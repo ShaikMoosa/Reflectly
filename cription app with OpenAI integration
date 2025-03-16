@@ -1,0 +1,6 @@
+user.email=70002385+ShaikMoosa@users.noreply.github.com
+user.name=ShaikMoosa
+filter.lfs.smudge=git-lfs smudge -- %f
+filter.lfs.process=git-lfs filter-process
+filter.lfs.required=true
+filter.lfs.clean=git-lfs clean -- %f
