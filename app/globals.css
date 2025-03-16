@@ -1,6 +1,10 @@
 @import "tailwindcss/preflight";
 @import "tailwindcss";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 248, 250, 252;
@@ -12,11 +16,21 @@
   --gray-200: 229, 231, 235;
   --gray-700: 55, 65, 81;
   --gray-800: 31, 41, 55;
+  --bg-dark: #121212;
+  --bg-card: #1e1e1e;
+  --bg-card-hover: #252525;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --accent-purple: #8b5cf6;
+  --accent-purple-hover: #7c3aed;
 }
 
 body {
-  color: rgb(var(--gray-800));
-  background: rgb(var(--background-rgb));
+  color: var(--text-primary);
+  background-color: var(--bg-dark);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 * {
@@ -73,4 +87,89 @@ a {
 
 .shadow-blue {
   box-shadow: 0 4px 14px rgba(var(--primary-blue), 0.15);
+}
+
+/* Modern card styles */
+.modern-card {
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modern-card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Modern button styles */
+.modern-button {
+  background-color: var(--accent-purple);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border: none;
+  min-width: 150px;
+}
+
+.modern-button:hover {
+  background-color: var(--accent-purple-hover);
+}
+
+.modern-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Transcript styles */
+.transcript-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.transcript-item:hover {
+  background-color: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.transcript-item.active {
+  border-color: var(--accent-purple);
+}
+
+.timestamp {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-family: monospace;
+  padding: 0.2rem 0.4rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
 } 
