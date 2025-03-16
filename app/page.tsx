@@ -270,7 +270,7 @@ export default function Home() {
               <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <div className="title" id="page-title">Thread</div>
+          <div className="title font-poppins font-extrabold" id="page-title">Reflectly</div>
           <button 
             onClick={toggleTheme} 
             className="theme-toggle"
@@ -282,7 +282,7 @@ export default function Home() {
         </div>
 
         <div className="px-4">
-          <h1 className="text-xl font-bold mb-2" aria-labelledby="page-title">{videoTitle || 'Reflectly'}</h1>
+          <h1 className="text-xl font-bold font-poppins mb-2" aria-labelledby="page-title">{videoTitle || 'Reflectly'}</h1>
           <p className="text-gray-400 mb-4 text-sm">Upload your video and generate an interactive transcript</p>
 
           {/* Video section */}
@@ -291,7 +291,7 @@ export default function Home() {
               // Upload section
               <div 
                 onClick={() => fileInputRef.current?.click()} 
-                className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center cursor-pointer hover:border-gray-500 bg-opacity-30 bg-black"
+                className="border-2 border-dashed border-upload-border rounded-lg p-10 text-center cursor-pointer hover:border-gray-500 bg-opacity-30 bg-upload-bg"
                 role="button"
                 tabIndex={0}
                 aria-label="Upload video"
