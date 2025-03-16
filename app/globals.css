@@ -18,17 +18,19 @@
   --gray-200: 229, 231, 235;
   --gray-700: 55, 65, 81;
   --gray-800: 31, 41, 55;
-  --bg-dark: #121212;
-  --bg-card: #1e1e1e;
-  --bg-card-hover: #252525;
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
+  --bg-dark: #18191a;
+  --bg-card: #242526;
+  --bg-card-hover: #3a3b3c;
+  --text-primary: #e4e6eb;
+  --text-secondary: #b0b3b8;
   --text-muted: rgba(255, 255, 255, 0.5);
   --border-color: rgba(255, 255, 255, 0.1);
   --accent-purple: #8b5cf6;
   --accent-purple-hover: #7c3aed;
   --upload-border: rgba(255, 255, 255, 0.2);
   --upload-bg: #000000;
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  --divider-color: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -97,66 +99,78 @@ a {
 .modern-card {
   background-color: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s ease;
 }
 
 .modern-card:hover {
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-/* Modern button styles */
+/* Updated button styles to match Facebook/Meta design */
 .modern-button {
   background-color: var(--accent-purple);
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 8px 12px;
   border-radius: 6px;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, filter 0.2s ease;
   border: none;
-  min-width: 150px;
+  min-width: 100px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .modern-button:hover {
   background-color: var(--accent-purple-hover);
+  filter: brightness(1.1);
+}
+
+.modern-button:active {
+  transform: scale(0.98);
 }
 
 .modern-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(30%);
 }
 
 /* Transcript styles */
 .transcript-item {
-  padding: 0.75rem;
-  cursor: pointer;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  transition: all 0.2s ease;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider-color);
+  transition: background-color 0.15s ease;
 }
 
 .transcript-item:hover {
   background-color: var(--bg-card-hover);
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .transcript-item.active {
-  border-color: var(--accent-purple);
+  border-left: 3px solid var(--accent-purple);
+  padding-left: 13px;
+  background-color: rgba(139, 92, 246, 0.05);
 }
 
 .timestamp {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-family: monospace;
-  padding: 0.2rem 0.4rem;
-  background-color: rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  background-color: var(--bg-card-hover);
   border-radius: 4px;
+  font-weight: 500;
+  min-width: 46px;
+  text-align: center;
 }
 
 /* Animations */
@@ -182,15 +196,16 @@ a {
 .thread-container {
   max-width: 600px;
   margin: 0 auto;
-  padding-bottom: 60px; /* Add bottom padding for better spacing */
+  padding-bottom: 60px;
+  padding-top: 12px;
 }
 
 .thread-header {
   display: flex;
   align-items: center;
-  padding: 12px 8px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider-color);
+  margin-bottom: 20px;
 }
 
 .thread-header .back-button {
@@ -210,11 +225,13 @@ a {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Make title text larger and bolder */
 .thread-header .title {
   flex: 1;
   text-align: center;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
 .thread-header .actions {
@@ -244,27 +261,46 @@ a {
   border-bottom: none;
 }
 
-.timestamp {
-  font-size: 12px;
-  color: var(--text-secondary);
-  padding: 2px 4px;
-  background: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+.text-transcript {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* Improve section headers */
+#transcript-heading {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Improve spacing in transcript container */
+.transcript-container {
+  width: 100%;
+  padding: 8px 0;
+}
+
+/* Make copy text button more visible */
+.text-accent-purple {
+  color: var(--accent-purple);
 }
 
 /* Light mode theme variables */
 :root.light-mode {
-  --bg-dark: #ffffff;
-  --bg-card: #f8f8f8;
-  --bg-card-hover: #f0f0f0;
-  --text-primary: #121212;
-  --text-secondary: rgba(0, 0, 0, 0.7);
+  --bg-dark: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f2f3f5;
+  --text-primary: #050505;
+  --text-secondary: #65676b;
   --text-muted: rgba(0, 0, 0, 0.5);
   --border-color: rgba(0, 0, 0, 0.1);
   --accent-purple: #8b5cf6;
   --accent-purple-hover: #7c3aed;
-  --upload-border: rgba(0, 0, 0, 0.3);
+  --upload-border: rgba(0, 0, 0, 0.2);
   --upload-bg: #f5f5f5;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --divider-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Theme toggle button styles */
@@ -350,12 +386,6 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   background-color: rgba(139, 92, 246, 0.05);
 }
 
-.text-transcript {
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
 /* Checkbox styling for accessibility */
 .accessibility-checkbox {
   width: 16px;
@@ -400,9 +430,18 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   font-weight: 800;
 }
 
-/* Remove fixed height and separate scroll in transcript */
-.transcript-container {
-  width: 100%;
+/* Update divider line */
+.border-gray-800 {
+  border-color: var(--divider-color);
+}
+
+/* Upload area styling */
+.border-upload-border {
+  border-color: var(--divider-color);
+}
+
+.bg-upload-bg {
+  background-color: var(--bg-card-hover);
 }
 
 /* Make the main element use the full viewport height */
