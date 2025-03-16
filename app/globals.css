@@ -1,0 +1,76 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss";
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 248, 250, 252;
+  --primary-blue: 59, 130, 246;
+  --primary-blue-dark: 37, 99, 235;
+  --primary-blue-light: 191, 219, 254;
+  --gray-50: 249, 250, 251;
+  --gray-100: 243, 244, 246;
+  --gray-200: 229, 231, 235;
+  --gray-700: 55, 65, 81;
+  --gray-800: 31, 41, 55;
+}
+
+body {
+  color: rgb(var(--gray-800));
+  background: rgb(var(--background-rgb));
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.shadow-blue {
+  box-shadow: 0 4px 14px rgba(var(--primary-blue), 0.15);
+} 
