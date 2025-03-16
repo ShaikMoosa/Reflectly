@@ -229,39 +229,40 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white p-4 md:p-6">
-      <h1 className="text-2xl font-bold text-center mb-4">{videoTitle || 'Reflectly'}</h1>
-      <p className="text-center text-gray-500 mb-8">Upload your video and generate an interactive transcript</p>
+    <main className="min-h-screen bg-white text-black p-4 md:p-6 flex justify-center">
+      <div className="max-w-3xl w-full flex flex-col items-center">
+        <h1 className="text-2xl font-bold text-center mb-4">{videoTitle || 'Reflectly'}</h1>
+        <p className="text-center text-gray-500 mb-8">Upload your video and generate an interactive transcript</p>
 
-      <div className="max-w-3xl mx-auto">
-        {!videoUrl ? (
-          // Upload section
-          <div 
-            onClick={() => fileInputRef.current?.click()} 
-            className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-gray-300"
-          >
-            <div className="flex flex-col items-center justify-center">
-              <FileVideo className="w-16 h-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Upload MP4 Video</h3>
-              <p className="text-sm text-gray-500 mb-4">Drag and drop your video file here, or click to browse</p>
-              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
-                Choose Video
-              </button>
-              <input 
-                ref={fileInputRef}
-                type="file"
-                accept="video/mp4"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+        {/* Video content area - centered */}
+        <div className="mb-6 w-full flex justify-center">
+          {!videoUrl ? (
+            // Upload section
+            <div 
+              onClick={() => fileInputRef.current?.click()} 
+              className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-gray-300 w-full"
+            >
+              <div className="flex flex-col items-center justify-center">
+                <FileVideo className="w-16 h-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-700 mb-2">Upload MP4 Video</h3>
+                <p className="text-sm text-gray-500 mb-4">Drag and drop your video file here, or click to browse</p>
+                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
+                  Choose Video
+                </button>
+                <input 
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/mp4"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          // Video player and controls
-          <>
-            <div className="mb-6 rounded-lg overflow-hidden">
+          ) : (
+            // Video player - centered
+            <div className="w-full flex justify-center">
               {isUploading ? (
-                <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                <div className="aspect-video bg-gray-100 flex items-center justify-center w-full">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-700"></div>
                 </div>
               ) : (
@@ -273,121 +274,122 @@ export default function Home() {
                 />
               )}
             </div>
-
-            {/* Action Buttons with inline styles to ensure visibility */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '2rem',
-              justifyContent: 'flex-start',
-              width: '100%'
-            }}>
-              {/* Generate transcript button */}
-              <button 
-                onClick={handleTranscribe}
-                disabled={isTranscribing}
-                style={{
-                  backgroundColor: 'black',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.375rem',
-                  minWidth: '180px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: isTranscribing ? 'not-allowed' : 'pointer',
-                  border: 'none'
-                }}
-              >
-                {isTranscribing ? (
-                  <>
-                    <div style={{ 
-                      width: '1rem', 
-                      height: '1rem', 
-                      borderRadius: '50%', 
-                      borderTop: '2px solid transparent',
-                      borderRight: '2px solid white',
-                      borderBottom: '2px solid white',
-                      borderLeft: '2px solid white',
-                      marginRight: '0.5rem',
-                      animation: 'spin 1s linear infinite'
-                    }}></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Generate transcript
-                  </>
-                )}
-              </button>
-              
-              {/* Import transcript button */}
-              <button 
-                onClick={triggerImportTranscript}
-                style={{
-                  backgroundColor: 'black',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.375rem',
-                  minWidth: '180px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  border: 'none'
-                }}
-              >
-                <Upload size={16} style={{ marginRight: '0.5rem' }} />
-                Import transcript
-              </button>
-              <input
-                ref={importTranscriptRef}
-                type="file"
-                accept="application/json"
-                onChange={handleImportTranscript}
-                className="hidden"
-              />
-              
-              {/* Export transcript button */}
-              <button 
-                onClick={handleExportTranscript}
-                disabled={transcripts.length === 0}
-                style={{
-                  backgroundColor: 'black',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.375rem',
-                  minWidth: '180px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: transcripts.length === 0 ? 'not-allowed' : 'pointer',
-                  border: 'none',
-                  opacity: transcripts.length === 0 ? 0.7 : 1
-                }}
-              >
-                <Download size={16} style={{ marginRight: '0.5rem' }} />
-                Export transcript
-              </button>
-            </div>
-          </>
-        )}
+          )}
+        </div>
         
+        {/* Action Buttons with inline styles - center aligned */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '1rem',
+          marginBottom: '2rem',
+          justifyContent: 'center',
+          width: '100%'
+        }}>
+          {/* Generate transcript button */}
+          <button 
+            onClick={handleTranscribe}
+            disabled={isTranscribing}
+            style={{
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              minWidth: '180px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: isTranscribing ? 'not-allowed' : 'pointer',
+              border: 'none'
+            }}
+          >
+            {isTranscribing ? (
+              <>
+                <div style={{ 
+                  width: '1rem', 
+                  height: '1rem', 
+                  borderRadius: '50%', 
+                  borderTop: '2px solid transparent',
+                  borderRight: '2px solid white',
+                  borderBottom: '2px solid white',
+                  borderLeft: '2px solid white',
+                  marginRight: '0.5rem',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                Generate transcript
+              </>
+            )}
+          </button>
+          
+          {/* Import transcript button */}
+          <button 
+            onClick={triggerImportTranscript}
+            style={{
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              minWidth: '180px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none'
+            }}
+          >
+            <Upload size={16} style={{ marginRight: '0.5rem' }} />
+            Import transcript
+          </button>
+          <input
+            ref={importTranscriptRef}
+            type="file"
+            accept="application/json"
+            onChange={handleImportTranscript}
+            className="hidden"
+          />
+          
+          {/* Export transcript button */}
+          <button 
+            onClick={handleExportTranscript}
+            disabled={transcripts.length === 0}
+            style={{
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              minWidth: '180px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: transcripts.length === 0 ? 'not-allowed' : 'pointer',
+              border: 'none',
+              opacity: transcripts.length === 0 ? 0.7 : 1
+            }}
+          >
+            <Download size={16} style={{ marginRight: '0.5rem' }} />
+            Export transcript
+          </button>
+        </div>
+
+        {/* Error message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6 w-full text-center">
             {error}
           </div>
         )}
 
-        {/* Transcript display */}
+        {/* Transcript display - centered */}
         {transcripts.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-4">Transcript</h2>
+          <div className="mt-6 w-full">
+            <h2 className="text-xl font-semibold mb-4 text-center">Transcript</h2>
             <div className="space-y-[18px]">
               {transcripts.map((transcript, index) => {
                 const isActive = currentTime >= transcript.start && currentTime <= transcript.end;

@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-// Initialize OpenAI client with API key
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    // In a real implementation, you would:
-    // 1. Extract the video file from the FormData
-    // 2. Send it to OpenAI's Whisper API or another transcription service
-    // 3. Process the response and return the transcript data
+    console.log('Transcription API called');
+    
+    // Extract the form data
+    let formData;
+    try {
+      formData = await request.formData();
+      console.log('Form data received');
+    } catch (error) {
+      console.error('Error parsing form data:', error);
+      return NextResponse.json(
+        { error: 'Failed to parse form data' },
+        { status: 400 }
+      );
+    }
     
     // For demo purposes, we'll just return some mock transcript data
     const mockTranscripts = [
@@ -79,7 +83,8 @@ export async function POST(request: NextRequest) {
 
     // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-
+    
+    console.log('Returning mock transcript data');
     return NextResponse.json({ 
       transcripts: mockTranscripts,
       message: 'Transcript generated successfully'
