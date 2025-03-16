@@ -62,7 +62,8 @@ export default function Home() {
 
   // Auto-scroll to active transcript
   useEffect(() => {
-    if (autoScroll && activeItemRef.current && transcriptListRef.current) {
+    if (autoScroll && activeItemRef.current) {
+      // Scroll the window instead of the container
       activeItemRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center'
@@ -419,10 +420,9 @@ export default function Home() {
             ) : (
               <div 
                 ref={transcriptListRef}
-                className="max-h-[calc(100vh-430px)] overflow-y-auto" 
+                className="transcript-container" 
                 role="region" 
                 aria-labelledby="transcript-heading"
-                tabIndex={0}
               >
                 <ul className="transcript-list">
                   {transcripts.map((transcript, index) => {

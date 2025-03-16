@@ -182,6 +182,7 @@ a {
 .thread-container {
   max-width: 600px;
   margin: 0 auto;
+  padding-bottom: 60px; /* Add bottom padding for better spacing */
 }
 
 .thread-header {
@@ -397,4 +398,16 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
 
 .font-extrabold {
   font-weight: 800;
+}
+
+/* Remove fixed height and separate scroll in transcript */
+.transcript-container {
+  width: 100%;
+}
+
+/* Make the main element use the full viewport height */
+main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 } 
