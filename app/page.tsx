@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon } from 'lucide-react';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -12,6 +12,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,6 +41,21 @@ export default function Home() {
       }
     };
   }, [videoUrl]);
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle('light-mode');
+  };
+
+  // Apply theme class on mount and theme change
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('light-mode');
+    } else {
+      document.documentElement.classList.add('light-mode');
+    }
+  }, [isDarkMode]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -229,7 +245,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-0 md:p-0">
+    <main className={`min-h-screen p-0 md:p-0 ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
       <div className="thread-container">
         {/* Thread-like header */}
         <div className="thread-header">
@@ -239,13 +255,13 @@ export default function Home() {
             </svg>
           </button>
           <div className="title">Thread</div>
-          <div className="actions">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          <button 
+            onClick={toggleTheme} 
+            className="theme-toggle"
+            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
         </div>
 
         <div className="px-4">

@@ -246,4 +246,62 @@ a {
   padding: 2px 4px;
   background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Light mode theme variables */
+:root.light-mode {
+  --bg-dark: #ffffff;
+  --bg-card: #f8f8f8;
+  --bg-card-hover: #f0f0f0;
+  --text-primary: #121212;
+  --text-secondary: rgba(0, 0, 0, 0.7);
+  --text-muted: rgba(0, 0, 0, 0.5);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --accent-purple: #8b5cf6;
+  --accent-purple-hover: #7c3aed;
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+:root.light-mode .theme-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Light mode overrides */
+:root.light-mode .modern-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:root.light-mode .transcript-item {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+:root.light-mode .transcript-item:hover {
+  background-color: var(--bg-card-hover);
+}
+
+:root.light-mode .transcript-item.active {
+  border-color: var(--accent-purple);
+}
+
+/* Ensure smooth transitions between themes */
+body, .modern-card, .modern-button, .transcript-item, .timestamp {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 } 
