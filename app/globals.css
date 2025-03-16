@@ -304,4 +304,84 @@ a {
 /* Ensure smooth transitions between themes */
 body, .modern-card, .modern-button, .transcript-item, .timestamp {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Accessibility styles */
+:focus {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+}
+
+.transcript-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.transcript-item {
+  padding: 12px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.transcript-item:focus {
+  outline: 2px solid var(--accent-purple);
+  background-color: rgba(139, 92, 246, 0.1);
+  z-index: 1;
+}
+
+.transcript-item:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.transcript-item.active {
+  border-left: 3px solid var(--accent-purple);
+  padding-left: 9px; /* Compensate for the border */
+  background-color: rgba(139, 92, 246, 0.05);
+}
+
+.text-transcript {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Checkbox styling for accessibility */
+.accessibility-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  margin-right: 8px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.accessibility-checkbox:checked {
+  background-color: var(--accent-purple);
+  border-color: var(--accent-purple);
+}
+
+.accessibility-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.accessibility-checkbox:focus {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
 } 
