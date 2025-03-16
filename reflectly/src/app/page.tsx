@@ -3,9 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import VideoPlayer from './components/VideoPlayer';
 import TranscriptList from './components/TranscriptList';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UploadCloud, RefreshCw, FileVideo } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { UploadCloud, FileVideo, FileAudio, Download, Upload } from 'lucide-react';
 
 /**
  * TranscriptItem interface - defines the structure for a transcript segment
@@ -24,7 +23,7 @@ export default function Home() {
   // State management
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
-  const [videoTitle, setVideoTitle] = useState<string>('Video Transcription');
+  const [videoTitle, setVideoTitle] = useState<string>('Upload a video to get started');
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -35,6 +34,7 @@ export default function Home() {
   // References
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importTranscriptRef = useRef<HTMLInputElement>(null);
 
   /**
    * Updates current video time when the video is playing
@@ -115,18 +115,23 @@ export default function Home() {
     setError(null);
     
     try {
+      console.log('Starting transcription process...');
+      
       // Create a FormData object to send the video file
       const formData = new FormData();
       if (videoFile) {
+        console.log('Using uploaded video file:', videoFile.name);
         formData.append('file', videoFile);
       } else if (videoUrl) {
         // For blob URLs, we need to fetch the file first
+        console.log('Using blob URL video');
         const response = await fetch(videoUrl);
         const blob = await response.blob();
         formData.append('file', blob, 'video.mp4');
       }
       
       // Call our API endpoint
+      console.log('Calling API endpoint...');
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
@@ -138,6 +143,7 @@ export default function Home() {
       }
       
       const data = await response.json();
+      console.log('Received transcript data:', data);
       
       if (data.transcripts && data.transcripts.length > 0) {
         setTranscripts(data.transcripts);
@@ -180,165 +186,269 @@ export default function Home() {
     }
     setVideoFile(null);
     setVideoUrl('');
-    setVideoTitle('Video Transcription');
+    setVideoTitle('Upload a video to get started');
     setTranscripts([]);
     setCurrentTime(0);
     setError(null);
     setShowHelpTip(true);
   };
 
+  /**
+   * Exports the current transcript as a JSON file
+   */
+  const handleExportTranscript = () => {
+    if (transcripts.length === 0) {
+      setError('No transcript available to export');
+      return;
+    }
+
+    try {
+      // Create transcript data object with metadata
+      const transcriptData = {
+        title: videoTitle,
+        exportedAt: new Date().toISOString(),
+        transcripts: transcripts
+      };
+      
+      // Convert to JSON string
+      const jsonString = JSON.stringify(transcriptData, null, 2);
+      
+      // Create a blob and download link
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${videoTitle.replace(/\s+/g, '_')}_transcript.json`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('Transcript exported successfully');
+    } catch (error) {
+      console.error('Error exporting transcript:', error);
+      setError('Failed to export transcript');
+    }
+  };
+
+  /**
+   * Imports a transcript from a JSON file
+   */
+  const handleImportTranscript = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Reset the file input
+    if (event.target) {
+      event.target.value = '';
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        
+        // Validate the imported data
+        if (!data.transcripts || !Array.isArray(data.transcripts)) {
+          throw new Error('Invalid transcript format');
+        }
+        
+        // Set the imported transcripts
+        setTranscripts(data.transcripts);
+        
+        // Update title if available
+        if (data.title) {
+          setVideoTitle(data.title);
+        }
+        
+        console.log('Transcript imported successfully');
+      } catch (error) {
+        console.error('Error importing transcript:', error);
+        setError('Failed to import transcript: Invalid format');
+      }
+    };
+    
+    reader.onerror = () => {
+      setError('Failed to read the transcript file');
+    };
+    
+    reader.readAsText(file);
+  };
+
+  /**
+   * Opens the file dialog for transcript import
+   */
+  const triggerImportTranscript = () => {
+    importTranscriptRef.current?.click();
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50/50 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Reflectly</h1>
-          <p className="text-slate-500 text-sm max-w-md mx-auto">
-            Upload your video and generate interactive transcripts with speaker identification
-          </p>
-        </header>
+    <main className="min-h-screen bg-white text-black">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Video title */}
+        <h1 className="text-2xl font-bold text-center mb-6">{videoTitle}</h1>
 
-        {/* Video player section */}
-        <Card className="mb-8 border border-slate-200 shadow-sm rounded-xl overflow-hidden">
-          <CardHeader className="pb-2 pt-5 px-6 border-b border-slate-100">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-xl font-semibold text-slate-800">
-                {videoTitle}
-              </CardTitle>
-              {videoUrl && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={resetApp}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Reset
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {error && (
-              <div className="p-4 m-4 bg-red-50 border border-red-100 text-red-600 rounded-md text-sm">
-                <div className="flex items-start">
-                  <span className="text-red-500 text-lg mr-2">⚠️</span>
-                  <div>
-                    <p className="font-medium">{error}</p>
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto text-red-500 mt-1" 
-                      onClick={() => setError(null)}
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
-                </div>
+        {/* Video content area */}
+        <div className="mb-6">
+          {!videoUrl ? (
+            // File upload area
+            <div 
+              onClick={triggerFileInput}
+              className="border-2 border-dashed border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 hover:bg-gray-50/50 transition-all duration-300"
+            >
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                <FileVideo className="w-8 h-8" />
               </div>
-            )}
-          
-            {!videoUrl ? (
-              // File upload area
-              <div 
-                onClick={triggerFileInput}
-                className="border-2 border-dashed border-slate-200 rounded-lg m-6 p-10 flex flex-col items-center justify-center cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all duration-300"
+              <h3 className="text-lg font-medium text-black mb-2">Upload MP4 Video</h3>
+              <p className="text-sm text-gray-500 mb-4 text-center max-w-md">
+                Drag and drop your video file here, or click to browse
+              </p>
+              <Button 
+                variant="outline"
+                className="text-sm border-gray-300 hover:bg-gray-100 hover:text-black"
+                onClick={(e) => { e.stopPropagation(); triggerFileInput(); }}
               >
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                  <FileVideo className="w-8 h-8" />
-                </div>
-                <h3 className="text-base font-medium text-slate-700 mb-1">Upload MP4 Video</h3>
-                <p className="text-sm text-slate-500 mb-4 text-center max-w-md">
-                  Drag and drop your video file here, or click to browse
-                </p>
-                <Button 
-                  variant="outline"
-                  className="text-sm"
-                  onClick={(e) => { e.stopPropagation(); triggerFileInput(); }}
-                >
-                  <UploadCloud className="w-4 h-4 mr-2" />
-                  Choose Video
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/mp4"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-
-                {showHelpTip && (
-                  <div className="mt-6 p-3 bg-blue-50 border border-blue-100 rounded-md max-w-md text-sm text-blue-600">
-                    <p className="font-medium mb-1">💡 Pro Tip</p>
-                    <p className="text-slate-600 text-xs">After uploading a video, you can generate an AI transcript to navigate through the content easily.</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              // Video player
+                <UploadCloud className="w-4 h-4 mr-2" />
+                Choose Video
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/mp4"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          ) : (
+            // Video player
+            <VideoPlayer
+              ref={videoRef} 
+              src={videoUrl}
+              className="w-full rounded-lg overflow-hidden"
+            />
+          )}
+        </div>
+        
+        {/* Action Buttons with INLINE STYLES to ensure visibility */}
+        <div className="flex flex-wrap items-center gap-4 mb-8 justify-start" style={{
+          display: 'flex',
+          justifyContent: 'flex-start',
+          marginBottom: '2rem',
+          gap: '1rem',
+          width: '100%'
+        }}>
+          {/* Generate transcript button */}
+          <button 
+            onClick={handleTranscribe}
+            disabled={isTranscribing || !videoUrl}
+            style={{
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              minWidth: '180px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none'
+            }}
+          >
+            {isTranscribing ? (
               <>
-                {isUploading ? (
-                  <div className="flex items-center justify-center h-64 bg-slate-50">
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-500 rounded-full animate-spin mb-3"></div>
-                      <div className="text-slate-500 font-medium text-sm">Loading video...</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-lg overflow-hidden">
-                    <VideoPlayer
-                      ref={videoRef}
-                      src={videoUrl}
-                      className="w-full aspect-video"
-                    />
-                  </div>
-                )}
+                <div style={{ 
+                  width: '1rem', 
+                  height: '1rem', 
+                  borderRadius: '50%', 
+                  borderTop: '2px solid transparent',
+                  borderRight: '2px solid white',
+                  borderBottom: '2px solid white',
+                  borderLeft: '2px solid white',
+                  marginRight: '0.5rem',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                Generate transcript
               </>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Transcribe button - shown only when video is loaded and no transcript exists */}
-        {videoUrl && transcripts.length === 0 && (
-          <div className="flex justify-center mb-8">
-            <Button 
-              onClick={handleTranscribe}
-              disabled={isTranscribing}
-              variant="default"
-              size="lg"
-              className="relative"
-            >
-              {isTranscribing ? (
-                <>
-                  <div className="absolute inset-0 bg-slate-800 rounded-md animate-pulse opacity-20"></div>
-                  <div className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                  Generating transcript...
-                </>
-              ) : (
-                'Generate AI Transcript'
-              )}
-            </Button>
+          </button>
+          
+          {/* Import transcript button */}
+          <button 
+            onClick={triggerImportTranscript}
+            disabled={!videoUrl}
+            style={{
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              minWidth: '180px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none'
+            }}
+          >
+            <Upload size={16} style={{ marginRight: '0.5rem' }} />
+            Import transcript
+          </button>
+          <input
+            ref={importTranscriptRef}
+            type="file"
+            accept="application/json"
+            onChange={handleImportTranscript}
+            className="hidden"
+          />
+          
+          {/* Export transcript button */}
+          <button 
+            onClick={handleExportTranscript}
+            disabled={transcripts.length === 0}
+            style={{
+              backgroundColor: 'black',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.375rem',
+              minWidth: '180px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none'
+            }}
+          >
+            <Download size={16} style={{ marginRight: '0.5rem' }} />
+            Export transcript
+          </button>
+        </div>
+        
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-6">
+            {error}
           </div>
         )}
-
-        {/* Transcript list - shown only when transcripts exist */}
+        
+        {/* Transcripts */}
         {transcripts.length > 0 && (
-          <div>
-            <div className="flex items-center mb-2 px-1">
-              <h2 className="text-sm font-medium text-slate-700">
-                Transcript
-              </h2>
-              <div className="ml-2 text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
-                Click on any line to jump to that moment
-              </div>
-            </div>
-            <Card className="border border-slate-200 shadow-sm overflow-hidden rounded-xl">
-              <CardContent className="p-0">
-                <TranscriptList
-                  transcripts={transcripts}
-                  onTranscriptClick={handleTranscriptClick}
-                  currentTime={currentTime}
-                />
-              </CardContent>
-            </Card>
+          <div className="mt-8">
+            <TranscriptList 
+              transcripts={transcripts}
+              onTranscriptClick={handleTranscriptClick}
+              currentTime={currentTime}
+            />
           </div>
         )}
       </div>
