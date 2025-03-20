@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
 export async function POST(request: Request) {
   try {
@@ -17,82 +18,67 @@ export async function POST(request: Request) {
       );
     }
     
-    // For demo purposes, we'll just return some mock transcript data
-    const mockTranscripts = [
-      {
-        start: 0,
-        end: 5,
-        text: "Here's a challenge for you.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 5,
-        end: 10,
-        text: "You have to create an animation like this using trim paths.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 10,
-        end: 15,
-        text: "You will find the starter file in the resources with this path.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 15,
-        end: 20,
-        text: "So go ahead and start animating the same.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 20,
-        end: 25,
-        text: "You can come back to this lesson for the solution.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 25,
-        end: 30,
-        text: "In the starter file, you will find a path like this, which has two strokes applied.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 30,
-        end: 35,
-        text: "That is the background and the foreground.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 35,
-        end: 40,
-        text: "We have to animate the white stroke, which has trim path enabled.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 40,
-        end: 45,
-        text: "And you can see the start is zero and the end is 1%.",
-        speaker: "Speaker 1"
-      },
-      {
-        start: 45,
-        end: 50,
-        text: "Now to achieve the animation shown in the video previously, we'll go ahead and animate the end like this.",
-        speaker: "Speaker 1"
-      }
-    ];
-
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Get the video file from the form data
+    const file = formData.get('file');
+    if (!file || !(file instanceof File)) {
+      console.error('No file or invalid file in form data');
+      return NextResponse.json(
+        { error: 'No file uploaded or invalid file' },
+        { status: 400 }
+      );
+    }
     
-    console.log('Returning mock transcript data');
+    console.log(`File received: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+    
+    // Initialize OpenAI client with API key from .env
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    
+    if (!openai.apiKey) {
+      console.error('OpenAI API key is missing');
+      return NextResponse.json(
+        { error: 'API configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('Creating transcription with OpenAI Whisper API...');
+    
+    // Convert the file to a Buffer and then to a Blob with the correct type
+    const fileArrayBuffer = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(fileArrayBuffer);
+    
+    // Create a transcription using the OpenAI API
+    const transcriptionResponse = await openai.audio.transcriptions.create({
+      file: new File([fileBuffer], file.name, { type: file.type }),
+      model: "whisper-1",
+      response_format: "verbose_json",
+      timestamp_granularities: ["segment"],
+    });
+    
+    console.log('Transcription received from OpenAI');
+    
+    // Transform the OpenAI response to our expected format
+    const transformedTranscripts = transcriptionResponse.segments?.map((segment, index) => {
+      return {
+        start: segment.start,
+        end: segment.end,
+        text: segment.text,
+        speaker: `Speaker ${(index % 2) + 1}` // Alternate between Speaker 1 and Speaker 2
+      };
+    }) || [];
+    
+    console.log(`Transformed ${transformedTranscripts.length} transcript segments`);
+    
     return NextResponse.json({ 
-      transcripts: mockTranscripts,
+      transcripts: transformedTranscripts,
       message: 'Transcript generated successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating transcript:', error);
     return NextResponse.json(
-      { error: 'Failed to generate transcript' },
+      { error: `Failed to generate transcript: ${error.message}` },
       { status: 500 }
     );
   }
