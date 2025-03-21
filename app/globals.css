@@ -123,6 +123,11 @@ a {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
+/* Content card for single card layout */
+.content-card {
+  padding: 24px;
+}
+
 /* Updated button styles to match requested black design */
 .modern-button {
   background-color: var(--button-bg);
@@ -163,110 +168,6 @@ a {
   padding: 12px 16px;
   border-bottom: 1px solid var(--divider-color);
   transition: background-color 0.15s ease;
-}
-
-.transcript-item:hover {
-  background-color: var(--bg-card-hover);
-  transform: none;
-}
-
-.transcript-item.active {
-  border-left: 3px solid var(--accent-purple);
-  padding-left: 13px;
-  background-color: rgba(139, 92, 246, 0.05);
-}
-
-.timestamp {
-  font-size: 12px;
-  color: var(--text-secondary);
-  padding: 2px 6px;
-  background-color: var(--bg-card-hover);
-  border-radius: 4px;
-  font-weight: 500;
-  min-width: 46px;
-  text-align: center;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease forwards;
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-/* Thread-like styles */
-.thread-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding-bottom: 60px;
-  padding-top: 12px;
-}
-
-.thread-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--divider-color);
-  margin-bottom: 20px;
-}
-
-.thread-header .back-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-secondary);
-  border: none;
-  cursor: pointer;
-}
-
-.thread-header .back-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Make title text larger and bolder */
-.thread-header .title {
-  flex: 1;
-  text-align: center;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-}
-
-.thread-header .actions {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modern-card {
-  border-radius: 12px;
-  background-color: var(--bg-card);
-  overflow: hidden;
-}
-
-/* Transcript styles */
-.transcript-item {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--divider-color);
-  transition: background-color 0.15s ease;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -295,9 +196,10 @@ a {
 
 /* Add margin between buttons and transcript */
 .transcript-container {
-  margin-top: 24px;
-  padding-left: 16px;
-  padding-right: 16px;
+  margin-top: 14px;
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--divider-color);
 }
 
 /* Move auto-scroll and copy after transcript title with left margin */
@@ -332,21 +234,21 @@ a {
 /* Add margin between video title and video player */
 .video-title {
   margin-bottom: 16px;
-  padding: 0 16px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
 }
 
 /* Add margin between video and buttons */
-.video-container {
-  margin-bottom: 24px;
+.video-wrapper {
+  margin-bottom: 20px;
 }
 
 /* Button container for spacing */
 .button-container {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
   margin-bottom: 20px;
-  padding: 0 16px;
 }
 
 .theme-toggle {
@@ -364,6 +266,7 @@ a {
   top: 16px;
   right: 16px;
   transition: background-color 0.2s ease;
+  z-index: 10;
 }
 
 .theme-toggle:hover {
@@ -407,6 +310,7 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   padding: 0;
   margin: 0;
   overflow-y: auto;
+  max-height: 350px;
 }
 
 .transcript-item {
@@ -480,24 +384,76 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   font-weight: 800;
 }
 
-/* Make video title left-aligned */
-.video-title {
-  text-align: left;
-  font-weight: 600;
-  font-size: 16px;
+/* Style for the header with Reflectly title */
+.app-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.app-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
   color: var(--text-primary);
 }
 
-.border-gray-800 {
-  border-color: rgba(var(--gray-800), 1);
+/* Thread container for layout */
+.thread-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+  padding-top: 12px;
 }
 
-.border-upload-border {
-  border-color: var(--upload-border);
+/* Upload container styling */
+.upload-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
 }
 
-.bg-upload-bg {
-  background-color: var(--upload-bg);
+.upload-container:hover {
+  background-color: var(--bg-card-hover);
+}
+
+/* Content wrapper for all elements */
+.content-wrapper {
+  padding: 0 8px;
+}
+
+/* Error message styling */
+.error-message {
+  padding: 16px;
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #ef4444;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+/* Transcript section */
+.transcript-section {
+  margin-top: 24px;
+}
+
+/* Add dividers between sections */
+.content-wrapper > *:not(:last-child) {
+  margin-bottom: 20px;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  background-color: var(--bg-card-hover);
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 46px;
+  text-align: center;
 }
 
 main {
