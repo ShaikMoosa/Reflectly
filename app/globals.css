@@ -419,10 +419,28 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .upload-container:hover {
   background-color: var(--bg-card-hover);
+  border-color: var(--accent-purple) !important;
+}
+
+.upload-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+.upload-container button {
+  margin: 0 auto;
+  display: block;
 }
 
 /* Drag and drop active state */

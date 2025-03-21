@@ -374,7 +374,7 @@ export default function Home() {
         <div className="modern-card content-card">
           {!videoUrl ? (
             <div 
-              className="upload-container"
+              className="upload-container hover:border-accent-purple"
               onClick={triggerFileInput}
               onDragOver={handleDragOver}
               onDragEnter={handleDragEnter}
@@ -388,13 +388,16 @@ export default function Home() {
                 backgroundColor: 'var(--upload-bg)'
               }}
             >
-              <div className="text-center">
-                <UploadCloud className="mx-auto mb-4" size={48} />
-                <h3 className="mb-2 font-semibold">Upload Video File</h3>
-                <p className="text-sm">
+              <div className="text-center w-full">
+                <UploadCloud className="mx-auto mb-4 text-secondary" size={48} />
+                <h3 className="mb-2 font-semibold text-lg">Upload Video File</h3>
+                <p className="text-sm mb-4 text-secondary">
                   Click to upload or drag and drop<br />
                   MP4 file (max 100MB)
                 </p>
+                <button className="modern-button mt-2 mx-auto">
+                  Choose File
+                </button>
                 <input
                   ref={fileInputRef}
                   type="file"
