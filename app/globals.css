@@ -200,6 +200,10 @@ a {
   background-color: var(--bg-card);
   border-radius: 8px;
   border: 1px solid var(--divider-color);
+  height: 350px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Move auto-scroll and copy after transcript title with left margin */
@@ -310,7 +314,8 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   padding: 0;
   margin: 0;
   overflow-y: auto;
-  max-height: 350px;
+  height: 100%;
+  flex: 1;
 }
 
 .transcript-item {

@@ -62,12 +62,26 @@ export default function Home() {
 
   // Auto-scroll to active transcript
   useEffect(() => {
-    if (autoScroll && activeItemRef.current) {
-      // Scroll the window instead of the container
-      activeItemRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
+    if (autoScroll && activeItemRef.current && transcriptListRef.current) {
+      // Calculate position of active item relative to transcript container
+      const container = transcriptListRef.current;
+      const activeItem = activeItemRef.current;
+      
+      // Get positions and dimensions
+      const containerRect = container.getBoundingClientRect();
+      const activeItemRect = activeItem.getBoundingClientRect();
+      
+      // Check if active item is not fully visible in the container
+      const isAboveVisible = activeItemRect.top < containerRect.top;
+      const isBelowVisible = activeItemRect.bottom > containerRect.bottom;
+      
+      if (isAboveVisible || isBelowVisible) {
+        // Scroll the item into view within the container
+        activeItem.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      }
     }
   }, [currentTime, autoScroll]);
 
@@ -284,150 +298,156 @@ export default function Home() {
       </button>
 
       <div className="thread-container">
-        {!videoUrl ? (
-          <div 
-            className="modern-card flex items-center justify-center p-6 hover-scale cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-            style={{ 
-              minHeight: '240px',
-              borderStyle: 'dashed',
-              borderWidth: '2px',
-              borderColor: 'var(--upload-border)',
-              backgroundColor: 'var(--upload-bg)'
-            }}
-          >
-            <div className="text-center">
-              <UploadCloud className="mx-auto mb-4" size={48} />
-              <h3 className="mb-2 font-semibold">Upload Video File</h3>
-              <p className="text-sm">
-                Click to upload or drag and drop<br />
-                MP4 file (max 100MB)
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/mp4"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+        <div className="app-header">
+          <h1 className="app-title">Reflectly</h1>
+        </div>
+
+        <div className="modern-card content-card">
+          {!videoUrl ? (
+            <div 
+              className="upload-container"
+              onClick={() => fileInputRef.current?.click()}
+              style={{ 
+                minHeight: '240px',
+                borderStyle: 'dashed',
+                borderWidth: '2px',
+                borderColor: 'var(--upload-border)',
+                backgroundColor: 'var(--upload-bg)'
+              }}
+            >
+              <div className="text-center">
+                <UploadCloud className="mx-auto mb-4" size={48} />
+                <h3 className="mb-2 font-semibold">Upload Video File</h3>
+                <p className="text-sm">
+                  Click to upload or drag and drop<br />
+                  MP4 file (max 100MB)
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/mp4"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {videoTitle && <h1 className="video-title">{videoTitle}</h1>}
-            
-            <div className="modern-card video-container">
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                controls
-                className="w-full"
-                style={{ borderRadius: '8px 8px 0 0' }}
-              />
-            </div>
-            
-            <div className="button-container">
-              <button
-                onClick={handleTranscribe}
-                disabled={isTranscribing || !videoFile}
-                className="modern-button"
-              >
-                {isTranscribing ? (
-                  <>
-                    <Clock className="animate-spin" size={16} />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <FileVideo size={16} />
-                    Generate Transcript
-                  </>
-                )}
-              </button>
+          ) : (
+            <div className="content-wrapper">
+              {videoTitle && <h1 className="video-title">{videoTitle}</h1>}
               
-              <button
-                onClick={triggerImportTranscript}
-                className="modern-button"
-              >
-                <Upload size={16} />
-                Import
-              </button>
-              <input
-                ref={importTranscriptRef}
-                type="file"
-                accept="application/json"
-                onChange={handleImportTranscript}
-                className="hidden"
-              />
+              <div className="video-wrapper">
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  className="w-full"
+                  style={{ borderRadius: '8px' }}
+                />
+              </div>
               
-              <button
-                onClick={handleExportTranscript}
-                disabled={transcripts.length === 0}
-                className="modern-button"
-              >
-                <Download size={16} />
-                Export
-              </button>
-            </div>
-            
-            {transcripts.length > 0 && (
-              <div>
-                <h2 id="transcript-heading">Transcript</h2>
+              <div className="button-container">
+                <button
+                  onClick={handleTranscribe}
+                  disabled={isTranscribing || !videoFile}
+                  className="modern-button"
+                >
+                  {isTranscribing ? (
+                    <>
+                      <Clock className="animate-spin" size={16} />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <FileVideo size={16} />
+                      Generate Transcript
+                    </>
+                  )}
+                </button>
                 
-                <div className="transcript-controls">
-                  <label className="flex items-center">
-                    <input 
-                      type="checkbox"
-                      checked={autoScroll}
-                      onChange={(e) => setAutoScroll(e.target.checked)}
-                      className="accessibility-checkbox"
-                    />
-                    Auto-scroll
-                  </label>
+                <button
+                  onClick={triggerImportTranscript}
+                  className="modern-button"
+                >
+                  <Upload size={16} />
+                  Import
+                </button>
+                <input
+                  ref={importTranscriptRef}
+                  type="file"
+                  accept="application/json"
+                  onChange={handleImportTranscript}
+                  className="hidden"
+                />
+                
+                <button
+                  onClick={handleExportTranscript}
+                  disabled={transcripts.length === 0}
+                  className="modern-button"
+                >
+                  <Download size={16} />
+                  Export
+                </button>
+              </div>
+              
+              {transcripts.length > 0 && (
+                <div className="transcript-section">
+                  <h2 id="transcript-heading">Transcript</h2>
                   
-                  <span 
-                    onClick={handleCopyTranscript}
-                    className="text-accent-purple"
-                  >
-                    Copy all text
-                  </span>
-                </div>
-                
-                <div className="transcript-container modern-card">
-                  <div className="transcript-list" ref={transcriptListRef}>
-                    {transcripts.map((transcript, index) => (
-                      <div
-                        key={index}
-                        className={`transcript-item ${index === activeTranscriptIndex ? 'active' : ''}`}
-                        onClick={() => handleTranscriptClick(transcript.start)}
-                        ref={index === activeTranscriptIndex ? activeItemRef : null}
-                        tabIndex={0}
-                        role="button"
-                        aria-pressed={index === activeTranscriptIndex}
-                      >
-                        <span className="timestamp">{formatTime(transcript.start)}</span>
-                        <span className="text-transcript">
-                          {transcript.text}
-                          {transcript.speaker && (
-                            <span className="block text-xs mt-1 text-secondary">
-                              {transcript.speaker}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="transcript-controls">
+                    <label className="flex items-center">
+                      <input 
+                        type="checkbox"
+                        checked={autoScroll}
+                        onChange={(e) => setAutoScroll(e.target.checked)}
+                        className="accessibility-checkbox"
+                      />
+                      Auto-scroll
+                    </label>
+                    
+                    <span 
+                      onClick={handleCopyTranscript}
+                      className="text-accent-purple"
+                    >
+                      Copy all text
+                    </span>
+                  </div>
+                  
+                  <div className="transcript-container">
+                    <div className="transcript-list" ref={transcriptListRef}>
+                      {transcripts.map((transcript, index) => (
+                        <div
+                          key={index}
+                          className={`transcript-item ${index === activeTranscriptIndex ? 'active' : ''}`}
+                          onClick={() => handleTranscriptClick(transcript.start)}
+                          ref={index === activeTranscriptIndex ? activeItemRef : null}
+                          tabIndex={0}
+                          role="button"
+                          aria-pressed={index === activeTranscriptIndex}
+                        >
+                          <span className="timestamp">{formatTime(transcript.start)}</span>
+                          <span className="text-transcript">
+                            {transcript.text}
+                            {transcript.speaker && (
+                              <span className="block text-xs mt-1 text-secondary">
+                                {transcript.speaker}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {error && (
-              <div className="p-4 bg-red-500 bg-opacity-20 text-red-700 rounded mt-4">
-                {error}
-              </div>
-            )}
-          </>
-        )}
+              )}
+              
+              {error && (
+                <div className="error-message">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
