@@ -425,6 +425,14 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   background-color: var(--bg-card-hover);
 }
 
+/* Drag and drop active state */
+.drag-active {
+  background-color: var(--bg-card-hover) !important;
+  border-color: var(--accent-purple) !important;
+  transform: scale(1.01);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
 /* Content wrapper for all elements */
 .content-wrapper {
   padding: 0 8px;

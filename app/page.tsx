@@ -121,6 +121,75 @@ export default function Home() {
     }
   };
 
+  // Add drag and drop handlers
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('drag-active');
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-active');
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-active');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      
+      if (file.type === 'video/mp4') {
+        setIsUploading(true);
+        setVideoFile(file);
+        setError(null);
+        
+        // Set video title from file name
+        const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove file extension
+        setVideoTitle(fileName);
+        
+        try {
+          // Clean up previous URL object
+          if (videoUrl && videoUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(videoUrl);
+          }
+          
+          // Create new object URL
+          const newUrl = URL.createObjectURL(file);
+          
+          // Simulate loading for better UX
+          setTimeout(() => {
+            setVideoUrl(newUrl);
+            setTranscripts([]);
+            setIsUploading(false);
+          }, 500);
+        } catch (error) {
+          console.error('Error creating object URL:', error);
+          setIsUploading(false);
+          setError('Failed to process video file. Please try again.');
+        }
+      } else {
+        setError('Please upload an MP4 file. Other formats are not supported at this time.');
+      }
+    }
+  };
+
+  // Manual trigger for file input click
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const handleTranscribe = async () => {
     if (!videoFile) return;
 
@@ -306,7 +375,11 @@ export default function Home() {
           {!videoUrl ? (
             <div 
               className="upload-container"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={triggerFileInput}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               style={{ 
                 minHeight: '240px',
                 borderStyle: 'dashed',
