@@ -31,6 +31,19 @@
   --upload-bg: #000000;
   --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
   --divider-color: rgba(255, 255, 255, 0.1);
+  
+  /* Light theme colors */
+  --bg-light: #FAFAFA;
+  --bg-card-light: #FFFFFF;
+  --bg-card-hover-light: #F5F5F5;
+  --text-primary-light: #333333;
+  --text-secondary-light: #666666;
+  --text-muted-light: rgba(0, 0, 0, 0.5);
+  --border-color-light: rgba(0, 0, 0, 0.1);
+  --divider-color-light: rgba(0, 0, 0, 0.1);
+  --button-bg: #000000;
+  --button-hover: #333333;
+  --card-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 body {
@@ -110,9 +123,9 @@ a {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-/* Updated button styles to match Facebook/Meta design */
+/* Updated button styles to match requested black design */
 .modern-button {
-  background-color: var(--accent-purple);
+  background-color: var(--button-bg);
   color: white;
   padding: 8px 12px;
   border-radius: 6px;
@@ -127,10 +140,11 @@ a {
   border: none;
   min-width: 100px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  margin-right: 10px;
 }
 
 .modern-button:hover {
-  background-color: var(--accent-purple-hover);
+  background-color: var(--button-hover);
   filter: brightness(1.1);
 }
 
@@ -248,13 +262,14 @@ a {
   overflow: hidden;
 }
 
+/* Transcript styles */
 .transcript-item {
-  padding: 12px;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-  margin-bottom: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider-color);
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .transcript-item:last-child {
@@ -262,117 +277,151 @@ a {
 }
 
 .text-transcript {
-  color: var(--text-primary);
   font-size: 14px;
-  line-height: 1.4;
-  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-primary);
+  flex: 1;
+  margin-top: 2px;
 }
 
-/* Improve section headers */
+/* Add margin between video title and video */
 #transcript-heading {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-left: 16px;
 }
 
-/* Improve spacing in transcript container */
+/* Add margin between buttons and transcript */
 .transcript-container {
-  width: 100%;
-  padding: 8px 0;
+  margin-top: 24px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
-/* Make copy text button more visible */
+/* Move auto-scroll and copy after transcript title with left margin */
+.transcript-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
 .text-accent-purple {
   color: var(--accent-purple);
+  cursor: pointer;
+  font-weight: 500;
 }
 
-/* Light mode theme variables */
+/* Light mode override */
 :root.light-mode {
-  --bg-dark: #f0f2f5;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f2f3f5;
-  --text-primary: #050505;
-  --text-secondary: #65676b;
-  --text-muted: rgba(0, 0, 0, 0.5);
-  --border-color: rgba(0, 0, 0, 0.1);
-  --accent-purple: #8b5cf6;
-  --accent-purple-hover: #7c3aed;
-  --upload-border: rgba(0, 0, 0, 0.2);
-  --upload-bg: #f5f5f5;
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
-  --divider-color: rgba(0, 0, 0, 0.1);
+  --bg-dark: var(--bg-light);
+  --bg-card: var(--bg-card-light);
+  --bg-card-hover: var(--bg-card-hover-light);
+  --text-primary: var(--text-primary-light);
+  --text-secondary: var(--text-secondary-light);
+  --text-muted: var(--text-muted-light);
+  --border-color: var(--border-color-light);
+  --divider-color: var(--divider-color-light);
+  --card-shadow: var(--card-shadow-light);
 }
 
-/* Theme toggle button styles */
+/* Add margin between video title and video player */
+.video-title {
+  margin-bottom: 16px;
+  padding: 0 16px;
+}
+
+/* Add margin between video and buttons */
+.video-container {
+  margin-bottom: 24px;
+}
+
+/* Button container for spacing */
+.button-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 0 16px;
+}
+
 .theme-toggle {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s;
+  background-color: rgba(var(--gray-800), 0.1);
+  color: var(--text-primary);
+  border: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  transition: background-color 0.2s ease;
 }
 
 .theme-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(var(--gray-800), 0.2);
 }
 
 :root.light-mode .theme-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(var(--gray-100), 0.5);
 }
 
-/* Light mode overrides */
 :root.light-mode .modern-card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background-color: var(--bg-card-light);
 }
 
 :root.light-mode .transcript-item {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: var(--divider-color-light);
 }
 
 :root.light-mode .transcript-item:hover {
-  background-color: var(--bg-card-hover);
+  background-color: var(--bg-card-hover-light);
 }
 
 :root.light-mode .transcript-item.active {
-  border-color: var(--accent-purple);
+  border-left: 3px solid var(--accent-purple);
+  background-color: rgba(139, 92, 246, 0.05);
 }
 
-/* Ensure smooth transitions between themes */
+/* Default transition for all theme changes */
 body, .modern-card, .modern-button, .transcript-item, .timestamp {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Accessibility styles */
 :focus {
-  outline: 2px solid var(--accent-purple);
+  outline: 2px solid rgba(139, 92, 246, 0.5);
   outline-offset: 2px;
 }
 
+/* Transcript list styling */
 .transcript-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow-y: auto;
 }
 
 .transcript-item {
-  padding: 12px;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-  margin-bottom: 0;
   position: relative;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider-color);
 }
 
 .transcript-item:focus {
-  outline: 2px solid var(--accent-purple);
-  background-color: rgba(139, 92, 246, 0.1);
+  outline: none;
+  background-color: rgba(139, 92, 246, 0.05);
   z-index: 1;
 }
 
@@ -382,21 +431,22 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
 
 .transcript-item.active {
   border-left: 3px solid var(--accent-purple);
-  padding-left: 9px; /* Compensate for the border */
+  padding-left: 13px;
   background-color: rgba(139, 92, 246, 0.05);
 }
 
-/* Checkbox styling for accessibility */
+/* Checkbox styling for auto-scroll feature */
 .accessibility-checkbox {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  border: 1px solid var(--border-color);
   appearance: none;
   -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--text-secondary);
+  border-radius: 4px;
+  background-color: transparent;
   position: relative;
-  margin-right: 8px;
   cursor: pointer;
+  margin-right: 8px;
   vertical-align: middle;
 }
 
@@ -406,20 +456,20 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
 }
 
 .accessibility-checkbox:checked::after {
-  content: '';
+  content: "";
   position: absolute;
-  left: 5px;
+  left: 6px;
   top: 2px;
-  width: 4px;
-  height: 8px;
+  width: 5px;
+  height: 10px;
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
 .accessibility-checkbox:focus {
-  outline: 2px solid var(--accent-purple);
-  outline-offset: 2px;
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: 1px;
 }
 
 .font-poppins {
@@ -430,23 +480,26 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   font-weight: 800;
 }
 
-/* Update divider line */
-.border-gray-800 {
-  border-color: var(--divider-color);
+/* Make video title left-aligned */
+.video-title {
+  text-align: left;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
 }
 
-/* Upload area styling */
+.border-gray-800 {
+  border-color: rgba(var(--gray-800), 1);
+}
+
 .border-upload-border {
-  border-color: var(--divider-color);
+  border-color: var(--upload-border);
 }
 
 .bg-upload-bg {
-  background-color: var(--bg-card-hover);
+  background-color: var(--upload-bg);
 }
 
-/* Make the main element use the full viewport height */
 main {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  padding: 20px;
 } 
