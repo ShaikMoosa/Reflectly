@@ -529,8 +529,7 @@ export default function Home() {
       </div>
 
       <div className="app-container">
-        {/* Main content area - left side */}
-        <div className="main-content">
+        <div className={`main-content ${activeTab !== 'notes' ? 'main-content-half' : ''}`}>
           <div className="app-header">
             <h1 className="app-title">Reflectly</h1>
           </div>
