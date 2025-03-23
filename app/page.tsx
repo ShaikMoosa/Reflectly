@@ -705,21 +705,146 @@ export default function Home() {
                             <div
                               key={index}
                               className={`transcript-item ${index === activeTranscriptIndex ? 'active' : ''}`}
-                              onClick={() => handleTranscriptClick(transcript.start)}
-                              ref={index === activeTranscriptIndex ? activeItemRef : null}
-                              tabIndex={0}
-                              role="button"
-                              aria-pressed={index === activeTranscriptIndex}
                             >
-                              <span className="timestamp">{formatTime(transcript.start)}</span>
-                              <span className="text-transcript">
-                                {transcript.text}
-                                {transcript.speaker && (
-                                  <span className="block text-xs mt-1 text-secondary">
-                                    {transcript.speaker}
+                              <div className="transcript-item-content">
+                                <span 
+                                  className="timestamp" 
+                                  onClick={() => handleTranscriptClick(transcript.start)}
+                                  title="Jump to this timestamp"
+                                >
+                                  {formatTime(transcript.start)}
+                                </span>
+                                <span className="text-transcript">
+                                  {transcript.text}
+                                  {transcript.speaker && (
+                                    <span className="block text-xs mt-1 text-secondary">
+                                      {transcript.speaker}
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                              
+                              <div className="transcript-actions">
+                                <button 
+                                  className="note-action-btn"
+                                  onClick={() => {
+                                    // Check if this transcript is already in notes
+                                    const existingNoteIndex = notes.findIndex(
+                                      note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
+                                    );
+                                    
+                                    if (existingNoteIndex >= 0) {
+                                      // Toggle highlight if already exists
+                                      toggleHighlight(existingNoteIndex);
+                                    } else {
+                                      // Add as new highlighted note
+                                      const newNote = {
+                                        text: transcript.text,
+                                        timestamp: transcript.start,
+                                        tags: [],
+                                        isHighlighted: true
+                                      };
+                                      setNotes([...notes, newNote]);
+                                    }
+                                  }}
+                                  title="Highlight"
+                                >
+                                  <span className="highlight-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    </svg>
                                   </span>
-                                )}
-                              </span>
+                                </button>
+                                
+                                <button 
+                                  className="note-action-btn"
+                                  onClick={() => {
+                                    // First, check if note exists or create one
+                                    const existingNoteIndex = notes.findIndex(
+                                      note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
+                                    );
+                                    
+                                    if (existingNoteIndex === -1) {
+                                      // Create new note
+                                      const newNote = {
+                                        text: transcript.text,
+                                        timestamp: transcript.start,
+                                        tags: [],
+                                        isHighlighted: false
+                                      };
+                                      setNotes([...notes, newNote]);
+                                      // Set this as the editing note to add tag
+                                      setEditingNoteIndex(notes.length);
+                                      setIsAddingTag(true);
+                                      setTimeout(() => tagInputRef.current?.focus(), 0);
+                                    } else {
+                                      // Set existing note as editing note
+                                      setEditingNoteIndex(existingNoteIndex);
+                                      setIsAddingTag(true);
+                                      setTimeout(() => tagInputRef.current?.focus(), 0);
+                                    }
+                                  }}
+                                  title="Add tag"
+                                >
+                                  <Tag size={14} />
+                                </button>
+                                
+                                <button 
+                                  className="note-action-btn"
+                                  onClick={() => {
+                                    // First, check if note exists or create one
+                                    const existingNoteIndex = notes.findIndex(
+                                      note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
+                                    );
+                                    
+                                    if (existingNoteIndex === -1) {
+                                      // Create new note
+                                      const newNote = {
+                                        text: transcript.text,
+                                        timestamp: transcript.start,
+                                        tags: [],
+                                        isHighlighted: false
+                                      };
+                                      setNotes([...notes, newNote]);
+                                      // Set this as the editing note to add comment
+                                      setEditingNoteIndex(notes.length);
+                                      setIsAddingComment(true);
+                                      setTimeout(() => commentInputRef.current?.focus(), 0);
+                                    } else {
+                                      // Set existing note as editing note
+                                      setEditingNoteIndex(existingNoteIndex);
+                                      setIsAddingComment(true);
+                                      setTimeout(() => commentInputRef.current?.focus(), 0);
+                                    }
+                                  }}
+                                  title="Add comment"
+                                >
+                                  <MessageSquare size={14} />
+                                </button>
+                                
+                                <button 
+                                  className="note-action-btn"
+                                  onClick={() => {
+                                    // Add to notes directly
+                                    const segmentAlreadyAdded = notes.some(
+                                      note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
+                                    );
+                                    
+                                    if (!segmentAlreadyAdded) {
+                                      const newNote = {
+                                        text: transcript.text,
+                                        timestamp: transcript.start,
+                                        tags: [],
+                                        isHighlighted: false
+                                      };
+                                      setNotes([...notes, newNote]);
+                                    }
+                                  }}
+                                  title="Add to notes"
+                                >
+                                  <FileText size={14} />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -835,6 +960,17 @@ export default function Home() {
                             aria-label="Edit note"
                           >
                             <Edit size={14} />
+                          </button>
+                          <button 
+                            className="note-action-btn delete"
+                            onClick={() => {
+                              const updatedNotes = [...notes];
+                              updatedNotes.splice(index, 1);
+                              setNotes(updatedNotes);
+                            }}
+                            aria-label="Delete note"
+                          >
+                            <X size={14} />
                           </button>
                         </div>
                       </div>
