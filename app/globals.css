@@ -948,4 +948,51 @@ main {
   gap: 6px;
   margin-top: 8px;
   justify-content: flex-end;
+}
+
+/* Notes subheadings */
+.notes-subheading {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--divider-color);
+  background-color: var(--bg-card-hover);
+  margin-bottom: 0;
+}
+
+.user-notes {
+  margin-top: 20px;
+}
+
+.transcript-segments {
+  margin-bottom: 20px;
+}
+
+/* Transcript text in notes */
+.transcript-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  flex: 1;
+  margin-top: 2px;
+}
+
+/* Active transcript segment styling */
+.note-item.active-segment {
+  border-left: 3px solid var(--accent-purple);
+  padding-left: 13px;
+  background-color: rgba(139, 92, 246, 0.05);
+}
+
+/* Scrollable container for transcript in notes */
+.transcript-segments .notes-container {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+/* Override existing styles for notes tab */
+.notes-container .transcript-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
 } 
