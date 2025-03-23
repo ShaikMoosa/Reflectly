@@ -995,4 +995,92 @@ main {
   padding: 0;
   margin: 0;
   list-style: none;
+}
+
+/* Two-column layout for notes */
+.notes-layout {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.notes-column {
+  flex: 1;
+  min-width: 0; /* Allow columns to shrink below content size */
+}
+
+.transcript-column {
+  flex: 3; /* Make transcript take more space */
+}
+
+.notes-column-right {
+  flex: 2; /* Make notes column slightly smaller than transcript */
+}
+
+/* Styling for card header in notes */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--divider-color);
+  background-color: var(--bg-card-hover);
+}
+
+.card-header .notes-subheading {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.notes-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modern-button.small {
+  font-size: 12px;
+  padding: 6px 10px;
+  min-width: auto;
+}
+
+.action-text {
+  display: inline-block;
+  margin-left: 5px;
+}
+
+/* Update notes section styling */
+.notes-section {
+  margin-top: 20px;
+}
+
+.user-notes, .transcript-segments {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-bottom: 16px;
+}
+
+.empty-transcript {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Update container heights for better scrolling */
+.transcript-container {
+  height: 350px;
+  overflow: hidden;
+}
+
+.transcript-list {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Override existing styles for notes subheading now that it's in a card header */
+.notes-subheading {
+  font-size: 14px;
+  font-weight: 600;
 } 
