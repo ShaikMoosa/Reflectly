@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X } from 'lucide-react';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -15,9 +15,21 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [activeTab, setActiveTab] = useState<'transcript' | 'notes' | 'ai-chat'>('transcript');
-  const [notes, setNotes] = useState<{text: string, timestamp: number}[]>([]);
+  const [notes, setNotes] = useState<{
+    text: string, 
+    timestamp: number, 
+    tags?: string[], 
+    comment?: string, 
+    isHighlighted?: boolean
+  }[]>([]);
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
+  const [suggestedTags, setSuggestedTags] = useState(['Pain point', 'Goal', 'Role', 'Motivation', 'Behavior', 'User journey', 'Positive']);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -25,6 +37,8 @@ export default function Home() {
   const transcriptListRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Update current time when video is playing
   useEffect(() => {
@@ -390,11 +404,90 @@ export default function Home() {
 
   // Function to add a note at current timestamp
   const addNote = () => {
-    const newNote = {
-      text: `Note at ${formatTime(currentTime)}`,
-      timestamp: currentTime
-    };
-    setNotes([...notes, newNote]);
+    if (videoRef.current) {
+      const text = getTranscriptTextAtTime(currentTime) || `Note at ${formatTime(currentTime)}`;
+      const newNote = {
+        text: text,
+        timestamp: currentTime,
+        tags: [],
+        isHighlighted: false
+      };
+      setNotes([...notes, newNote]);
+    }
+  };
+
+  // Get transcript text at the current timestamp
+  const getTranscriptTextAtTime = (time: number): string | null => {
+    const transcript = transcripts.find(
+      t => time >= t.start && (t.end ? time <= t.end : true)
+    );
+    return transcript ? transcript.text : null;
+  };
+
+  // Toggle highlight status for a note
+  const toggleHighlight = (index: number) => {
+    const updatedNotes = [...notes];
+    updatedNotes[index].isHighlighted = !updatedNotes[index].isHighlighted;
+    setNotes(updatedNotes);
+  };
+
+  // Add a tag to a note
+  const addTagToNote = (index: number) => {
+    if (!tagInput.trim()) return;
+    
+    const updatedNotes = [...notes];
+    const tags = updatedNotes[index].tags || [];
+    
+    if (!tags.includes(tagInput)) {
+      updatedNotes[index].tags = [...tags, tagInput];
+      setNotes(updatedNotes);
+      
+      // Add to suggested tags if not already there
+      if (!suggestedTags.includes(tagInput)) {
+        setSuggestedTags([...suggestedTags, tagInput]);
+      }
+    }
+    
+    setTagInput('');
+    setIsAddingTag(false);
+  };
+
+  // Remove a tag from a note
+  const removeTagFromNote = (noteIndex: number, tagIndex: number) => {
+    const updatedNotes = [...notes];
+    const tags = updatedNotes[noteIndex].tags || [];
+    updatedNotes[noteIndex].tags = tags.filter((_, i) => i !== tagIndex);
+    setNotes(updatedNotes);
+  };
+
+  // Add a comment to a note
+  const addCommentToNote = (index: number) => {
+    if (!commentInput.trim()) return;
+    
+    const updatedNotes = [...notes];
+    updatedNotes[index].comment = commentInput;
+    setNotes(updatedNotes);
+    
+    setCommentInput('');
+    setIsAddingComment(false);
+  };
+
+  // Handle editing note text
+  const startEditingNote = (index: number) => {
+    setEditingNoteIndex(index);
+  };
+
+  const saveNoteEdit = (index: number, newText: string) => {
+    if (!newText.trim()) return;
+    
+    const updatedNotes = [...notes];
+    updatedNotes[index].text = newText;
+    setNotes(updatedNotes);
+    setEditingNoteIndex(null);
+  };
+
+  const cancelNoteEdit = () => {
+    setEditingNoteIndex(null);
   };
 
   return (
@@ -611,10 +704,199 @@ export default function Home() {
                     <div className="notes-container">
                       {notes.map((note, index) => (
                         <div key={index} className="note-item">
-                          <span className="timestamp" onClick={() => handleTranscriptClick(note.timestamp)}>
-                            {formatTime(note.timestamp)}
-                          </span>
-                          <span className="note-text">{note.text}</span>
+                          <div className="note-header">
+                            <span 
+                              className="timestamp" 
+                              onClick={() => handleTranscriptClick(note.timestamp)}
+                            >
+                              {formatTime(note.timestamp)}
+                            </span>
+                            <div className="note-actions">
+                              <button 
+                                className="note-action-btn"
+                                onClick={() => toggleHighlight(index)}
+                                aria-label={note.isHighlighted ? "Remove highlight" : "Highlight"}
+                              >
+                                <span className={`highlight-icon ${note.isHighlighted ? 'active' : ''}`}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                  </svg>
+                                </span>
+                              </button>
+                              <button 
+                                className="note-action-btn"
+                                onClick={() => {
+                                  setIsAddingTag(true);
+                                  setEditingNoteIndex(index);
+                                  setTimeout(() => tagInputRef.current?.focus(), 0);
+                                }}
+                                aria-label="Add tag"
+                              >
+                                <Tag size={14} />
+                              </button>
+                              <button 
+                                className="note-action-btn"
+                                onClick={() => startEditingNote(index)}
+                                aria-label="Edit note"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="note-content">
+                            {editingNoteIndex === index ? (
+                              <div className="note-edit">
+                                <textarea 
+                                  defaultValue={note.text}
+                                  className="note-edit-input"
+                                  autoFocus
+                                />
+                                <div className="note-edit-actions">
+                                  <button 
+                                    className="note-edit-btn save"
+                                    onClick={(e) => {
+                                      const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
+                                      saveNoteEdit(index, textarea.value);
+                                    }}
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button 
+                                    className="note-edit-btn cancel"
+                                    onClick={cancelNoteEdit}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className={`note-text ${note.isHighlighted ? 'highlighted' : ''}`}>
+                                {note.text}
+                              </span>
+                            )}
+
+                            {/* Tags */}
+                            {note.tags && note.tags.length > 0 && (
+                              <div className="note-tags">
+                                {note.tags.map((tag, tagIndex) => (
+                                  <span key={tagIndex} className="note-tag">
+                                    {tag}
+                                    <button 
+                                      className="remove-tag-btn"
+                                      onClick={() => removeTagFromNote(index, tagIndex)}
+                                      aria-label={`Remove ${tag} tag`}
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Comment */}
+                            {note.comment && (
+                              <div className="note-comment">
+                                <p>{note.comment}</p>
+                              </div>
+                            )}
+
+                            {/* Add comment button if no comment exists */}
+                            {!note.comment && !isAddingComment && (
+                              <button 
+                                className="add-comment-btn"
+                                onClick={() => {
+                                  setIsAddingComment(true);
+                                  setEditingNoteIndex(index);
+                                  setTimeout(() => commentInputRef.current?.focus(), 0);
+                                }}
+                              >
+                                Add a comment...
+                              </button>
+                            )}
+
+                            {/* Tag input form */}
+                            {isAddingTag && editingNoteIndex === index && (
+                              <div className="tag-input-container">
+                                <input
+                                  ref={tagInputRef}
+                                  type="text"
+                                  value={tagInput}
+                                  onChange={(e) => setTagInput(e.target.value)}
+                                  placeholder="Enter a tag..."
+                                  className="tag-input"
+                                />
+                                <div className="tag-input-actions">
+                                  <button 
+                                    className="tag-input-btn save"
+                                    onClick={() => addTagToNote(index)}
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button 
+                                    className="tag-input-btn cancel"
+                                    onClick={() => {
+                                      setIsAddingTag(false);
+                                      setTagInput('');
+                                    }}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                                {/* Suggested tags */}
+                                {tagInput.length === 0 && (
+                                  <div className="suggested-tags">
+                                    <p className="suggested-tags-title">Get started with a tag</p>
+                                    <div className="suggested-tags-list">
+                                      {suggestedTags.map((tag, i) => (
+                                        <button 
+                                          key={i} 
+                                          className="suggested-tag-btn"
+                                          onClick={() => {
+                                            setTagInput(tag);
+                                            addTagToNote(index);
+                                          }}
+                                        >
+                                          {tag}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Comment input form */}
+                            {isAddingComment && editingNoteIndex === index && (
+                              <div className="comment-input-container">
+                                <textarea
+                                  ref={commentInputRef}
+                                  value={commentInput}
+                                  onChange={(e) => setCommentInput(e.target.value)}
+                                  placeholder="Add your comment..."
+                                  className="comment-input"
+                                  rows={3}
+                                />
+                                <div className="comment-input-actions">
+                                  <button 
+                                    className="comment-input-btn save"
+                                    onClick={() => addCommentToNote(index)}
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button 
+                                    className="comment-input-btn cancel"
+                                    onClick={() => {
+                                      setIsAddingComment(false);
+                                      setCommentInput('');
+                                    }}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

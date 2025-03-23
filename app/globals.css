@@ -674,4 +674,278 @@ main {
 /* Override theme toggle positioning */
 .theme-toggle {
   position: static;
+}
+
+/* Enhanced Note section styles */
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.note-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.note-action-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-action-btn:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.highlight-icon {
+  display: flex;
+  opacity: 0.7;
+}
+
+.highlight-icon.active {
+  color: #fbbf24; /* Amber/yellow color for highlight */
+  opacity: 1;
+}
+
+.note-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+}
+
+.note-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  width: 100%;
+  padding: 4px 0;
+}
+
+.note-text.highlighted {
+  background-color: rgba(251, 191, 36, 0.2); /* Semi-transparent yellow */
+  border-radius: 2px;
+  padding: 4px 8px;
+  margin: 0 -8px;
+}
+
+/* Tags styling */
+.note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.note-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--accent-purple);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.remove-tag-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+}
+
+.remove-tag-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: white;
+}
+
+/* Comment styling */
+.note-comment {
+  background-color: var(--bg-card-hover);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.add-comment-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: color 0.2s ease;
+}
+
+.add-comment-btn:hover {
+  color: var(--accent-purple);
+}
+
+/* Tag input styling */
+.tag-input-container {
+  background-color: var(--bg-card-hover);
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
+  position: relative;
+}
+
+.tag-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.tag-input-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.tag-input-btn, 
+.comment-input-btn, 
+.note-edit-btn {
+  background-color: var(--bg-card);
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+
+.tag-input-btn.save, 
+.comment-input-btn.save, 
+.note-edit-btn.save {
+  background-color: var(--accent-purple);
+  color: white;
+}
+
+.tag-input-btn:hover, 
+.comment-input-btn:hover, 
+.note-edit-btn:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.tag-input-btn.save:hover, 
+.comment-input-btn.save:hover, 
+.note-edit-btn.save:hover {
+  background-color: var(--accent-purple-hover);
+}
+
+/* Suggested tags */
+.suggested-tags {
+  margin-top: 12px;
+}
+
+.suggested-tags-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.suggested-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.suggested-tag-btn {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.suggested-tag-btn:hover {
+  background-color: var(--accent-purple);
+  border-color: var(--accent-purple);
+  color: white;
+}
+
+/* Comment input styling */
+.comment-input-container {
+  background-color: var(--bg-card-hover);
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.comment-input-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+/* Note edit styling */
+.note-edit {
+  width: 100%;
+  position: relative;
+}
+
+.note-edit-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.note-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
 } 
