@@ -1098,9 +1098,9 @@ main {
   min-width: 0; /* Prevent flex items from overflowing */
 }
 
-/* When main content should take exactly half the screen (3/6) */
+/* When main content should take exactly 40% of the screen */
 .main-content-half {
-  flex: 50% !important;
+  flex: 40% !important;
 }
 
 .notes-sidebar {
