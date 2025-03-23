@@ -904,7 +904,7 @@ export default function Home() {
         </div>
 
         {/* Notes sidebar - right side */}
-        {videoUrl && (
+        {videoUrl && activeTab === 'notes' && (
           <div className="notes-sidebar">
             <div className="modern-card">
               <div className="card-header">
