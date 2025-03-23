@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send } from 'lucide-react';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -14,12 +14,17 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [activeTab, setActiveTab] = useState<'transcript' | 'notes' | 'ai-chat'>('transcript');
+  const [notes, setNotes] = useState<{text: string, timestamp: number}[]>([]);
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const [chatInput, setChatInput] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const importTranscriptRef = useRef<HTMLInputElement>(null);
   const transcriptListRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   // Update current time when video is playing
   useEffect(() => {
@@ -356,15 +361,79 @@ export default function Home() {
       });
   };
 
+  // Handle chat submission
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    // Add user message
+    const newMessages = [
+      ...chatMessages,
+      { role: 'user' as const, content: chatInput }
+    ];
+    setChatMessages(newMessages);
+    
+    // Clear input
+    setChatInput('');
+    
+    // Simulate AI response
+    setTimeout(() => {
+      setChatMessages([
+        ...newMessages,
+        { 
+          role: 'assistant' as const, 
+          content: `I'm an AI assistant that can help you with your video "${videoTitle || 'your video'}". What would you like to know about it?` 
+        }
+      ]);
+    }, 1000);
+  };
+
+  // Function to add a note at current timestamp
+  const addNote = () => {
+    const newNote = {
+      text: `Note at ${formatTime(currentTime)}`,
+      timestamp: currentTime
+    };
+    setNotes([...notes, newNote]);
+  };
+
   return (
     <main className={`${isDarkMode ? '' : 'light-mode'}`}>
-      <button 
-        className="theme-toggle" 
-        onClick={toggleTheme} 
-        aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-      >
-        {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-      </button>
+      <div className="top-controls">
+        <button 
+          className="theme-toggle" 
+          onClick={toggleTheme} 
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        {videoUrl && (
+          <div className="tab-menu">
+            <button 
+              className={`tab-button ${activeTab === 'transcript' ? 'active' : ''}`}
+              onClick={() => setActiveTab('transcript')}
+            >
+              <FileText size={18} />
+              Transcript
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('notes')}
+            >
+              <FileText size={18} />
+              Notes
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'ai-chat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('ai-chat')}
+            >
+              <MessageSquare size={18} />
+              AI Chat
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="thread-container">
         <div className="app-header">
@@ -422,50 +491,64 @@ export default function Home() {
               </div>
               
               <div className="button-container">
-                <button
-                  onClick={handleTranscribe}
-                  disabled={isTranscribing || !videoFile}
-                  className="modern-button"
-                >
-                  {isTranscribing ? (
-                    <>
-                      <Clock className="animate-spin" size={16} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <FileVideo size={16} />
-                      Generate Transcript
-                    </>
-                  )}
-                </button>
-                
-                <button
-                  onClick={triggerImportTranscript}
-                  className="modern-button"
-                >
-                  <Upload size={16} />
-                  Import
-                </button>
-                <input
-                  ref={importTranscriptRef}
-                  type="file"
-                  accept="application/json"
-                  onChange={handleImportTranscript}
-                  className="hidden"
-                />
-                
-                <button
-                  onClick={handleExportTranscript}
-                  disabled={transcripts.length === 0}
-                  className="modern-button"
-                >
-                  <Download size={16} />
-                  Export
-                </button>
+                {activeTab === 'transcript' && (
+                  <>
+                    <button
+                      onClick={handleTranscribe}
+                      disabled={isTranscribing || !videoFile}
+                      className="modern-button"
+                    >
+                      {isTranscribing ? (
+                        <>
+                          <Clock className="animate-spin" size={16} />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <FileVideo size={16} />
+                          Generate Transcript
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={triggerImportTranscript}
+                      className="modern-button"
+                    >
+                      <Upload size={16} />
+                      Import
+                    </button>
+                    <input
+                      ref={importTranscriptRef}
+                      type="file"
+                      accept="application/json"
+                      onChange={handleImportTranscript}
+                      className="hidden"
+                    />
+                    
+                    <button
+                      onClick={handleExportTranscript}
+                      disabled={transcripts.length === 0}
+                      className="modern-button"
+                    >
+                      <Download size={16} />
+                      Export
+                    </button>
+                  </>
+                )}
+
+                {activeTab === 'notes' && (
+                  <button
+                    onClick={addNote}
+                    className="modern-button"
+                  >
+                    <FileText size={16} />
+                    Add Note at {formatTime(currentTime)}
+                  </button>
+                )}
               </div>
               
-              {transcripts.length > 0 && (
+              {activeTab === 'transcript' && transcripts.length > 0 && (
                 <div className="transcript-section">
                   <h2 id="transcript-heading">Transcript</h2>
                   
@@ -512,6 +595,65 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'notes' && (
+                <div className="notes-section">
+                  <h2 id="notes-heading">Notes</h2>
+                  
+                  {notes.length === 0 ? (
+                    <div className="empty-notes">
+                      <p>No notes yet. Add a note at the current timestamp.</p>
+                    </div>
+                  ) : (
+                    <div className="notes-container">
+                      {notes.map((note, index) => (
+                        <div key={index} className="note-item">
+                          <span className="timestamp" onClick={() => handleTranscriptClick(note.timestamp)}>
+                            {formatTime(note.timestamp)}
+                          </span>
+                          <span className="note-text">{note.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'ai-chat' && (
+                <div className="chat-section">
+                  <h2 id="chat-heading">AI Chat</h2>
+                  
+                  <div className="chat-container">
+                    <div className="chat-messages">
+                      {chatMessages.length === 0 ? (
+                        <div className="chat-welcome">
+                          <p>Chat with AI about this video. Ask questions about the content or request summaries.</p>
+                        </div>
+                      ) : (
+                        chatMessages.map((message, index) => (
+                          <div key={index} className={`chat-message ${message.role}`}>
+                            <div className="message-content">{message.content}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    <form onSubmit={handleChatSubmit} className="chat-input-container">
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Type your message..."
+                        className="chat-input"
+                        ref={chatInputRef}
+                      />
+                      <button type="submit" className="chat-send-button">
+                        <Send size={16} />
+                      </button>
+                    </form>
                   </div>
                 </div>
               )}
