@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X } from 'lucide-react';
-import { useChat } from 'ai/react';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -397,6 +396,12 @@ export default function Home() {
     setChatInput('');
     
     try {
+      // Show loading state
+      setChatMessages([
+        ...newMessages,
+        { role: 'assistant' as const, content: "Thinking..." }
+      ]);
+      
       // Call the chat API
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -413,28 +418,24 @@ export default function Home() {
         throw new Error('Failed to get AI response');
       }
 
-      // Read the response as a stream
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader available');
-
-      let aiResponse = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        // Convert the chunk to text
-        const chunk = new TextDecoder().decode(value);
-        aiResponse += chunk;
-        
-        // Update messages with the streaming response
-        setChatMessages([
-          ...newMessages,
-          { role: 'assistant' as const, content: aiResponse }
-        ]);
+      // Parse the JSON response
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
+
+      // Update messages with the AI response
+      setChatMessages([
+        ...newMessages,
+        { role: 'assistant' as const, content: data.response }
+      ]);
     } catch (error: any) {
       console.error('Error in chat:', error);
       setError('Failed to get AI response. Please try again.');
+      
+      // Remove the loading message
+      setChatMessages(newMessages);
     }
   };
 
