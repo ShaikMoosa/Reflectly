@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save } from 'lucide-react';
+import { useToast } from './components/ui/toast';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -50,6 +51,8 @@ export default function Home() {
   const chatInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const { addToast } = useToast();
 
   // Update current time when video is playing
   useEffect(() => {
@@ -541,7 +544,11 @@ export default function Home() {
   // Function to save current project
   const saveProject = () => {
     if (!videoUrl || !videoTitle) {
-      setError('Cannot save project: No video loaded');
+      addToast({
+        title: "Error",
+        description: "Cannot save project: No video loaded",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -577,12 +584,19 @@ export default function Home() {
       const allProjects = [...projects, newProject];
       localStorage.setItem('reflectly-projects', JSON.stringify(allProjects));
       
-      // Show success message
-      setError('Project saved successfully');
-      setTimeout(() => setError(null), 3000);
+      // Show success toast
+      addToast({
+        title: "Project Saved",
+        description: `${videoTitle} has been saved successfully`,
+        variant: "success",
+      });
     } catch (error) {
       console.error('Error saving project:', error);
-      setError('Failed to save project');
+      addToast({
+        title: "Error",
+        description: "Failed to save project",
+        variant: "destructive",
+      });
     }
   };
 
