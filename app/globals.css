@@ -494,16 +494,31 @@ body, .modern-card, .modern-button, .transcript-item, .timestamp {
   text-align: center;
 }
 
+/* Remove global padding */
 main {
-  padding: 20px;
+  padding: 0;
 }
 
-/* Top controls with tabs */
+/* Adjust app layout to ensure sidebar is flush with window edges */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Main area should have padding instead of the whole main element */
+.main-area {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Adjust the top controls positioning to account for the new layout */
 .top-controls {
   display: flex;
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: 20px;
+  right: 20px;
   z-index: 100;
   align-items: center;
   gap: 16px;
@@ -1180,6 +1195,7 @@ main {
 .app-layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
 /* Side navigation styles */
@@ -1235,7 +1251,7 @@ main {
 /* Main Area Styles */
 .main-area {
   flex: 1;
-  padding: 0;
+  padding: 20px;
   overflow-y: auto;
 }
 
