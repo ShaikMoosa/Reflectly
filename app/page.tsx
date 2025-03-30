@@ -52,7 +52,7 @@ export default function Home() {
   const tagInputRef = useRef<HTMLInputElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const { addToast } = useToast();
+  const toast = useToast();
 
   // Update current time when video is playing
   useEffect(() => {
@@ -544,7 +544,7 @@ export default function Home() {
   // Function to save current project
   const saveProject = () => {
     if (!videoUrl || !videoTitle) {
-      addToast({
+      toast.addToast({
         title: "Error",
         description: "Cannot save project: No video loaded",
         variant: "destructive",
@@ -585,14 +585,14 @@ export default function Home() {
       localStorage.setItem('reflectly-projects', JSON.stringify(allProjects));
       
       // Show success toast
-      addToast({
+      toast.addToast({
         title: "Project Saved",
         description: `${videoTitle} has been saved successfully`,
         variant: "success",
       });
     } catch (error) {
       console.error('Error saving project:', error);
-      addToast({
+      toast.addToast({
         title: "Error",
         description: "Failed to save project",
         variant: "destructive",
