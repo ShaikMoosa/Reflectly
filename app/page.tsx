@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X } from 'lucide-react';
+import { useChat } from 'ai/react';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -375,10 +376,15 @@ export default function Home() {
       });
   };
 
-  // Handle chat submission
-  const handleChatSubmit = (e: React.FormEvent) => {
+  // Inside the component, add this function to format transcript for context
+  const getTranscriptContext = () => {
+    return transcripts.map(t => `${formatTime(t.start)} - ${t.text}`).join('\n');
+  };
+
+  // Replace the handleChatSubmit function with this version
+  const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || transcripts.length === 0) return;
 
     // Add user message
     const newMessages = [
@@ -390,16 +396,46 @@ export default function Home() {
     // Clear input
     setChatInput('');
     
-    // Simulate AI response
-    setTimeout(() => {
-      setChatMessages([
-        ...newMessages,
-        { 
-          role: 'assistant' as const, 
-          content: `I'm an AI assistant that can help you with your video "${videoTitle || 'your video'}". What would you like to know about it?` 
-        }
-      ]);
-    }, 1000);
+    try {
+      // Call the chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+          transcript: getTranscriptContext()
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      // Read the response as a stream
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+
+      let aiResponse = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        // Convert the chunk to text
+        const chunk = new TextDecoder().decode(value);
+        aiResponse += chunk;
+        
+        // Update messages with the streaming response
+        setChatMessages([
+          ...newMessages,
+          { role: 'assistant' as const, content: aiResponse }
+        ]);
+      }
+    } catch (error: any) {
+      console.error('Error in chat:', error);
+      setError('Failed to get AI response. Please try again.');
+    }
   };
 
   // Function to add a note at current timestamp
@@ -865,6 +901,11 @@ export default function Home() {
                         {chatMessages.length === 0 ? (
                           <div className="chat-welcome">
                             <p>Chat with AI about this video. Ask questions about the content or request summaries.</p>
+                            {transcripts.length === 0 && (
+                              <p className="text-accent-red mt-2">
+                                Note: Please generate or import a transcript first to enable AI chat functionality.
+                              </p>
+                            )}
                           </div>
                         ) : (
                           chatMessages.map((message, index) => (
@@ -883,8 +924,13 @@ export default function Home() {
                           placeholder="Type your message..."
                           className="chat-input"
                           ref={chatInputRef}
+                          disabled={transcripts.length === 0}
                         />
-                        <button type="submit" className="chat-send-button">
+                        <button 
+                          type="submit" 
+                          className="chat-send-button"
+                          disabled={transcripts.length === 0}
+                        >
                           <Send size={16} />
                         </button>
                       </form>
