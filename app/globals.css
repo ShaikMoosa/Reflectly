@@ -44,6 +44,12 @@
   --button-bg: #000000;
   --button-hover: #333333;
   --card-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --accent-purple-dark: #7928c9;
+  --accent-purple-transparent: rgba(147, 51, 234, 0.1);
+  --accent-red: #e11d48;
+  --hover-color: rgba(255, 255, 255, 0.05);
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
 }
 
 body {
@@ -1165,4 +1171,203 @@ main {
 
 .note-action-btn.delete:hover {
   background-color: rgba(225, 29, 72, 0.1);
+}
+
+/* App Layout with Side Navigation */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Side navigation styles */
+.side-navigation {
+  width: 240px;
+  background-color: var(--card-bg);
+  border-right: 1px solid var(--divider-color);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-container {
+  margin-bottom: 32px;
+  padding-left: 8px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-purple);
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.nav-link:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+}
+
+.nav-link.active {
+  background-color: var(--accent-purple-transparent);
+  color: var(--accent-purple);
+}
+
+/* Main Area Styles */
+.main-area {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* Projects Page Styles */
+.projects-page {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.project-card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.project-thumbnail {
+  height: 160px;
+  background-color: var(--upload-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-thumbnail {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.project-info {
+  padding: 16px;
+}
+
+.project-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.empty-projects {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--text-secondary);
+}
+
+/* Video title with save button */
+.video-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.save-project-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--accent-purple);
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.save-project-button:hover {
+  background-color: var(--accent-purple-dark);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .side-navigation {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--divider-color);
+  }
+  
+  .logo-container {
+    margin-bottom: 0;
+  }
+  
+  .nav-links {
+    flex-direction: row;
+  }
+  
+  .nav-link span {
+    display: none;
+  }
+  
+  .projects-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
 } 
