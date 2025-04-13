@@ -112,8 +112,8 @@
 }
 
 body {
-  color: var(--text-primary);
-  background-color: var(--bg-dark);
+  color: var(--foreground);
+  background-color: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
@@ -130,8 +130,6 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: var(--background);
-  color: var(--foreground);
 }
 
 a {
@@ -203,6 +201,43 @@ a {
 
 .card-body {
   padding: 1rem;
+}
+
+.modern-card-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+/* Button styles */
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
 }
 
 /* Updated button styles to match requested black design */
@@ -721,125 +756,6 @@ a {
   border-color: var(--transcript-border-dark);
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-/* Modern card styles */
-.modern-card {
-  @apply bg-card rounded-xl shadow-md border border-border p-4;
-}
-
-.modern-card-header {
-  @apply flex justify-between items-center mb-4;
-}
-
-.modern-card-title {
-  @apply text-lg font-medium text-card-foreground;
-}
-
-/* Button styles */
-.btn {
-  @apply px-4 py-2 rounded-md font-medium transition-colors;
-}
-
-.btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90;
-}
-
-.btn-secondary {
-  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
-}
-
-.btn-sm {
-  @apply px-3 py-1 text-sm;
-}
-
-/* Transcript segment styles */
-.transcript-segment {
-  background-color: hsl(var(--transcript-bg));
-  color: hsl(var(--transcript-text));
-  border: 1px solid hsl(var(--transcript-border-light));
-  transition: all 0.2s ease-in-out;
-}
-
-.dark .transcript-segment {
-  background-color: hsl(var(--transcript-bg));
-  color: hsl(var(--transcript-text));
-  border: 1px solid hsl(var(--transcript-border-dark));
-}
-
-.transcript-segment:hover {
-  background-color: hsl(var(--transcript-active-bg));
-}
-
-.dark .transcript-segment:hover {
-  background-color: hsl(var(--transcript-active-bg));
-}
-
-.transcript-segment-active {
-  background-color: hsl(var(--transcript-active-bg));
-  border: 1px solid hsl(var(--transcript-active-border-light));
-}
-
-.dark .transcript-segment-active {
-  background-color: hsl(var(--transcript-active-bg));
-  border: 1px solid hsl(var(--transcript-active-border-dark));
-}
-
-.transcript-highlight {
-  background-color: hsl(var(--transcript-highlight-bg));
-  color: hsl(var(--transcript-highlight-text));
-}
-
-.dark .transcript-highlight {
-  background-color: hsl(var(--transcript-highlight-bg));
-}
-
-.timestamp-btn {
-  background-color: hsl(var(--timestamp-bg));
-  color: hsl(var(--timestamp-text));
-}
-
-.dark .timestamp-btn {
-  background-color: hsl(var(--timestamp-bg));
-}
-
-/* Planner related styles */
-.planner-container {
-  @apply border rounded-lg p-4 bg-card text-card-foreground;
-}
-
-.planner-header {
-  @apply flex justify-between items-center mb-4;
-}
-
-.planner-title {
-  @apply text-xl font-bold;
-}
-
-.planner-controls {
-  @apply flex space-x-2;
-}
-
-.planner-list {
-  @apply space-y-2;
-}
-
-.planner-item {
-  @apply p-3 border rounded-md bg-background;
-  transition: all 0.2s ease;
-}
-
-.drag-over {
-  @apply border-primary bg-primary/10;
-}
-
 /* App layout */
 .app-container {
   display: flex;
@@ -875,44 +791,52 @@ a {
   }
   
   .notes-sidebar {
-    border-top: 1px solid hsl(var(--border));
+    border-top: 1px solid gray;
     border-left: none;
   }
 }
 
 /* Tabs */
 .tab-container {
-  @apply flex border-b border-border;
+  display: flex;
+  border-bottom: 1px solid gray;
 }
 
 .tab-button {
-  @apply px-4 py-2 font-medium transition-colors;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
   border-bottom: 2px solid transparent;
 }
 
 .tab-button.active {
-  @apply text-primary;
-  border-bottom: 2px solid hsl(var(--primary));
+  color: blue;
+  border-bottom: 2px solid blue;
 }
 
 .tab-button:hover:not(.active) {
-  @apply text-muted-foreground;
-  border-bottom: 2px solid hsl(var(--muted));
+  color: gray;
+  border-bottom: 2px solid gray;
 }
 
 /* Upload area */
 .upload-container {
-  @apply border-2 border-dashed rounded-lg p-8 text-center bg-background/50 transition-all;
-  border-color: hsl(var(--border));
+  border: 2px dashed gray;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s;
 }
 
 .upload-container:hover {
-  @apply bg-background/80;
-  border-color: hsl(var(--primary/50));
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: blue;
 }
 
 .drag-active {
-  @apply border-primary bg-primary/10;
+  border-color: blue;
+  background-color: rgba(0, 0, 255, 0.1);
 }
 
 /* Notes */
@@ -922,25 +846,20 @@ a {
 }
 
 .note-card {
-  @apply mb-3 p-3 rounded-md border bg-card;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid gray;
+  background-color: white;
 }
 
 .note-tag {
-  @apply inline-block mr-2 mb-2 px-2 py-1 text-xs rounded-full;
-  background-color: hsl(var(--secondary));
-  color: hsl(var(--secondary-foreground));
-}
-
-/* Transcript container */
-.transcript-container {
-  max-height: 300px;
-  overflow-y: auto;
-  @apply p-3 rounded-md;
-  background-color: hsl(var(--transcript-bg));
-  border: 1px solid hsl(var(--transcript-border-light));
-}
-
-.dark .transcript-container {
-  background-color: hsl(var(--transcript-bg));
-  border: 1px solid hsl(var(--transcript-border-dark));
+  display: inline-block;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 9999px;
+  background-color: gray;
+  color: white;
 } 
