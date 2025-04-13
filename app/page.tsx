@@ -26,6 +26,7 @@ export default function Home() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -298,23 +299,47 @@ export default function Home() {
   const handleTranscriptClick = (timestamp: number) => {
     logDebug('Home', 'Transcript segment clicked', { timestamp });
     if (videoRef.current) {
-      // Update video position
-      videoRef.current.currentTime = timestamp;
-      logDebug('Home', 'Video time updated', { newTime: timestamp });
-      
-      // Only trigger play if the video is currently paused
-      // This prevents repeated play/pause cycles when clicking timestamps
-      if (videoRef.current.paused) {
-        logDebug('Home', 'Video was paused, starting playback');
-        videoRef.current.play().catch(err => {
-          console.error("[Home] Playback error:", err);
-          setError('Failed to play video at the selected timestamp.');
-        });
-      } else {
-        logDebug('Home', 'Video already playing, not triggering play');
+      try {
+        // First set the current time state to trigger update in VideoPlayer
+        setCurrentTime(timestamp);
+        logDebug('Home', 'Video time state updated', { newTime: timestamp });
+        
+        // Explicitly update video currentTime and force play
+        // This direct manipulation ensures it works even if state updates are delayed
+        videoRef.current.currentTime = timestamp;
+        
+        // Start playing if not already playing
+        if (videoRef.current.paused) {
+          logDebug('Home', 'Starting video playback via direct play call');
+          const playPromise = videoRef.current.play();
+          
+          // Handle play promise to catch any autoplay restrictions
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              setIsPlaying(true);
+              logDebug('Home', 'Video playback started successfully');
+            }).catch(err => {
+              logDebug('Home', 'Video playback failed, may need user interaction', { error: err });
+              setError('Video playback failed. Try clicking the play button directly.');
+            });
+          }
+        }
+      } catch (err) {
+        console.error("[Home] Error navigating to timestamp:", err);
+        setError('Failed to navigate to the selected timestamp.');
       }
     } else {
       logDebug('Home', 'Video reference not available');
+    }
+  };
+
+  // Handle video play/pause events
+  const handleVideoPlayPause = () => {
+    logDebug('Home', 'Play/pause triggered from video controls');
+    if (videoRef.current) {
+      const newIsPlaying = !videoRef.current.paused;
+      setIsPlaying(newIsPlaying);
+      logDebug('Home', 'Video play state updated', { isPlaying: newIsPlaying });
     }
   };
 
@@ -839,16 +864,8 @@ export default function Home() {
             videoUrl={videoUrl}
             currentTime={currentTime}
             onTimeUpdate={setCurrentTime}
-            isPlaying={false}
-            onPlayPause={() => {
-              if (videoRef.current) {
-                if (videoRef.current.paused) {
-                  videoRef.current.play();
-                } else {
-                  videoRef.current.pause();
-                }
-              }
-            }}
+            isPlaying={isPlaying}
+            onPlayPause={handleVideoPlayPause}
           />
         </div>
         <div className="my-4 flex gap-2">
