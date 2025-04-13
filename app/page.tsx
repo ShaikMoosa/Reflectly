@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2 } from 'lucide-react';
 import { useToast } from './components/ui/toast';
 
 export default function Home() {
@@ -616,6 +616,36 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading project:', error);
       setError('Failed to load project');
+    }
+  };
+
+  // Function to delete a project
+  const deleteProject = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation(); // Prevent triggering the card click event
+    
+    try {
+      // Filter out the project to delete
+      const updatedProjects = projects.filter(project => project.id !== projectId);
+      
+      // Update state
+      setProjects(updatedProjects);
+      
+      // Save to localStorage
+      localStorage.setItem('reflectly-projects', JSON.stringify(updatedProjects));
+      
+      // Show success toast
+      toast.addToast({
+        title: "Project Deleted",
+        description: "Project has been deleted successfully",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.addToast({
+        title: "Error",
+        description: "Failed to delete project",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1345,7 +1375,16 @@ export default function Home() {
                       )}
                     </div>
                     <div className="project-info">
-                      <h3 className="project-title">{project.title}</h3>
+                      <div className="project-header">
+                        <h3 className="project-title">{project.title}</h3>
+                        <button 
+                          className="project-delete-btn"
+                          onClick={(e) => deleteProject(e, project.id)}
+                          aria-label="Delete project"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                       <p className="project-date">
                         {new Date(project.createdAt).toLocaleDateString()}
                       </p>
