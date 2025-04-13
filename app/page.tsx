@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil, Kanban } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil, Kanban } from 'lucide-react';
 import { useToast } from './components/ui/toast';
-import { useTheme } from 'next-themes';
 import { TranscriptSegmentData } from './components/TranscriptSegment';
 import Planner from './components/Planner';
 import VideoPlayer from './components/VideoPlayer';
@@ -28,7 +27,6 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [activeTab, setActiveTab] = useState<'transcript' | 'notes' | 'ai-chat'>('transcript');
   const [notes, setNotes] = useState<{
@@ -70,7 +68,6 @@ export default function Home() {
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const toast = useToast();
-  const { theme, setTheme } = useTheme();
 
   // Update current time when video is playing
   useEffect(() => {
@@ -98,13 +95,6 @@ export default function Home() {
       }
     };
   }, [videoUrl]);
-
-  // Toggle theme function
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    setIsDarkMode(newTheme === 'dark');
-  };
 
   // Auto-scroll to active transcript
   useEffect(() => {
@@ -1032,17 +1022,6 @@ export default function Home() {
       {/* Main Content */}
       <div className="p-4 lg:ml-64">
         <div className="top-controls">
-          <button 
-            className="btn btn-circle btn-sm swap swap-rotate" 
-            onClick={toggleTheme} 
-            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {/* Sun icon */}
-            <Sun className={theme === 'dark' ? 'block' : 'hidden'} size={20} />
-            {/* Moon icon */}
-            <Moon className={theme === 'light' ? 'block' : 'hidden'} size={20} />
-          </button>
-
           {videoUrl && activePage === 'home' && (
             <div className="tabs tabs-boxed">
               <button 

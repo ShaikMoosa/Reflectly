@@ -78,37 +78,17 @@
   --secondary-rgb: 99, 102, 241; /* Indigo-500 in RGB */
   --accent-rgb: 129, 140, 248; /* Indigo-400 in RGB */
   
-  /* Add these explicitly for light/dark mode transcript styling */
+  /* Explicitly define transcript styling without dark mode variations */
   --transcript-bg-light: white;
   --transcript-text-light: #333333;
   --transcript-border-light: #e5e7eb;
   --transcript-header-light: white;
   
-  --transcript-bg-dark: #1f2937;
-  --transcript-text-dark: #e5e7eb;
-  --transcript-border-dark: #374151;
-  --transcript-header-dark: #1f2937;
-}
-
-[data-theme="dark"] {
-  /* Base colors */
-  --background: #1a1a1a;
-  --foreground: #e5e7eb;
-  --card-bg: #262626;
-  --card-shadow: rgba(0, 0, 0, 0.3);
-  --card-border: rgba(255, 255, 255, 0.1);
-  --card-hover-border: rgba(255, 255, 255, 0.2);
-
-  /* Transcript colors */
-  --transcript-bg: #2a2a2a;
-  --transcript-text: #e5e7eb;
-  --transcript-active-bg: #3f3f46;
-  --transcript-active-text: #f9fafb;
-  --transcript-highlight-bg: #713f12;
-  --transcript-highlight-text: #fef3c7;
-  --timestamp-bg: #3f3f46;
-  --timestamp-text: #d1d5db;
-  --timestamp-hover-bg: #4b5563;
+  /* Card styling */
+  --card-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --card-border: rgba(0, 0, 0, 0.1);
+  --card-hover-border: rgba(0, 0, 0, 0.2);
 }
 
 body {
@@ -570,7 +550,7 @@ a {
   }
 }
 
-/* TranscriptSegment styles - Remove !important flags and rely on specificity */
+/* TranscriptSegment styles */
 .transcript-segment {
   transition: all 0.2s ease-in-out;
   background-color: var(--transcript-bg);
@@ -578,19 +558,9 @@ a {
   border: 1px solid var(--transcript-border-light);
 }
 
-.dark .transcript-segment {
-  background-color: var(--transcript-bg);
-  color: var(--transcript-text);
-  border-color: var(--transcript-border-dark);
-}
-
 .transcript-segment:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  background-color: var(--transcript-active-bg);
-}
-
-.dark .transcript-segment:hover {
   background-color: var(--transcript-active-bg);
 }
 
@@ -600,11 +570,7 @@ a {
   color: var(--transcript-active-text);
 }
 
-.dark .transcript-segment-active {
-  background-color: var(--transcript-active-bg);
-}
-
-/* Make sure timestamp buttons are visible in all modes */
+/* Make sure timestamp buttons are visible */
 .timestamp-btn {
   color: rgba(var(--primary-rgb), 1);
   transition: all 0.15s ease;
@@ -613,19 +579,9 @@ a {
   border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
-.dark .timestamp-btn {
-  background-color: rgba(var(--primary-rgb), 0.2);
-  color: white;
-  border: 1px solid rgba(var(--primary-rgb), 0.3);
-}
-
 .timestamp-btn:hover {
   background-color: rgba(var(--primary-rgb), 0.25);
   transform: scale(1.05);
-}
-
-.dark .timestamp-btn:hover {
-  background-color: rgba(var(--primary-rgb), 0.35);
 }
 
 /* Styles for pulse animation on click */
@@ -688,20 +644,11 @@ a {
   color: var(--transcript-text-light);
 }
 
-.dark .transcript-player-container {
-  background-color: var(--transcript-bg-dark);
-  color: var(--transcript-text-dark);
-}
-
 /* Adjust the transcript scroll container to be taller */
 .transcript-scroll-container {
   height: calc(60vh - 80px); /* matches video height minus header */
   min-height: 300px;
   background-color: var(--transcript-bg-light);
-}
-
-.dark .transcript-scroll-container {
-  background-color: var(--transcript-bg-dark);
 }
 
 /* Responsive adjustments */
@@ -727,37 +674,22 @@ a {
   background-color: var(--transcript-header-light);
 }
 
-.dark .transcript-header {
-  background-color: var(--transcript-header-dark);
-  border-bottom-color: var(--transcript-border-dark);
-}
-
 /* Ensure the transcript body takes all available space */
 .transcript-body {
   flex: 1;
   overflow-y: auto;
 }
 
-/* Fix for transcript segments in light/dark modes */
+/* Fix for transcript segments */
 .transcript-segments {
   background-color: var(--transcript-bg-light);
   color: var(--transcript-text-light);
 }
 
-.dark .transcript-segments {
-  background-color: var(--transcript-bg-dark);
-  color: var(--transcript-text-dark);
-}
-
-/* Fix for transcript controls in light/dark modes */
+/* Fix for transcript controls */
 .transcript-controls {
   background-color: var(--transcript-bg-light);
   border-color: var(--transcript-border-light);
-}
-
-.dark .transcript-controls {
-  background-color: var(--transcript-bg-dark);
-  border-color: var(--transcript-border-dark);
 }
 
 /* App layout */

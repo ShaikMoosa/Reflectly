@@ -6,7 +6,7 @@ import { Providers } from './providers';
 const inter = Inter({ 
   subsets: ["latin"],
   display: 'swap',
-  preload: true,
+  variable: '--font-inter',
   weight: ['400', '500', '600', '700']
 });
 
@@ -21,20 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="light">
-      <head>
-        {/* Preload critical assets for better LCP */}
-        <link
-          rel="preload"
-          href="/_next/static/media/c9a5bc6a7c948fb0-s.p.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        {/* Preconnect to critical domains */}
-        <link rel="preconnect" href="https://localhost" />
-      </head>
-      <body className={inter.className}>
+    <html lang="en">
+      <body className={`${inter.className} ${inter.variable} font-sans`}>
         <Providers>
           {children}
         </Providers>
