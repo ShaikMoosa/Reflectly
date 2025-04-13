@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2 } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil } from 'lucide-react';
 import { useToast } from './components/ui/toast';
+import Whiteboard from './components/Whiteboard';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -32,7 +33,7 @@ export default function Home() {
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
   const [suggestedTags, setSuggestedTags] = useState(['Pain point', 'Goal', 'Role', 'Motivation', 'Behavior', 'User journey', 'Positive']);
   // New state for navigation and projects
-  const [activePage, setActivePage] = useState<'home' | 'projects'>('home');
+  const [activePage, setActivePage] = useState<'home' | 'projects' | 'whiteboard'>('home');
   const [projects, setProjects] = useState<{
     id: string,
     title: string,
@@ -755,6 +756,13 @@ export default function Home() {
             <FolderOpen size={20} />
             <span>Projects</span>
           </button>
+          <button 
+            className={`nav-link ${activePage === 'whiteboard' ? 'active' : ''}`}
+            onClick={() => setActivePage('whiteboard')}
+          >
+            <Pencil size={20} />
+            <span>Whiteboard</span>
+          </button>
         </nav>
       </div>
 
@@ -1424,7 +1432,7 @@ export default function Home() {
               </div>
             )}
           </div>
-        ) : (
+        ) : activePage === 'projects' ? (
           /* Projects Page */
           <div className="projects-page">
             <h1 className="page-title">My Projects</h1>
@@ -1474,6 +1482,12 @@ export default function Home() {
                 <p>No saved projects yet. Upload a video and save it as a project from the Home page.</p>
               </div>
             )}
+          </div>
+        ) : (
+          /* Whiteboard Page */
+          <div className="whiteboard-page">
+            <h1 className="page-title">Interactive Whiteboard</h1>
+            <Whiteboard isDarkMode={isDarkMode} />
           </div>
         )}
       </div>
