@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import React from 'react';
 
 // Debug utility for consistent logging
 const logDebug = (component: string, action: string, data?: any) => {
@@ -10,92 +9,83 @@ const logDebug = (component: string, action: string, data?: any) => {
 
 export interface TranscriptSegmentData {
   id: string;
-  timestamp: number;
   text: string;
+  start_time: number;
+  end_time: number;
 }
 
-interface TranscriptSegmentProps {
+export interface TranscriptSegmentProps {
   segment: TranscriptSegmentData;
-  isActive: boolean;
-  isHighlighted?: boolean;
-  onSegmentClick: (timestamp: number) => void;
+  isActive?: boolean;
+  highlighted?: boolean;
+  onClick?: (id: string) => void;
+  onTimestampClick?: (timestamp: number) => void;
 }
 
-const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
+export default function TranscriptSegment({
   segment,
-  isActive,
-  isHighlighted = false,
-  onSegmentClick
-}) => {
-  // Log when the component renders, especially active state changes
-  logDebug('TranscriptSegment', `Rendering segment ${segment.id}`, { 
-    timestamp: segment.timestamp, 
-    isActive,
-    isHighlighted,
-    textLength: segment.text.length
-  });
-
-  // Monitor active state changes
-  useEffect(() => {
-    if (isActive) {
-      logDebug('TranscriptSegment', `Segment ${segment.id} became active`);
-    }
-  }, [isActive, segment.id]);
-
-  const formatTimestamp = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
+  isActive = false,
+  highlighted = false,
+  onClick,
+  onTimestampClick
+}: TranscriptSegmentProps) {
+  const formatTimestamp = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    
+    return hours > 0
+      ? `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+      : `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Handle click on the entire segment
-  const handleSegmentClick = () => {
-    logDebug('TranscriptSegment', `Segment clicked ${segment.id}`, {
-      timestamp: segment.timestamp
-    });
-    onSegmentClick(segment.timestamp);
+  const segmentClasses = [
+    'transcript-segment',
+    'p-3',
+    'mb-2',
+    'rounded',
+    'cursor-pointer',
+    isActive ? 'transcript-segment-active' : '',
+    highlighted ? 'transcript-highlight' : ''
+  ].filter(Boolean).join(' ');
+
+  const timestampClasses = [
+    'timestamp-btn',
+    'text-xs',
+    'font-mono',
+    'py-1',
+    'px-2',
+    'rounded',
+    'inline-block',
+    'mr-2',
+    'cursor-pointer'
+  ].join(' ');
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick(segment.id);
+    }
   };
 
-  // Use a separate handler for timestamp clicks to prevent event bubbling
   const handleTimestampClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent bubbling to the parent div
-    logDebug('TranscriptSegment', `Timestamp clicked on segment ${segment.id}`, {
-      timestamp: segment.timestamp,
-      formattedTime: formatTimestamp(segment.timestamp)
-    });
-    onSegmentClick(segment.timestamp);
+    e.stopPropagation();
+    if (onTimestampClick) {
+      onTimestampClick(segment.start_time);
+    }
   };
 
   return (
     <div 
-      id={`segment-${segment.id}`}
-      className={`transcript-segment p-3 rounded-md mb-2 transition-all cursor-pointer
-                hover:bg-base-200 
-                ${isActive ? 'transcript-segment-active bg-primary bg-opacity-10 border border-primary' : 'bg-base-100'}
-                ${isHighlighted ? 'transcript-highlight' : ''}`}
-      onClick={handleSegmentClick}
-      role="button"
-      tabIndex={0}
-      aria-label={`Jump to ${formatTimestamp(segment.timestamp)}: ${segment.text.substring(0, 30)}...`}
-      style={{ backgroundColor: '#ffffff', color: '#333333' }}
+      className={segmentClasses}
+      onClick={handleClick}
     >
-      <div className="flex justify-between items-start">
-        <div className="flex-1 text-gray-800 dark:text-gray-200" style={{ color: '#333333' }}>
-          {segment.text}
-        </div>
-        <button 
-          className="timestamp-btn text-primary font-medium ml-2 hover:text-primary-focus focus:outline-none
-                    flex items-center px-2 py-1 rounded transition-all"
-          onClick={handleTimestampClick}
-          aria-label={`Jump to ${formatTimestamp(segment.timestamp)}`}
-          style={{ backgroundColor: 'rgba(79, 70, 229, 0.1)', color: 'rgb(79, 70, 229)' }}
-        >
-          <Clock className="h-3 w-3 mr-1" />
-          {formatTimestamp(segment.timestamp)}
-        </button>
-      </div>
+      <span 
+        className={timestampClasses}
+        onClick={handleTimestampClick}
+      >
+        {formatTimestamp(segment.start_time)}
+      </span>
+      {segment.text}
     </div>
   );
-};
-
-export default TranscriptSegment; 
+} 

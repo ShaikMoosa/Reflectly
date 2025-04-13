@@ -2,217 +2,193 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import TranscriptSegment, { TranscriptSegmentData } from './TranscriptSegment';
+import { Clock, ChevronsDown, ChevronsUp, FileText } from 'lucide-react';
+import LoadingIndicator from './LoadingIndicator';
 
-// Debug utility for consistent logging
-const logDebug = (component: string, action: string, data?: any) => {
-  console.log(`[${component}] ${action}`, data !== undefined ? data : '');
-};
-
-interface TranscriptPlayerProps {
+export interface TranscriptPlayerProps {
   segments: TranscriptSegmentData[];
   currentTime: number;
   onSegmentClick: (timestamp: number) => void;
+  className?: string;
+  loading?: boolean;
+  hasTranscript?: boolean;
+  showTimestamps?: boolean;
+  playbackSpeed?: number;
+  isExpanded?: boolean;
+  highlightedSegments?: string[];
+  onAddToNotes?: (segment: TranscriptSegmentData) => void;
+  onToggleTimestamps?: () => void;
+  onChangePlaybackSpeed?: (speed: number) => void;
+  onToggleExpand?: () => void;
 }
 
 const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   segments,
   currentTime,
-  onSegmentClick
+  onSegmentClick,
+  className = '',
+  loading = false,
+  hasTranscript = true,
+  showTimestamps = true,
+  playbackSpeed = 1,
+  isExpanded = true,
+  highlightedSegments = [],
+  onAddToNotes,
+  onToggleTimestamps,
+  onChangePlaybackSpeed,
+  onToggleExpand
 }) => {
-  console.log('[TranscriptPlayer] Rendering', { 
-    segmentsCount: segments.length, 
-    currentTime 
-  });
-
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const userScrolledRef = useRef<boolean>(false);
-  const transcriptContainerRef = useRef<HTMLDivElement>(null);
-  const prevActiveIdRef = useRef<string | null>(null);
   const [lastClickedId, setLastClickedId] = useState<string | null>(null);
+  const transcriptContainerRef = useRef<HTMLDivElement>(null);
 
-  // Handle click with highlight effect
-  const handleSegmentClick = (timestamp: number, segmentId: string) => {
-    logDebug('TranscriptPlayer', 'Segment clicked', { timestamp, segmentId });
-    setLastClickedId(segmentId);
-    
-    // Reset the highlight after a delay
-    setTimeout(() => {
-      setLastClickedId(null);
-    }, 1000);
-    
-    // Call the parent's click handler
+  // Handle segment click and highlight
+  const handleSegmentClick = (segmentId: string) => {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment) {
+      setLastClickedId(segmentId);
+      onSegmentClick(segment.start_time);
+      
+      // Reset highlight after 1 second
+      setTimeout(() => {
+        setLastClickedId(null);
+      }, 1000);
+    }
+  };
+
+  // Handle direct timestamp click
+  const handleTimestampClick = (timestamp: number) => {
     onSegmentClick(timestamp);
   };
 
-  // Detect manual scrolling by user
-  useEffect(() => {
-    const container = transcriptContainerRef.current;
-    if (!container) {
-      logDebug('TranscriptPlayer', 'Container ref not available for scroll handler');
-      return;
+  // Handle adding a segment to notes
+  const handleAddToNotes = (segmentId: string) => {
+    if (onAddToNotes) {
+      const segment = segments.find(s => s.id === segmentId);
+      if (segment) {
+        onAddToNotes(segment);
+      }
     }
+  };
 
-    logDebug('TranscriptPlayer', 'Setting up scroll detection');
-    
-    const handleScroll = () => {
-      if (!userScrolledRef.current) {
-        logDebug('TranscriptPlayer', 'User started manual scrolling');
-      }
-      userScrolledRef.current = true;
-      
-      // Reset after 5 seconds of no scrolling
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      
-      scrollTimeoutRef.current = setTimeout(() => {
-        logDebug('TranscriptPlayer', 'Manual scroll timeout expired, enabling auto-scroll');
-        userScrolledRef.current = false;
-      }, 5000);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => {
-      logDebug('TranscriptPlayer', 'Cleaning up scroll handler');
-      container.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
+  // Find and set active segment based on current time
   useEffect(() => {
-    // Find the active segment based on current time
-    logDebug('TranscriptPlayer', 'Checking for active segment', { currentTime });
-    
-    const activeSegment = segments.find(
-      segment => currentTime >= segment.timestamp && currentTime <= segment.timestamp + 5
+    if (segments.length === 0) return;
+
+    const activeSegment = segments.find(segment => 
+      currentTime >= segment.start_time && 
+      currentTime < segment.end_time
     );
     
     if (activeSegment) {
-      if (activeSegment.id !== activeSegmentId) {
-        logDebug('TranscriptPlayer', 'Active segment changed', { 
-          from: activeSegmentId, 
-          to: activeSegment.id, 
-          text: activeSegment.text.substring(0, 30) + (activeSegment.text.length > 30 ? '...' : '')
-        });
-        
-        setActiveSegmentId(activeSegment.id);
-        prevActiveIdRef.current = activeSegment.id;
-        
-        // Only auto-scroll if user hasn't manually scrolled recently
-        if (!userScrolledRef.current) {
-          const element = document.getElementById(`segment-${activeSegment.id}`);
-          if (element && transcriptContainerRef.current) {
-            logDebug('TranscriptPlayer', 'Auto-scrolling to active segment');
-            // Use smooth scrolling for better UX
-            element.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'center',
-              inline: 'nearest'
-            });
-          } else {
-            logDebug('TranscriptPlayer', 'Could not find element to scroll to', {
-              segmentId: activeSegment.id,
-              elementExists: !!element,
-              containerExists: !!transcriptContainerRef.current
-            });
-          }
-        } else {
-          logDebug('TranscriptPlayer', 'Skipping auto-scroll due to recent user scroll');
+      setActiveSegmentId(activeSegment.id);
+      
+      // Auto-scroll to active segment if not manually clicked
+      if (activeSegment.id !== lastClickedId && transcriptContainerRef.current) {
+        const activeElement = document.getElementById(`segment-${activeSegment.id}`);
+        if (activeElement) {
+          activeElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
         }
       }
     } else {
-      if (activeSegmentId !== null) {
-        logDebug('TranscriptPlayer', 'No active segment found, clearing active segment');
-        setActiveSegmentId(null);
-      }
+      setActiveSegmentId(null);
     }
-  }, [segments, currentTime, activeSegmentId]);
+  }, [segments, currentTime, lastClickedId]);
 
-  // Log segments changes
-  useEffect(() => {
-    logDebug('TranscriptPlayer', 'Segments changed', {
-      count: segments.length,
-      firstSegmentTime: segments.length > 0 ? segments[0].timestamp : null,
-      lastSegmentTime: segments.length > 0 ? segments[segments.length - 1].timestamp : null
-    });
-  }, [segments]);
+  // Handle UI control events
+  const handleToggleTimestamps = () => {
+    if (onToggleTimestamps) onToggleTimestamps();
+  };
+  
+  const handleSpeedChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (onChangePlaybackSpeed) onChangePlaybackSpeed(parseFloat(e.target.value));
+  };
+  
+  const handleExpandCollapse = () => {
+    if (onToggleExpand) onToggleExpand();
+  };
 
-  // Component mount logging
-  useEffect(() => {
-    logDebug('TranscriptPlayer', 'Component mounted');
-    return () => {
-      logDebug('TranscriptPlayer', 'Component unmounting');
-    };
-  }, []);
-
-  // Add CSS for highlight animation
-  useEffect(() => {
-    // Add style for click highlight animation if not already present
-    if (!document.getElementById('transcript-highlight-style')) {
-      const style = document.createElement('style');
-      style.id = 'transcript-highlight-style';
-      style.innerHTML = `
-        .transcript-highlight {
-          animation: highlightPulse 1s ease-out;
-        }
-        
-        @keyframes highlightPulse {
-          0% { background-color: rgba(var(--primary-rgb), 0.3); }
-          100% { background-color: rgba(var(--primary-rgb), 0); }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  }, []);
-
-  if (segments.length === 0) {
+  // Loading state
+  if (loading) {
     return (
-      <div className="card bg-white dark:bg-gray-800 shadow-md h-full">
-        <div className="card-body">
-          <h3 className="card-title text-lg text-gray-900 dark:text-white">Transcript</h3>
-          <div className="h-full flex items-center justify-center">
-            <p className="text-gray-500 dark:text-gray-400">No transcript available</p>
-          </div>
-        </div>
+      <div className={`flex items-center justify-center h-full ${className}`}>
+        <LoadingIndicator />
       </div>
     );
   }
 
+  // No transcript state 
+  if (!hasTranscript) {
+    return (
+      <div className={`flex flex-col items-center justify-center p-6 text-center rounded-md h-full ${className}`}>
+        <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+        <h3 className="text-lg font-medium">No transcript available</h3>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Upload a video to generate a transcript or check back later if processing.
+        </p>
+      </div>
+    );
+  }
+
+  // With transcript
   return (
-    <div 
-      className="transcript-player-container card bg-white dark:bg-gray-800 shadow-md h-full"
-      style={{ backgroundColor: 'white' }}
-    >
-      <div className="card-body p-4 flex flex-col" style={{ backgroundColor: 'white' }}>
-        <div 
-          className="transcript-header bg-white dark:bg-gray-800" 
-          style={{ backgroundColor: 'white', borderBottomColor: '#e5e7eb' }}
-        >
-          <h3 className="card-title text-lg text-gray-900 dark:text-white" style={{ color: '#111827' }}>
-            Transcript
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400" style={{ color: '#6b7280' }}>
-            Click any segment to jump to that point
-          </p>
+    <div className={`transcript-player flex flex-col h-full ${className}`}>
+      {/* Transcript controls */}
+      <div className="transcript-controls flex items-center justify-between p-3 border-b">
+        <div className="flex items-center">
+          <button 
+            className="p-2 rounded-md focus:outline-none"
+            onClick={handleToggleTimestamps}
+            aria-label={showTimestamps ? "Hide timestamps" : "Show timestamps"}
+          >
+            <Clock className="h-4 w-4" />
+          </button>
+          
+          <div className="ml-4 flex items-center">
+            <span className="text-sm mr-2">Speed:</span>
+            <select 
+              value={playbackSpeed} 
+              onChange={handleSpeedChange}
+              className="text-sm rounded p-1 focus:outline-none"
+            >
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1">1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="1.75">1.75x</option>
+              <option value="2">2x</option>
+            </select>
+          </div>
         </div>
-        <div 
-          ref={transcriptContainerRef}
-          className="transcript-scroll-container transcript-body overflow-y-auto pr-2 space-y-2 bg-white dark:bg-gray-800"
-          style={{ backgroundColor: 'white' }}
+        
+        <button
+          className="p-2 rounded-md focus:outline-none"
+          onClick={handleExpandCollapse}
+          aria-label={isExpanded ? "Collapse transcript" : "Expand transcript"}
         >
-          {segments.map(segment => (
-            <TranscriptSegment
-              key={segment.id}
-              segment={segment}
-              isActive={segment.id === activeSegmentId}
-              isHighlighted={segment.id === lastClickedId}
-              onSegmentClick={(timestamp) => handleSegmentClick(timestamp, segment.id)}
-            />
-          ))}
-        </div>
+          {isExpanded ? <ChevronsDown className="h-4 w-4" /> : <ChevronsUp className="h-4 w-4" />}
+        </button>
+      </div>
+      
+      {/* Transcript segments */}
+      <div 
+        ref={transcriptContainerRef}
+        className="transcript-segments flex-1 overflow-y-auto p-4"
+      >
+        {segments.map(segment => (
+          <TranscriptSegment
+            key={segment.id}
+            segment={segment}
+            isActive={activeSegmentId === segment.id}
+            highlighted={highlightedSegments.includes(segment.id) || lastClickedId === segment.id}
+            onClick={handleSegmentClick}
+            onTimestampClick={handleTimestampClick}
+          />
+        ))}
       </div>
     </div>
   );

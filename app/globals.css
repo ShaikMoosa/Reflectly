@@ -9,29 +9,38 @@
 
 /* Critical CSS moved to top for faster LCP */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 248, 250, 252;
-  --primary-blue: 59, 130, 246;
-  --primary-blue-dark: 37, 99, 235;
-  --primary-blue-light: 191, 219, 254;
-  --gray-50: 249, 250, 251;
-  --gray-100: 243, 244, 246;
-  --gray-200: 229, 231, 235;
-  --gray-700: 55, 65, 81;
-  --gray-800: 31, 41, 55;
-  --bg-dark: #18191a;
-  --bg-card: #242526;
-  --bg-card-hover: #3a3b3c;
-  --text-primary: #e4e6eb;
-  --text-secondary: #b0b3b8;
-  --text-muted: rgba(255, 255, 255, 0.5);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --accent-purple: #8b5cf6;
-  --accent-purple-hover: #7c3aed;
-  --upload-border: rgba(255, 255, 255, 0.2);
-  --upload-bg: #000000;
-  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  --divider-color: rgba(255, 255, 255, 0.1);
+  /* Base colors */
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+  
+  /* Transcript-specific colors */
+  --transcript-bg: #f9fafb;
+  --transcript-text: #1f2937;
+  --transcript-active-bg: #e5e7eb;
+  --transcript-active-text: #111827;
+  --transcript-highlight-bg: #fef3c7;
+  --transcript-highlight-text: #92400e;
+  --timestamp-bg: #e5e7eb;
+  --timestamp-text: #4b5563;
+  --timestamp-hover-bg: #d1d5db;
   
   /* Light theme colors */
   --bg-light: #FAFAFA;
@@ -50,7 +59,7 @@
   --accent-red: #e11d48;
   --hover-color: rgba(255, 255, 255, 0.05);
   --bg-color: #121212;
-  --card-bg: #1e1e1e;
+  --card-bg: #ffffff;
   
   /* Planner specific variables */
   --color-primary: var(--accent-purple);
@@ -81,6 +90,27 @@
   --transcript-header-dark: #1f2937;
 }
 
+[data-theme="dark"] {
+  /* Base colors */
+  --background: #1a1a1a;
+  --foreground: #e5e7eb;
+  --card-bg: #262626;
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --card-hover-border: rgba(255, 255, 255, 0.2);
+
+  /* Transcript colors */
+  --transcript-bg: #2a2a2a;
+  --transcript-text: #e5e7eb;
+  --transcript-active-bg: #3f3f46;
+  --transcript-active-text: #f9fafb;
+  --transcript-highlight-bg: #713f12;
+  --transcript-highlight-text: #fef3c7;
+  --timestamp-bg: #3f3f46;
+  --timestamp-text: #d1d5db;
+  --timestamp-hover-bg: #4b5563;
+}
+
 body {
   color: var(--text-primary);
   background-color: var(--bg-dark);
@@ -97,6 +127,11 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 a {
@@ -145,22 +180,29 @@ a {
 
 /* Modern card styles */
 .modern-card {
-  background-color: var(--bg-card);
-  border-radius: 8px;
-  border: none;
-  box-shadow: var(--card-shadow);
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px var(--card-shadow);
+  border: 1px solid var(--card-border);
   overflow: hidden;
-  margin-bottom: 16px;
-  transition: box-shadow 0.2s ease;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
 }
 
 .modern-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border-color: var(--card-hover-border);
 }
 
-/* Content card for single card layout */
-.content-card {
-  padding: 24px;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.card-body {
+  padding: 1rem;
 }
 
 /* Updated button styles to match requested black design */
@@ -493,57 +535,58 @@ a {
   }
 }
 
-/* TranscriptSegment styles */
+/* TranscriptSegment styles - Remove !important flags and rely on specificity */
 .transcript-segment {
   transition: all 0.2s ease-in-out;
-  background-color: white !important;
-  color: #333 !important;
-  border: 1px solid #e5e7eb !important;
+  background-color: var(--transcript-bg);
+  color: var(--transcript-text);
+  border: 1px solid var(--transcript-border-light);
 }
 
 .dark .transcript-segment {
-  background-color: #1f2937 !important;
-  color: #e5e7eb !important;
-  border-color: #374151 !important;
+  background-color: var(--transcript-bg);
+  color: var(--transcript-text);
+  border-color: var(--transcript-border-dark);
 }
 
 .transcript-segment:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  background-color: #f9fafb !important;
+  background-color: var(--transcript-active-bg);
 }
 
 .dark .transcript-segment:hover {
-  background-color: #2d3748 !important;
+  background-color: var(--transcript-active-bg);
 }
 
 .transcript-segment-active {
   border-left: 3px solid rgba(var(--primary-rgb), 1);
-  background-color: rgba(var(--primary-rgb), 0.05) !important;
+  background-color: var(--transcript-active-bg);
+  color: var(--transcript-active-text);
 }
 
 .dark .transcript-segment-active {
-  background-color: rgba(var(--primary-rgb), 0.15) !important;
+  background-color: var(--transcript-active-bg);
 }
 
 /* Make sure timestamp buttons are visible in all modes */
 .timestamp-btn {
   color: rgba(var(--primary-rgb), 1);
   transition: all 0.15s ease;
-  background-color: rgba(var(--primary-rgb), 0.05);
+  background-color: var(--timestamp-bg);
 }
 
 .dark .timestamp-btn {
-  background-color: rgba(var(--primary-rgb), 0.15);
+  background-color: var(--timestamp-bg);
 }
 
 .timestamp-btn:hover {
-  background-color: rgba(var(--primary-rgb), 0.1);
+  background-color: var(--timestamp-hover-bg);
   transform: scale(1.05);
 }
 
 .dark .timestamp-btn:hover {
-  background-color: rgba(var(--primary-rgb), 0.2);
+  background-color: var(--timestamp-hover-bg);
 }
 
 /* Styles for pulse animation on click */
@@ -561,6 +604,8 @@ a {
 
 .transcript-highlight {
   animation: pulse-highlight 1s ease-out forwards;
+  background-color: var(--transcript-highlight-bg);
+  color: var(--transcript-highlight-text);
 }
 
 /* TranscriptPlayer styles */
@@ -600,24 +645,24 @@ a {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--transcript-bg-light) !important;
-  color: var(--transcript-text-light) !important;
+  background-color: var(--transcript-bg-light);
+  color: var(--transcript-text-light);
 }
 
 .dark .transcript-player-container {
-  background-color: var(--transcript-bg-dark) !important;
-  color: var(--transcript-text-dark) !important;
+  background-color: var(--transcript-bg-dark);
+  color: var(--transcript-text-dark);
 }
 
 /* Adjust the transcript scroll container to be taller */
 .transcript-scroll-container {
   height: calc(60vh - 80px); /* matches video height minus header */
   min-height: 300px;
-  background-color: var(--transcript-bg-light) !important;
+  background-color: var(--transcript-bg-light);
 }
 
 .dark .transcript-scroll-container {
-  background-color: var(--transcript-bg-dark) !important;
+  background-color: var(--transcript-bg-dark);
 }
 
 /* Responsive adjustments */
@@ -640,11 +685,11 @@ a {
   padding-bottom: 8px;
   margin-bottom: 8px;
   border-bottom: 1px solid var(--transcript-border-light);
-  background-color: var(--transcript-header-light) !important;
+  background-color: var(--transcript-header-light);
 }
 
 .dark .transcript-header {
-  background-color: var(--transcript-header-dark) !important;
+  background-color: var(--transcript-header-dark);
   border-bottom-color: var(--transcript-border-dark);
 }
 
@@ -652,4 +697,250 @@ a {
 .transcript-body {
   flex: 1;
   overflow-y: auto;
+}
+
+/* Fix for transcript segments in light/dark modes */
+.transcript-segments {
+  background-color: var(--transcript-bg-light);
+  color: var(--transcript-text-light);
+}
+
+.dark .transcript-segments {
+  background-color: var(--transcript-bg-dark);
+  color: var(--transcript-text-dark);
+}
+
+/* Fix for transcript controls in light/dark modes */
+.transcript-controls {
+  background-color: var(--transcript-bg-light);
+  border-color: var(--transcript-border-light);
+}
+
+.dark .transcript-controls {
+  background-color: var(--transcript-bg-dark);
+  border-color: var(--transcript-border-dark);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Modern card styles */
+.modern-card {
+  @apply bg-card rounded-xl shadow-md border border-border p-4;
+}
+
+.modern-card-header {
+  @apply flex justify-between items-center mb-4;
+}
+
+.modern-card-title {
+  @apply text-lg font-medium text-card-foreground;
+}
+
+/* Button styles */
+.btn {
+  @apply px-4 py-2 rounded-md font-medium transition-colors;
+}
+
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+}
+
+.btn-sm {
+  @apply px-3 py-1 text-sm;
+}
+
+/* Transcript segment styles */
+.transcript-segment {
+  background-color: hsl(var(--transcript-bg));
+  color: hsl(var(--transcript-text));
+  border: 1px solid hsl(var(--transcript-border-light));
+  transition: all 0.2s ease-in-out;
+}
+
+.dark .transcript-segment {
+  background-color: hsl(var(--transcript-bg));
+  color: hsl(var(--transcript-text));
+  border: 1px solid hsl(var(--transcript-border-dark));
+}
+
+.transcript-segment:hover {
+  background-color: hsl(var(--transcript-active-bg));
+}
+
+.dark .transcript-segment:hover {
+  background-color: hsl(var(--transcript-active-bg));
+}
+
+.transcript-segment-active {
+  background-color: hsl(var(--transcript-active-bg));
+  border: 1px solid hsl(var(--transcript-active-border-light));
+}
+
+.dark .transcript-segment-active {
+  background-color: hsl(var(--transcript-active-bg));
+  border: 1px solid hsl(var(--transcript-active-border-dark));
+}
+
+.transcript-highlight {
+  background-color: hsl(var(--transcript-highlight-bg));
+  color: hsl(var(--transcript-highlight-text));
+}
+
+.dark .transcript-highlight {
+  background-color: hsl(var(--transcript-highlight-bg));
+}
+
+.timestamp-btn {
+  background-color: hsl(var(--timestamp-bg));
+  color: hsl(var(--timestamp-text));
+}
+
+.dark .timestamp-btn {
+  background-color: hsl(var(--timestamp-bg));
+}
+
+/* Planner related styles */
+.planner-container {
+  @apply border rounded-lg p-4 bg-card text-card-foreground;
+}
+
+.planner-header {
+  @apply flex justify-between items-center mb-4;
+}
+
+.planner-title {
+  @apply text-xl font-bold;
+}
+
+.planner-controls {
+  @apply flex space-x-2;
+}
+
+.planner-list {
+  @apply space-y-2;
+}
+
+.planner-item {
+  @apply p-3 border rounded-md bg-background;
+  transition: all 0.2s ease;
+}
+
+.drag-over {
+  @apply border-primary bg-primary/10;
+}
+
+/* App layout */
+.app-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  min-height: calc(100vh - 2rem);
+  margin: 1rem auto;
+  max-width: 1800px;
+  padding: 0 1rem;
+}
+
+.main-content {
+  flex: 1 1 65%;
+  min-width: 0;
+}
+
+.notes-sidebar {
+  flex: 1 1 35%;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .main-content, .notes-sidebar {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+  
+  .notes-sidebar {
+    border-top: 1px solid hsl(var(--border));
+    border-left: none;
+  }
+}
+
+/* Tabs */
+.tab-container {
+  @apply flex border-b border-border;
+}
+
+.tab-button {
+  @apply px-4 py-2 font-medium transition-colors;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-button.active {
+  @apply text-primary;
+  border-bottom: 2px solid hsl(var(--primary));
+}
+
+.tab-button:hover:not(.active) {
+  @apply text-muted-foreground;
+  border-bottom: 2px solid hsl(var(--muted));
+}
+
+/* Upload area */
+.upload-container {
+  @apply border-2 border-dashed rounded-lg p-8 text-center bg-background/50 transition-all;
+  border-color: hsl(var(--border));
+}
+
+.upload-container:hover {
+  @apply bg-background/80;
+  border-color: hsl(var(--primary/50));
+}
+
+.drag-active {
+  @apply border-primary bg-primary/10;
+}
+
+/* Notes */
+.notes-container {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.note-card {
+  @apply mb-3 p-3 rounded-md border bg-card;
+}
+
+.note-tag {
+  @apply inline-block mr-2 mb-2 px-2 py-1 text-xs rounded-full;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+/* Transcript container */
+.transcript-container {
+  max-height: 300px;
+  overflow-y: auto;
+  @apply p-3 rounded-md;
+  background-color: hsl(var(--transcript-bg));
+  border: 1px solid hsl(var(--transcript-border-light));
+}
+
+.dark .transcript-container {
+  background-color: hsl(var(--transcript-bg));
+  border: 1px solid hsl(var(--transcript-border-dark));
 } 
