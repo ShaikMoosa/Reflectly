@@ -1587,287 +1587,472 @@ main {
 
 /* Planner styles */
 .planner-container {
-  width: 100%;
-  height: 100%;
-  padding: 20px;
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .planner-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-.planner-actions {
-  display: flex;
-  gap: 10px;
-}
-
-/* Confirmation modal styles */
-.planner-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-.planner-modal {
-  background-color: var(--bg-card);
-  border-radius: 8px;
-  padding: 24px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: var(--card-shadow);
-  position: relative;
-  animation: modal-in 0.3s ease-out;
-}
-
-@keyframes modal-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.planner-modal h3 {
-  color: var(--text-primary);
-  margin-bottom: 16px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.planner-modal p {
-  color: var(--text-secondary);
-  margin-bottom: 24px;
-  line-height: 1.5;
-}
-
-.planner-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-/* Button variations */
-.modern-button.secondary {
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.modern-button.secondary:hover {
-  background-color: var(--hover-color);
-}
-
-.modern-button.warning {
-  background-color: var(--accent-red);
-}
-
-.modern-button.warning:hover {
-  background-color: #f43f5e;
 }
 
 .planner-board {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   overflow-x: auto;
-  padding-bottom: 16px;
-  flex-grow: 1;
-  min-height: calc(100vh - 160px);
+  min-height: 200px;
+  padding-bottom: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.planner-board.board-dragging-over {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-radius: 0.5rem;
 }
 
 .planner-column {
-  background-color: var(--bg-card);
-  border-radius: 8px;
-  width: 280px;
-  min-width: 280px;
-  max-height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--card-shadow);
+  min-width: 280px;
+  max-width: 280px;
+  background-color: var(--color-card-bg);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.planner-column.dragging {
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  opacity: 0.8;
+}
+
+.planner-column.column-drag-over {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.3);
 }
 
 .planner-column-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--divider-color);
-  background-color: var(--bg-card-hover);
-  border-radius: 8px 8px 0 0;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab;
+}
+
+.planner-column-header:active {
+  cursor: grabbing;
 }
 
 .planner-column-title {
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--text-primary);
   margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
-.planner-column-actions {
+.planner-column-actions,
+.planner-task-actions,
+.planner-edit-actions {
   display: flex;
-  gap: 4px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+  gap: 0.5rem;
 }
 
-.planner-column-header:hover .planner-column-actions {
-  opacity: 1;
+.planner-icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.planner-icon-button:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text);
 }
 
 .planner-tasks {
-  padding: 8px;
-  overflow-y: auto;
-  flex-grow: 1;
+  padding: 1rem;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.75rem;
+  overflow-y: auto;
+  min-height: 100px;
+  transition: background-color 0.2s ease;
+}
+
+.planner-tasks.task-list-dragging-over {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-radius: 0.25rem;
 }
 
 .planner-task {
-  background-color: white;
-  border-radius: 4px;
-  padding: 10px 12px;
-  min-height: 54px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   position: relative;
-  color: var(--text-primary);
-  border: 1px solid var(--divider-color);
 }
 
-:root.light-mode .planner-task {
-  background-color: white;
+.planner-task:active {
+  cursor: grabbing;
 }
 
-:root:not(.light-mode) .planner-task {
-  background-color: var(--bg-card);
-  border-color: var(--border-color);
+.planner-task.dragging {
+  transform: rotate(1deg) scale(1.02);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-hover);
+  z-index: 20;
 }
 
 .planner-task-content {
-  flex-grow: 1;
-  font-size: 14px;
+  flex: 1;
   word-break: break-word;
-  margin-right: 8px;
 }
 
 .planner-task-actions {
   opacity: 0;
   transition: opacity 0.2s ease;
-  display: flex;
-  gap: 4px;
 }
 
 .planner-task:hover .planner-task-actions {
   opacity: 1;
 }
 
-.planner-icon-button {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  padding: 4px;
-  border-radius: 4px;
-  cursor: pointer;
+.planner-edit-form {
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.planner-icon-button:hover {
-  background-color: var(--hover-color);
-  color: var(--text-primary);
-}
-
-.planner-add-button {
-  margin-top: 8px;
-  padding: 8px;
-  background-color: transparent;
-  border: none;
-  border-radius: 4px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 14px;
+  gap: 0.5rem;
   width: 100%;
-}
-
-.planner-add-button:hover {
-  background-color: var(--hover-color);
-  color: var(--text-primary);
 }
 
 .planner-input {
-  background-color: var(--bg-light);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 8px 12px;
-  width: 100%;
-  font-size: 14px;
-  color: var(--text-primary);
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
 }
 
-:root:not(.light-mode) .planner-input {
-  background-color: var(--bg-card);
-}
-
-.planner-edit-form {
-  width: 100%;
-}
-
-.planner-edit-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  justify-content: flex-end;
+.planner-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.2);
 }
 
 .planner-form-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.planner-add-button {
+  background-color: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.planner-add-button:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
 }
 
 .planner-add-task-form {
-  margin-top: 8px;
-  padding: 8px;
-  background-color: var(--bg-card-hover);
-  border-radius: 4px;
+  margin-top: 0.5rem;
 }
 
 .add-column-form {
-  background-color: var(--bg-card);
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: var(--color-card-bg);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  max-width: 280px;
+}
+
+/* Drag placeholder styles */
+.planner-task-placeholder {
+  height: 2.5rem;
+  background-color: rgba(var(--color-primary-rgb), 0.1);
+  border: 1px dashed var(--color-primary);
+  border-radius: 0.25rem;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .planner-board {
+    padding-bottom: 0.5rem;
+  }
+  
+  .planner-column {
+    min-width: 260px;
+    max-width: 260px;
+  }
+}
+
+/* Planner Styles */
+.planner-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   width: 100%;
 }
 
-/* Make planner page take full height */
-.planner-page {
-  width: 100%;
-  height: calc(100vh - 60px);
-  padding: 0;
-  overflow: hidden;
+.planner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.planner-board {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  min-height: 200px;
+  padding-bottom: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.planner-board.board-dragging-over {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-radius: 0.5rem;
+}
+
+.planner-column {
   display: flex;
   flex-direction: column;
+  min-width: 280px;
+  max-width: 280px;
+  background-color: var(--color-card-bg);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.planner-column.dragging {
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  opacity: 0.8;
+}
+
+.planner-column.column-drag-over {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.3);
+}
+
+.planner-column-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
+}
+
+.planner-column-header:active {
+  cursor: grabbing;
+}
+
+.planner-column-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.planner-column-actions,
+.planner-task-actions,
+.planner-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.planner-icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.planner-icon-button:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+.planner-tasks {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  min-height: 100px;
+  transition: background-color 0.2s ease;
+}
+
+.planner-tasks.task-list-dragging-over {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-radius: 0.25rem;
+}
+
+.planner-task {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+.planner-task:active {
+  cursor: grabbing;
+}
+
+.planner-task.dragging {
+  transform: rotate(1deg) scale(1.02);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-hover);
+  z-index: 20;
+}
+
+.planner-task-content {
+  flex: 1;
+  word-break: break-word;
+}
+
+.planner-task-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.planner-task:hover .planner-task-actions {
+  opacity: 1;
+}
+
+.planner-edit-form {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.planner-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.planner-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.2);
+}
+
+.planner-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.planner-add-button {
+  background-color: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.planner-add-button:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.planner-add-task-form {
+  margin-top: 0.5rem;
+}
+
+.add-column-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: var(--color-card-bg);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  max-width: 280px;
+}
+
+/* Drag placeholder styles */
+.planner-task-placeholder {
+  height: 2.5rem;
+  background-color: rgba(var(--color-primary-rgb), 0.1);
+  border: 1px dashed var(--color-primary);
+  border-radius: 0.25rem;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .planner-board {
+    padding-bottom: 0.5rem;
+  }
+  
+  .planner-column {
+    min-width: 260px;
+    max-width: 260px;
+  }
 } 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Plus, Edit, Trash2, X, Check } from 'lucide-react';
 
@@ -61,9 +61,6 @@ const generateId = () => {
   return `id-${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// Local storage key
-const STORAGE_KEY = 'reflectly_planner_data';
-
 export default function Planner() {
   const [data, setData] = useState<KanbanData>(initialData);
   const [newTaskContent, setNewTaskContent] = useState('');
@@ -72,31 +69,30 @@ export default function Planner() {
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [editingColumn, setEditingColumn] = useState<string | null>(null);
   const [addingColumn, setAddingColumn] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState<string | null>(null);
+  const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
+  const [isDraggingType, setIsDraggingType] = useState<string | null>(null);
 
-  // Load data from localStorage on component mount
-  useEffect(() => {
-    try {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        setData(JSON.parse(savedData));
-      }
-    } catch (error) {
-      console.error('Error loading planner data from localStorage:', error);
-    }
-  }, []);
+  // Handle drag start
+  const onDragStart = (result: any) => {
+    const { draggableId, type } = result;
+    setIsDraggingId(draggableId);
+    setIsDraggingType(type);
+  };
 
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error saving planner data to localStorage:', error);
-    }
-  }, [data]);
+  // Handle drag update - for highlighting drop targets
+  const onDragUpdate = (result: any) => {
+    const { destination } = result;
+    setIsDraggingOver(destination ? destination.droppableId : null);
+  };
 
   // Handle drag end
   const onDragEnd = (result: any) => {
+    // Reset drag state
+    setIsDraggingId(null);
+    setIsDraggingType(null);
+    setIsDraggingOver(null);
+    
     const { destination, source, draggableId, type } = result;
 
     // Drop outside the list
@@ -314,56 +310,18 @@ export default function Planner() {
     });
   };
 
-  // Reset data to initial state
-  const resetData = () => {
-    setData(initialData);
-    setShowResetConfirm(false);
-  };
-
   return (
     <div className="planner-container">
       <div className="planner-header">
-        <h2>Project Planner</h2>
-        <div className="planner-actions">
-          <button 
-            className="modern-button secondary"
-            onClick={() => setAddingColumn(true)}
-          >
-            <Plus size={16} />
-            Add Column
-          </button>
-          <button 
-            className="modern-button warning"
-            onClick={() => setShowResetConfirm(true)}
-          >
-            Reset Board
-          </button>
-        </div>
+        <h1 className="page-title">Planner</h1>
+        <button 
+          className="modern-button"
+          onClick={() => setAddingColumn(true)}
+        >
+          <Plus size={16} />
+          Add Column
+        </button>
       </div>
-
-      {/* Reset confirmation dialog */}
-      {showResetConfirm && (
-        <div className="planner-modal-overlay">
-          <div className="planner-modal">
-            <h3>Reset Board</h3>
-            <p>Are you sure you want to reset the board to its initial state? All your changes will be lost.</p>
-            <div className="planner-modal-actions">
-              <button 
-                className="modern-button warning"
-                onClick={resetData}
-              >
-                Yes, Reset
-              </button>
-              <button 
-                className="modern-button secondary"
-                onClick={() => setShowResetConfirm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add column form */}
       {addingColumn && (
@@ -393,23 +351,32 @@ export default function Planner() {
         </div>
       )}
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext 
+        onDragStart={onDragStart}
+        onDragUpdate={onDragUpdate}
+        onDragEnd={onDragEnd}
+      >
         <Droppable droppableId="all-columns" direction="horizontal" type="column">
-          {(provided) => (
+          {(provided, snapshot) => (
             <div 
-              className="planner-board"
+              className={`planner-board ${snapshot.isDraggingOver ? 'board-dragging-over' : ''}`}
               {...provided.droppableProps}
               ref={provided.innerRef}
             >
               {data.columnOrder.map((columnId, index) => {
                 const column = data.columns[columnId];
                 const tasks = column.taskIds.map(taskId => data.tasks[taskId]);
+                const isColumnDragging = isDraggingId === column.id && isDraggingType === 'column';
 
                 return (
                   <Draggable key={column.id} draggableId={column.id} index={index}>
-                    {(provided) => (
+                    {(provided, snapshot) => (
                       <div
-                        className="planner-column"
+                        className={`planner-column ${
+                          isColumnDragging ? 'dragging' : ''
+                        } ${
+                          isDraggingOver === column.id && isDraggingType === 'task' ? 'column-drag-over' : ''
+                        }`}
                         {...provided.draggableProps}
                         ref={provided.innerRef}
                       >
@@ -475,84 +442,92 @@ export default function Planner() {
 
                         {/* Tasks container */}
                         <Droppable droppableId={column.id} type="task">
-                          {(provided) => (
+                          {(provided, snapshot) => (
                             <div
-                              className="planner-tasks"
+                              className={`planner-tasks ${snapshot.isDraggingOver ? 'task-list-dragging-over' : ''}`}
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                             >
-                              {tasks.map((task, index) => (
-                                <Draggable
-                                  key={task.id}
-                                  draggableId={task.id}
-                                  index={index}
-                                >
-                                  {(provided) => (
-                                    <div
-                                      className="planner-task"
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                    >
-                                      {editingTask === task.id ? (
-                                        <div className="planner-edit-form">
-                                          <input
-                                            type="text"
-                                            value={newTaskContent}
-                                            onChange={(e) => setNewTaskContent(e.target.value)}
-                                            className="planner-input"
-                                            autoFocus
-                                          />
-                                          <div className="planner-edit-actions">
-                                            <button 
-                                              className="planner-icon-button"
-                                              onClick={() => updateTask(task.id)}
-                                              title="Save"
-                                            >
-                                              <Check size={14} />
-                                            </button>
-                                            <button 
-                                              className="planner-icon-button"
-                                              onClick={() => {
-                                                setEditingTask(null);
-                                                setNewTaskContent('');
-                                              }}
-                                              title="Cancel"
-                                            >
-                                              <X size={14} />
-                                            </button>
+                              {tasks.map((task, index) => {
+                                const isTaskDragging = isDraggingId === task.id;
+                                
+                                return (
+                                  <Draggable
+                                    key={task.id}
+                                    draggableId={task.id}
+                                    index={index}
+                                  >
+                                    {(provided, snapshot) => (
+                                      <div
+                                        className={`planner-task ${snapshot.isDragging ? 'dragging' : ''}`}
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        style={{
+                                          ...provided.draggableProps.style,
+                                          opacity: isTaskDragging ? 0.6 : 1,
+                                        }}
+                                      >
+                                        {editingTask === task.id ? (
+                                          <div className="planner-edit-form">
+                                            <input
+                                              type="text"
+                                              value={newTaskContent}
+                                              onChange={(e) => setNewTaskContent(e.target.value)}
+                                              className="planner-input"
+                                              autoFocus
+                                            />
+                                            <div className="planner-edit-actions">
+                                              <button 
+                                                className="planner-icon-button"
+                                                onClick={() => updateTask(task.id)}
+                                                title="Save"
+                                              >
+                                                <Check size={14} />
+                                              </button>
+                                              <button 
+                                                className="planner-icon-button"
+                                                onClick={() => {
+                                                  setEditingTask(null);
+                                                  setNewTaskContent('');
+                                                }}
+                                                title="Cancel"
+                                              >
+                                                <X size={14} />
+                                              </button>
+                                            </div>
                                           </div>
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <div className="planner-task-content">
-                                            {task.content}
-                                          </div>
-                                          <div className="planner-task-actions">
-                                            <button 
-                                              className="planner-icon-button"
-                                              onClick={() => {
-                                                setEditingTask(task.id);
-                                                setNewTaskContent(task.content);
-                                              }}
-                                              title="Edit task"
-                                            >
-                                              <Edit size={14} />
-                                            </button>
-                                            <button 
-                                              className="planner-icon-button"
-                                              onClick={() => deleteTask(task.id, column.id)}
-                                              title="Delete task"
-                                            >
-                                              <Trash2 size={14} />
-                                            </button>
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))}
+                                        ) : (
+                                          <>
+                                            <div className="planner-task-content">
+                                              {task.content}
+                                            </div>
+                                            <div className="planner-task-actions">
+                                              <button 
+                                                className="planner-icon-button"
+                                                onClick={() => {
+                                                  setEditingTask(task.id);
+                                                  setNewTaskContent(task.content);
+                                                }}
+                                                title="Edit task"
+                                              >
+                                                <Edit size={14} />
+                                              </button>
+                                              <button 
+                                                className="planner-icon-button"
+                                                onClick={() => deleteTask(task.id, column.id)}
+                                                title="Delete task"
+                                              >
+                                                <Trash2 size={14} />
+                                              </button>
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
                               {provided.placeholder}
 
                               {/* Add task form or button */}
