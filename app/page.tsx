@@ -930,7 +930,8 @@ export default function Home() {
                 <TranscriptPlayer 
                   segments={transcripts.map(transcript => ({
                     id: transcript.id || `transcript-${transcript.start}`,
-                    timestamp: transcript.start,
+                    start_time: transcript.start,
+                    end_time: transcript.end || transcript.start + 10, // Add fallback for end time
                     text: transcript.text
                   }))}
                   currentTime={currentTime}

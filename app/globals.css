@@ -608,20 +608,24 @@ a {
 .timestamp-btn {
   color: rgba(var(--primary-rgb), 1);
   transition: all 0.15s ease;
-  background-color: var(--timestamp-bg);
+  background-color: rgba(var(--primary-rgb), 0.1);
+  font-weight: 600;
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
 .dark .timestamp-btn {
-  background-color: var(--timestamp-bg);
+  background-color: rgba(var(--primary-rgb), 0.2);
+  color: white;
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
 }
 
 .timestamp-btn:hover {
-  background-color: var(--timestamp-hover-bg);
+  background-color: rgba(var(--primary-rgb), 0.25);
   transform: scale(1.05);
 }
 
 .dark .timestamp-btn:hover {
-  background-color: var(--timestamp-hover-bg);
+  background-color: rgba(var(--primary-rgb), 0.35);
 }
 
 /* Styles for pulse animation on click */
