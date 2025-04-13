@@ -863,69 +863,95 @@ export default function Home() {
             {currentProjectId ? 'Update Project' : 'Save Project'}
           </button>
         </div>
-        <div className="video-container rounded-lg overflow-hidden mb-4">
-          <VideoPlayer 
-            videoUrl={videoUrl}
-            currentTime={currentTime}
-            onTimeUpdate={setCurrentTime}
-            isPlaying={isPlaying}
-            onPlayPause={handleVideoPlayPause}
-          />
-        </div>
-        <div className="my-4 flex gap-2">
-          <button
-            onClick={handleTranscribe}
-            disabled={isTranscribing || !videoFile}
-            className="btn btn-primary"
-          >
-            {isTranscribing ? (
-              <>
-                <Clock className="animate-spin mr-2" size={16} />
-                Processing...
-              </>
+        
+        {/* Flex container for side-by-side layout */}
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Video player column */}
+          <div className="w-full md:w-1/2 lg:w-3/5">
+            <div className="video-container rounded-lg overflow-hidden">
+              <VideoPlayer 
+                videoUrl={videoUrl}
+                currentTime={currentTime}
+                onTimeUpdate={setCurrentTime}
+                isPlaying={isPlaying}
+                onPlayPause={handleVideoPlayPause}
+              />
+            </div>
+            
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={handleTranscribe}
+                disabled={isTranscribing || !videoFile}
+                className="btn btn-primary"
+              >
+                {isTranscribing ? (
+                  <>
+                    <Clock className="animate-spin mr-2" size={16} />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <FileVideo size={16} className="mr-2" />
+                    Generate Transcript
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={triggerImportTranscript}
+                className="btn btn-outline"
+              >
+                <Upload size={16} className="mr-2" />
+                Import
+              </button>
+              <input
+                ref={importTranscriptRef}
+                type="file"
+                accept="application/json"
+                onChange={handleImportTranscript}
+                className="hidden"
+              />
+              
+              <button
+                onClick={handleExportTranscript}
+                disabled={transcripts.length === 0}
+                className="btn btn-outline"
+              >
+                <Download size={16} className="mr-2" />
+                Export
+              </button>
+            </div>
+          </div>
+          
+          {/* Transcript column */}
+          <div className="w-full md:w-1/2 lg:w-2/5 mt-4 md:mt-0">
+            {transcripts.length > 0 ? (
+              <div className="h-full">
+                <TranscriptPlayer 
+                  segments={transcripts.map(transcript => ({
+                    id: transcript.id || `transcript-${transcript.start}`,
+                    timestamp: transcript.start,
+                    text: transcript.text
+                  }))}
+                  currentTime={currentTime}
+                  onSegmentClick={handleTranscriptClick}
+                />
+              </div>
             ) : (
-              <>
-                <FileVideo size={16} className="mr-2" />
-                Generate Transcript
-              </>
+              <div className="card bg-base-100 shadow-md h-full">
+                <div className="card-body flex items-center justify-center">
+                  <div className="text-center">
+                    <FileText size={48} className="mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-medium mb-2">No Transcript Available</h3>
+                    <p className="text-sm text-gray-500">
+                      Generate a transcript from your video or import an existing one.
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
-          </button>
-          
-          <button
-            onClick={triggerImportTranscript}
-            className="btn btn-outline"
-          >
-            <Upload size={16} className="mr-2" />
-            Import
-          </button>
-          <input
-            ref={importTranscriptRef}
-            type="file"
-            accept="application/json"
-            onChange={handleImportTranscript}
-            className="hidden"
-          />
-          
-          <button
-            onClick={handleExportTranscript}
-            disabled={transcripts.length === 0}
-            className="btn btn-outline"
-          >
-            <Download size={16} className="mr-2" />
-            Export
-          </button>
+          </div>
         </div>
-        {transcripts.length > 0 && (
-          <TranscriptPlayer 
-            segments={transcripts.map(transcript => ({
-              id: transcript.id || `transcript-${transcript.start}`,
-              timestamp: transcript.start,
-              text: transcript.text
-            }))}
-            currentTime={currentTime}
-            onSegmentClick={handleTranscriptClick}
-          />
-        )}
       </div>
     );
   };

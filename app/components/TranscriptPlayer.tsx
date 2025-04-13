@@ -170,10 +170,10 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
 
   if (segments.length === 0) {
     return (
-      <div className="card bg-base-100 shadow-md">
+      <div className="card bg-base-100 shadow-md h-full">
         <div className="card-body">
           <h3 className="card-title text-lg">Transcript</h3>
-          <div className="h-[400px] flex items-center justify-center">
+          <div className="h-full flex items-center justify-center">
             <p className="text-gray-400">No transcript available</p>
           </div>
         </div>
@@ -182,13 +182,15 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   }
 
   return (
-    <div className="card bg-base-100 shadow-md">
-      <div className="card-body">
-        <h3 className="card-title text-lg">Transcript</h3>
-        <p className="text-sm text-gray-500 mb-2">Click on any segment or timestamp to jump to that point in the video</p>
+    <div className="transcript-player-container card bg-base-100 shadow-md h-full">
+      <div className="card-body p-4 flex flex-col">
+        <div className="transcript-header">
+          <h3 className="card-title text-lg">Transcript</h3>
+          <p className="text-sm text-gray-500">Click any segment to jump to that point</p>
+        </div>
         <div 
           ref={transcriptContainerRef}
-          className="h-[400px] overflow-y-auto pr-2 space-y-2"
+          className="transcript-scroll-container transcript-body overflow-y-auto pr-2 space-y-2"
         >
           {segments.map(segment => (
             <TranscriptSegment
