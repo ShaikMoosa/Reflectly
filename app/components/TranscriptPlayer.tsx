@@ -29,6 +29,21 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   const userScrolledRef = useRef<boolean>(false);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const prevActiveIdRef = useRef<string | null>(null);
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null);
+
+  // Handle click with highlight effect
+  const handleSegmentClick = (timestamp: number, segmentId: string) => {
+    logDebug('TranscriptPlayer', 'Segment clicked', { timestamp, segmentId });
+    setLastClickedId(segmentId);
+    
+    // Reset the highlight after a delay
+    setTimeout(() => {
+      setLastClickedId(null);
+    }, 1000);
+    
+    // Call the parent's click handler
+    onSegmentClick(timestamp);
+  };
 
   // Detect manual scrolling by user
   useEffect(() => {
@@ -133,10 +148,44 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
     };
   }, []);
 
+  // Add CSS for highlight animation
+  useEffect(() => {
+    // Add style for click highlight animation if not already present
+    if (!document.getElementById('transcript-highlight-style')) {
+      const style = document.createElement('style');
+      style.id = 'transcript-highlight-style';
+      style.innerHTML = `
+        .transcript-highlight {
+          animation: highlightPulse 1s ease-out;
+        }
+        
+        @keyframes highlightPulse {
+          0% { background-color: rgba(var(--primary-rgb), 0.3); }
+          100% { background-color: rgba(var(--primary-rgb), 0); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  if (segments.length === 0) {
+    return (
+      <div className="card bg-base-100 shadow-md">
+        <div className="card-body">
+          <h3 className="card-title text-lg">Transcript</h3>
+          <div className="h-[400px] flex items-center justify-center">
+            <p className="text-gray-400">No transcript available</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card bg-base-100 shadow-md">
       <div className="card-body">
         <h3 className="card-title text-lg">Transcript</h3>
+        <p className="text-sm text-gray-500 mb-2">Click on any segment or timestamp to jump to that point in the video</p>
         <div 
           ref={transcriptContainerRef}
           className="h-[400px] overflow-y-auto pr-2 space-y-2"
@@ -146,7 +195,8 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
               key={segment.id}
               segment={segment}
               isActive={segment.id === activeSegmentId}
-              onSegmentClick={onSegmentClick}
+              isHighlighted={segment.id === lastClickedId}
+              onSegmentClick={(timestamp) => handleSegmentClick(timestamp, segment.id)}
             />
           ))}
         </div>

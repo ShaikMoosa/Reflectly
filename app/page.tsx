@@ -298,35 +298,39 @@ export default function Home() {
    */
   const handleTranscriptClick = (timestamp: number) => {
     logDebug('Home', 'Transcript segment clicked', { timestamp });
+    
+    // Directly update the current time state
+    setCurrentTime(timestamp);
+    logDebug('Home', 'Updated current time state', { timestamp });
+    
+    // Update the isPlaying state to true to ensure the video starts playing
+    setIsPlaying(true);
+    logDebug('Home', 'Set isPlaying to true');
+    
+    // Direct video element manipulation as a fallback
     if (videoRef.current) {
       try {
-        // First set the current time state to trigger update in VideoPlayer
-        setCurrentTime(timestamp);
-        logDebug('Home', 'Video time state updated', { newTime: timestamp });
-        
-        // Explicitly update video currentTime and force play
-        // This direct manipulation ensures it works even if state updates are delayed
+        // Set the current time directly on the video element
         videoRef.current.currentTime = timestamp;
         
-        // Start playing if not already playing
-        if (videoRef.current.paused) {
-          logDebug('Home', 'Starting video playback via direct play call');
-          const playPromise = videoRef.current.play();
-          
-          // Handle play promise to catch any autoplay restrictions
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              setIsPlaying(true);
-              logDebug('Home', 'Video playback started successfully');
-            }).catch(err => {
-              logDebug('Home', 'Video playback failed, may need user interaction', { error: err });
-              setError('Video playback failed. Try clicking the play button directly.');
+        // Attempt to play the video directly
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              logDebug('Home', 'Direct play successful');
+            })
+            .catch(() => {
+              // Show a user-friendly error
+              toast.addToast({
+                title: "Playback Error",
+                description: "Please click the play button to start playback",
+                variant: "default",
+              });
             });
-          }
         }
       } catch (err) {
-        console.error("[Home] Error navigating to timestamp:", err);
-        setError('Failed to navigate to the selected timestamp.');
+        console.error("[Home] Error in direct video manipulation:", err);
       }
     } else {
       logDebug('Home', 'Video reference not available');

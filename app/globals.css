@@ -1,6 +1,8 @@
+/* stylelint-disable */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* stylelint-enable */
 
 /* Remove Google Fonts import to improve LCP since we use next/font */
 /* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap'); */
@@ -59,6 +61,13 @@
   --color-bg-hover: var(--bg-card-hover);
   --color-text: var(--text-primary);
   --color-text-muted: var(--text-secondary);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-roboto-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Add these RGB variables for transcript highlights */
+  --primary-rgb: 79, 70, 229; /* Indigo-600 in RGB */
+  --secondary-rgb: 99, 102, 241; /* Indigo-500 in RGB */
+  --accent-rgb: 129, 140, 248; /* Indigo-400 in RGB */
 }
 
 body {
@@ -480,13 +489,14 @@ a {
   border-radius: 6px;
   margin-bottom: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out;
   background-color: var(--card-bg);
   border: 1px solid transparent;
 }
 
 .transcript-segment:hover {
-  background-color: var(--hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .transcript-segment.active {
@@ -503,6 +513,40 @@ a {
 
 .transcript-segment .text {
   flex: 1;
+}
+
+.transcript-segment-active {
+  border-left: 3px solid rgba(var(--primary-rgb), 1);
+}
+
+.timestamp-btn {
+  transition: all 0.15s ease;
+}
+
+.timestamp-btn:hover {
+  background-color: rgba(var(--primary-rgb), 0.1);
+  transform: scale(1.05);
+}
+
+.timestamp-btn:active {
+  transform: scale(0.98);
+}
+
+/* Styles for pulse animation on click */
+@keyframes pulse-highlight {
+  0% {
+    background-color: rgba(var(--primary-rgb), 0.15);
+  }
+  50% {
+    background-color: rgba(var(--primary-rgb), 0.25);
+  }
+  100% {
+    background-color: rgba(var(--primary-rgb), 0);
+  }
+}
+
+.transcript-highlight {
+  animation: pulse-highlight 1s ease-out forwards;
 }
 
 /* TranscriptPlayer styles */
