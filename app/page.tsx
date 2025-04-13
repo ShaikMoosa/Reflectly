@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil } from 'lucide-react';
+import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil, Kanban } from 'lucide-react';
 import { useToast } from './components/ui/toast';
 import Whiteboard from './components/Whiteboard';
+import Planner from './components/Planner';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -14,7 +15,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [activeTab, setActiveTab] = useState<'transcript' | 'notes' | 'ai-chat'>('transcript');
   const [notes, setNotes] = useState<{
@@ -33,7 +34,7 @@ export default function Home() {
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
   const [suggestedTags, setSuggestedTags] = useState(['Pain point', 'Goal', 'Role', 'Motivation', 'Behavior', 'User journey', 'Positive']);
   // New state for navigation and projects
-  const [activePage, setActivePage] = useState<'home' | 'projects' | 'whiteboard'>('home');
+  const [activePage, setActivePage] = useState<'home' | 'projects' | 'whiteboard' | 'planner'>('home');
   const [projects, setProjects] = useState<{
     id: string,
     title: string,
@@ -94,6 +95,9 @@ export default function Home() {
     } else {
       document.documentElement.classList.add('light-mode');
     }
+    
+    // Initial application of light mode
+    document.documentElement.classList.add('light-mode');
   }, [isDarkMode]);
 
   // Auto-scroll to active transcript
@@ -762,6 +766,13 @@ export default function Home() {
           >
             <Pencil size={20} />
             <span>Whiteboard</span>
+          </button>
+          <button 
+            className={`nav-link ${activePage === 'planner' ? 'active' : ''}`}
+            onClick={() => setActivePage('planner')}
+          >
+            <Kanban size={20} />
+            <span>Planner</span>
           </button>
         </nav>
       </div>
@@ -1483,11 +1494,13 @@ export default function Home() {
               </div>
             )}
           </div>
-        ) : (
-          /* Whiteboard Page */
+        ) : activePage === 'whiteboard' ? (
           <div className="whiteboard-page">
-            <h1 className="page-title">Interactive Whiteboard</h1>
             <Whiteboard isDarkMode={isDarkMode} />
+          </div>
+        ) : (
+          <div className="planner-page">
+            <Planner />
           </div>
         )}
       </div>
