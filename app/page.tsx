@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil, Kanban } from 'lucide-react';
 import { useToast } from './components/ui/toast';
 import { useTheme } from 'next-themes';
-import Whiteboard from './components/Whiteboard';
+import { TranscriptSegmentData } from './components/TranscriptSegment';
 import Planner from './components/Planner';
 import VideoPlayer from './components/VideoPlayer';
 import TranscriptPlayer from './components/TranscriptPlayer';
-import { TranscriptSegmentData } from './components/TranscriptSegment';
+
+const LazyWhiteboard = lazy(() => import('./components/Whiteboard'));
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -268,13 +269,22 @@ export default function Home() {
     }
   };
 
+  /**
+   * Jumps to specific timestamp in video when clicking on transcript
+   */
   const handleTranscriptClick = (timestamp: number) => {
     if (videoRef.current) {
+      // Update video position
       videoRef.current.currentTime = timestamp;
-      videoRef.current.play().catch(err => {
-        console.error("Playback error:", err);
-        setError('Failed to play video at the selected timestamp.');
-      });
+      
+      // Only trigger play if the video is currently paused
+      // This prevents repeated play/pause cycles when clicking timestamps
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(err => {
+          console.error("Playback error:", err);
+          setError('Failed to play video at the selected timestamp.');
+        });
+      }
     }
   };
 
@@ -848,11 +858,20 @@ export default function Home() {
     );
   };
 
-  // Fix Whiteboard component reference
+  // Update renderWhiteboardContent function
   const renderWhiteboardContent = () => {
     return (
       <div className="whiteboard-container">
-        <Whiteboard />
+        <Suspense fallback={
+          <div className="card bg-base-100 shadow-lg h-full w-full flex items-center justify-center">
+            <div className="text-center p-8">
+              <div className="loading loading-spinner loading-lg"></div>
+              <p className="mt-4">Loading Whiteboard...</p>
+            </div>
+          </div>
+        }>
+          <LazyWhiteboard />
+        </Suspense>
       </div>
     );
   };
