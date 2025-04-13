@@ -471,4 +471,64 @@ a {
     min-width: 260px;
     max-width: 260px;
   }
+}
+
+/* TranscriptSegment styles */
+.transcript-segment {
+  display: flex;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--card-bg);
+  border: 1px solid transparent;
+}
+
+.transcript-segment:hover {
+  background-color: var(--hover-bg);
+}
+
+.transcript-segment.active {
+  background-color: var(--accent-purple-10);
+  border-color: var(--accent-purple);
+}
+
+.transcript-segment .timestamp {
+  min-width: 50px;
+  color: var(--accent-purple);
+  font-weight: 500;
+  margin-right: 12px;
+}
+
+.transcript-segment .text {
+  flex: 1;
+}
+
+/* TranscriptPlayer styles */
+.transcript-container {
+  margin-top: 20px;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: var(--card-bg);
+}
+
+/* VideoPlayer styles */
+.video-section {
+  width: 100%;
+}
+
+.video-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
 } 

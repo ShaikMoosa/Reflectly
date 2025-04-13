@@ -5,6 +5,9 @@ import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileT
 import { useToast } from './components/ui/toast';
 import Whiteboard from './components/Whiteboard';
 import Planner from './components/Planner';
+import VideoPlayer from './components/VideoPlayer';
+import TranscriptPlayer from './components/TranscriptPlayer';
+import { TranscriptSegmentData } from './components/TranscriptSegment';
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -738,6 +741,82 @@ export default function Home() {
     }
   }, []);
 
+  // Update video-related component rendering section
+  const renderVideoContent = () => {
+    if (!videoUrl) {
+      // No video uploaded yet, show upload UI
+      return (
+        <div 
+          className="upload-container"
+          onClick={triggerFileInput}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            onChange={handleFileUpload} 
+            accept="video/mp4" 
+            className="hidden"
+          />
+          <div className="upload-content">
+            <UploadCloud size={48} className="mb-4" />
+            <h3 className="font-medium text-lg mb-2">Upload Video</h3>
+            <p className="text-sm text-gray-500">Click or drag and drop your MP4 video</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="video-section">
+        <div className="video-title-bar">
+          <h2 className="text-xl font-medium">{videoTitle || 'Untitled Video'}</h2>
+          {/* Video controls would go here */}
+        </div>
+        <div className="video-container">
+          <VideoPlayer 
+            videoUrl={videoUrl}
+            currentTime={currentTime}
+            onTimeUpdate={setCurrentTime}
+            isPlaying={false}
+            onPlayPause={() => {
+              if (videoRef.current) {
+                if (videoRef.current.paused) {
+                  videoRef.current.play();
+                } else {
+                  videoRef.current.pause();
+                }
+              }
+            }}
+          />
+        </div>
+        {transcripts.length > 0 && (
+          <TranscriptPlayer 
+            segments={transcripts.map(transcript => ({
+              id: transcript.id || `transcript-${transcript.start}`,
+              timestamp: transcript.start,
+              text: transcript.text
+            }))}
+            currentTime={currentTime}
+            onSegmentClick={handleTranscriptClick}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Fix Whiteboard component reference
+  const renderWhiteboardContent = () => {
+    return (
+      <div className="whiteboard-container">
+        <Whiteboard />
+      </div>
+    );
+  };
+
   return (
     <main className={`${isDarkMode ? '' : 'light-mode'} app-layout`}>
       {/* Side Navigation */}
@@ -819,390 +898,7 @@ export default function Home() {
           <div className="app-container">
             <div className={`main-content ${activeTab !== 'notes' ? 'main-content-half' : ''}`}>
               <div className="modern-card content-card">
-                {!videoUrl ? (
-                  <div 
-                    className="upload-container hover:border-accent-purple"
-                    onClick={triggerFileInput}
-                    onDragOver={handleDragOver}
-                    onDragEnter={handleDragEnter}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    style={{ 
-                      minHeight: '240px',
-                      borderStyle: 'dashed',
-                      borderWidth: '2px',
-                      borderColor: 'var(--upload-border)',
-                      backgroundColor: 'var(--upload-bg)'
-                    }}
-                  >
-                    <div className="text-center w-full">
-                      <UploadCloud className="mx-auto mb-4 text-secondary" size={48} />
-                      <h3 className="mb-2 font-semibold text-lg">Upload Video File</h3>
-                      <p className="text-sm mb-4 text-secondary">
-                        Click to upload or drag and drop<br />
-                        MP4 file (max 100MB)
-                      </p>
-                      <button className="modern-button mt-2 mx-auto">
-                        Choose File
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="video/mp4"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="content-wrapper">
-                    <div className="video-title-container">
-                      {videoTitle && <h1 className="video-title">{videoTitle}</h1>}
-                      <button 
-                        className="save-project-button"
-                        onClick={saveProject}
-                        title={currentProjectId ? "Update current project" : "Save as new project"}
-                      >
-                        <Save size={18} />
-                        {currentProjectId ? 'Update Project' : 'Save Project'}
-                      </button>
-                    </div>
-                    
-                    <div className="video-wrapper">
-                      <video
-                        ref={videoRef}
-                        src={videoUrl}
-                        controls
-                        className="w-full"
-                        style={{ borderRadius: '8px' }}
-                      />
-                    </div>
-                    
-                    <div className="button-container">
-                      {activeTab === 'transcript' && (
-                        <>
-                          <button
-                            onClick={handleTranscribe}
-                            disabled={isTranscribing || !videoFile}
-                            className="modern-button"
-                          >
-                            {isTranscribing ? (
-                              <>
-                                <Clock className="animate-spin" size={16} />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <FileVideo size={16} />
-                                Generate Transcript
-                              </>
-                            )}
-                          </button>
-                          
-                          <button
-                            onClick={triggerImportTranscript}
-                            className="modern-button"
-                          >
-                            <Upload size={16} />
-                            Import
-                          </button>
-                          <input
-                            ref={importTranscriptRef}
-                            type="file"
-                            accept="application/json"
-                            onChange={handleImportTranscript}
-                            className="hidden"
-                          />
-                          
-                          <button
-                            onClick={handleExportTranscript}
-                            disabled={transcripts.length === 0}
-                            className="modern-button"
-                          >
-                            <Download size={16} />
-                            Export
-                          </button>
-                        </>
-                      )}
-
-                      {activeTab === 'notes' && (
-                        <button
-                          onClick={addNote}
-                          className="modern-button"
-                        >
-                          <FileText size={16} />
-                          Add Note at {formatTime(currentTime)}
-                        </button>
-                      )}
-                    </div>
-                    
-                    {activeTab === 'transcript' && transcripts.length > 0 && (
-                      <div className="transcript-section">
-                        <h2 id="transcript-heading">Transcript</h2>
-                        
-                        <div className="transcript-controls">
-                          <label className="flex items-center">
-                            <input 
-                              type="checkbox"
-                              checked={autoScroll}
-                              onChange={(e) => setAutoScroll(e.target.checked)}
-                              className="accessibility-checkbox"
-                            />
-                            Auto-scroll
-                          </label>
-                          
-                          <span 
-                            onClick={handleCopyTranscript}
-                            className="text-accent-purple"
-                          >
-                            Copy all text
-                          </span>
-                        </div>
-                        
-                        <div className="transcript-container">
-                          <div className="transcript-list" ref={transcriptListRef}>
-                            {transcripts.map((transcript, index) => (
-                              <div
-                                key={index}
-                                className={`transcript-item ${index === activeTranscriptIndex ? 'active' : ''}`}
-                                onClick={() => handleTranscriptClick(transcript.start)}
-                                ref={index === activeTranscriptIndex ? activeItemRef : null}
-                                tabIndex={0}
-                                role="button"
-                                aria-pressed={index === activeTranscriptIndex}
-                              >
-                                <span className="timestamp">{formatTime(transcript.start)}</span>
-                                <span className="text-transcript">
-                                  {transcript.text}
-                                  {transcript.speaker && (
-                                    <span className="block text-xs mt-1 text-secondary">
-                                      {transcript.speaker}
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === 'notes' && (
-                      <div className="notes-section">
-                        <h2 id="transcript-heading">Transcript</h2>
-                        
-                        {transcripts.length > 0 ? (
-                          <div className="transcript-container">
-                            <div className="transcript-list" ref={transcriptListRef}>
-                              {transcripts.map((transcript, index) => (
-                                <div
-                                  key={index}
-                                  className={`transcript-item ${index === activeTranscriptIndex ? 'active' : ''}`}
-                                >
-                                  <div className="transcript-item-content">
-                                    <span 
-                                      className="timestamp" 
-                                      onClick={() => handleTranscriptClick(transcript.start)}
-                                      title="Jump to this timestamp"
-                                    >
-                                      {formatTime(transcript.start)}
-                                    </span>
-                                    <span className="text-transcript">
-                                      {transcript.text}
-                                      {transcript.speaker && (
-                                        <span className="block text-xs mt-1 text-secondary">
-                                          {transcript.speaker}
-                                        </span>
-                                      )}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="transcript-actions">
-                                    <button 
-                                      className="note-action-btn"
-                                      onClick={() => {
-                                        // Check if this transcript is already in notes
-                                        const existingNoteIndex = notes.findIndex(
-                                          note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
-                                        );
-                                        
-                                        if (existingNoteIndex >= 0) {
-                                          // Toggle highlight if already exists
-                                          toggleHighlight(existingNoteIndex);
-                                        } else {
-                                          // Add as new highlighted note
-                                          const newNote = {
-                                            text: transcript.text,
-                                            timestamp: transcript.start,
-                                            tags: [],
-                                            isHighlighted: true
-                                          };
-                                          setNotes([...notes, newNote]);
-                                        }
-                                      }}
-                                      title="Highlight"
-                                    >
-                                      <span className="highlight-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                                        </svg>
-                                      </span>
-                                    </button>
-                                    
-                                    <button 
-                                      className="note-action-btn"
-                                      onClick={() => {
-                                        // First, check if note exists or create one
-                                        const existingNoteIndex = notes.findIndex(
-                                          note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
-                                        );
-                                        
-                                        if (existingNoteIndex === -1) {
-                                          // Create new note
-                                          const newNote = {
-                                            text: transcript.text,
-                                            timestamp: transcript.start,
-                                            tags: [],
-                                            isHighlighted: false
-                                          };
-                                          setNotes([...notes, newNote]);
-                                          // Set this as the editing note to add tag
-                                          setEditingNoteIndex(notes.length);
-                                          setIsAddingTag(true);
-                                          setTimeout(() => tagInputRef.current?.focus(), 0);
-                                        } else {
-                                          // Set existing note as editing note
-                                          setEditingNoteIndex(existingNoteIndex);
-                                          setIsAddingTag(true);
-                                          setTimeout(() => tagInputRef.current?.focus(), 0);
-                                        }
-                                      }}
-                                      title="Add tag"
-                                    >
-                                      <Tag size={14} />
-                                    </button>
-                                    
-                                    <button 
-                                      className="note-action-btn"
-                                      onClick={() => {
-                                        // First, check if note exists or create one
-                                        const existingNoteIndex = notes.findIndex(
-                                          note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
-                                        );
-                                        
-                                        if (existingNoteIndex === -1) {
-                                          // Create new note
-                                          const newNote = {
-                                            text: transcript.text,
-                                            timestamp: transcript.start,
-                                            tags: [],
-                                            isHighlighted: false
-                                          };
-                                          setNotes([...notes, newNote]);
-                                          // Set this as the editing note to add comment
-                                          setEditingNoteIndex(notes.length);
-                                          setIsAddingComment(true);
-                                          setTimeout(() => commentInputRef.current?.focus(), 0);
-                                        } else {
-                                          // Set existing note as editing note
-                                          setEditingNoteIndex(existingNoteIndex);
-                                          setIsAddingComment(true);
-                                          setTimeout(() => commentInputRef.current?.focus(), 0);
-                                        }
-                                      }}
-                                      title="Add comment"
-                                    >
-                                      <MessageSquare size={14} />
-                                    </button>
-                                    
-                                    <button 
-                                      className="note-action-btn"
-                                      onClick={() => {
-                                        // Add to notes directly
-                                        const segmentAlreadyAdded = notes.some(
-                                          note => Math.abs(note.timestamp - transcript.start) < 0.5 && note.text === transcript.text
-                                        );
-                                        
-                                        if (!segmentAlreadyAdded) {
-                                          const newNote = {
-                                            text: transcript.text,
-                                            timestamp: transcript.start,
-                                            tags: [],
-                                            isHighlighted: false
-                                          };
-                                          setNotes([...notes, newNote]);
-                                        }
-                                      }}
-                                      title="Add to notes"
-                                    >
-                                      <FileText size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="empty-transcript">
-                            <p>No transcript available. Generate a transcript in the Transcript tab.</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {activeTab === 'ai-chat' && (
-                      <div className="chat-section">
-                        <h2 id="chat-heading">AI Chat</h2>
-                        
-                        <div className="chat-container">
-                          <div className="chat-messages">
-                            {chatMessages.length === 0 ? (
-                              <div className="chat-welcome">
-                                <p>Chat with AI about this video. Ask questions about the content or request summaries.</p>
-                                {transcripts.length === 0 && (
-                                  <p className="text-accent-red mt-2">
-                                    Note: Please generate or import a transcript first to enable AI chat functionality.
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              chatMessages.map((message, index) => (
-                                <div key={index} className={`chat-message ${message.role}`}>
-                                  <div className="message-content">{message.content}</div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                          
-                          <form onSubmit={handleChatSubmit} className="chat-input-container">
-                            <input
-                              type="text"
-                              value={chatInput}
-                              onChange={(e) => setChatInput(e.target.value)}
-                              placeholder="Type your message..."
-                              className="chat-input"
-                              ref={chatInputRef}
-                              disabled={transcripts.length === 0}
-                            />
-                            <button 
-                              type="submit" 
-                              className="chat-send-button"
-                              disabled={transcripts.length === 0}
-                            >
-                              <Send size={16} />
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {error && (
-                      <div className="error-message">
-                        {error}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {renderVideoContent()}
               </div>
             </div>
 
@@ -1495,9 +1191,7 @@ export default function Home() {
             )}
           </div>
         ) : activePage === 'whiteboard' ? (
-          <div className="whiteboard-page">
-            <Whiteboard isDarkMode={isDarkMode} />
-          </div>
+          renderWhiteboardContent()
         ) : (
           <div className="planner-page">
             <Planner />
