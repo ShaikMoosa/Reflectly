@@ -40,6 +40,7 @@ export default function Home() {
     videoUrl: string,
     transcripts: any[],
     notes: any[],
+    chatMessages: {role: 'user' | 'assistant', content: string}[],
     createdAt: string
   }[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -443,10 +444,33 @@ export default function Home() {
       }
 
       // Update messages with the AI response
-      setChatMessages([
+      const updatedMessages = [
         ...newMessages,
         { role: 'assistant' as const, content: data.response }
-      ]);
+      ];
+      setChatMessages(updatedMessages);
+      
+      // Save project if we have a current project
+      if (currentProjectId && videoUrl) {
+        // Find the existing project
+        const projectIndex = projects.findIndex(p => p.id === currentProjectId);
+        
+        if (projectIndex !== -1) {
+          // Create updated project with new chat messages
+          const updatedProject = {
+            ...projects[projectIndex],
+            chatMessages: updatedMessages
+          };
+          
+          // Update the project in the array
+          const updatedProjects = [...projects];
+          updatedProjects[projectIndex] = updatedProject;
+          
+          // Update state and localStorage
+          setProjects(updatedProjects);
+          localStorage.setItem('reflectly-projects', JSON.stringify(updatedProjects));
+        }
+      }
     } catch (error: any) {
       console.error('Error in chat:', error);
       setError('Failed to get AI response. Please try again.');
@@ -583,6 +607,7 @@ export default function Home() {
             videoUrl: videoUrl,
             transcripts: transcripts,
             notes: notes,
+            chatMessages: chatMessages,
             // Keep the original creation date
             createdAt: projects[projectIndex].createdAt
           };
@@ -613,6 +638,7 @@ export default function Home() {
         videoUrl: videoUrl,
         transcripts: transcripts,
         notes: notes,
+        chatMessages: chatMessages,
         createdAt: new Date().toISOString()
       };
       
@@ -651,8 +677,13 @@ export default function Home() {
       setActiveTab('transcript');
       setCurrentProjectId(project.id);
       
-      // Reset other states
-      setChatMessages([]);
+      // Load chat messages if available
+      if (project.chatMessages && Array.isArray(project.chatMessages)) {
+        setChatMessages(project.chatMessages);
+      } else {
+        setChatMessages([]);
+      }
+      
       setError(null);
     } catch (error) {
       console.error('Error loading project:', error);
