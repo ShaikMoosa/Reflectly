@@ -79,7 +79,7 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
       aria-label={`Jump to ${formatTimestamp(segment.timestamp)}: ${segment.text.substring(0, 30)}...`}
     >
       <div className="flex justify-between items-start">
-        <div className="flex-1">
+        <div className="flex-1 text-gray-800 dark:text-gray-200">
           {segment.text}
         </div>
         <button 

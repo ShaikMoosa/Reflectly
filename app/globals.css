@@ -484,43 +484,46 @@ a {
 
 /* TranscriptSegment styles */
 .transcript-segment {
-  display: flex;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-bottom: 4px;
-  cursor: pointer;
   transition: all 0.2s ease-in-out;
-  background-color: var(--card-bg);
-  border: 1px solid transparent;
+  background-color: white;
+  color: #333;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .transcript-segment {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border-color: #374151;
 }
 
 .transcript-segment:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: #f9fafb;
 }
 
-.transcript-segment.active {
-  background-color: var(--accent-purple-10);
-  border-color: var(--accent-purple);
-}
-
-.transcript-segment .timestamp {
-  min-width: 50px;
-  color: var(--accent-purple);
-  font-weight: 500;
-  margin-right: 12px;
-}
-
-.transcript-segment .text {
-  flex: 1;
+.dark .transcript-segment:hover {
+  background-color: #2d3748;
 }
 
 .transcript-segment-active {
   border-left: 3px solid rgba(var(--primary-rgb), 1);
+  background-color: rgba(var(--primary-rgb), 0.05) !important;
 }
 
+.dark .transcript-segment-active {
+  background-color: rgba(var(--primary-rgb), 0.15) !important;
+}
+
+/* Make sure timestamp buttons are visible in all modes */
 .timestamp-btn {
+  color: rgba(var(--primary-rgb), 1);
   transition: all 0.15s ease;
+  background-color: rgba(var(--primary-rgb), 0.05);
+}
+
+.dark .timestamp-btn {
+  background-color: rgba(var(--primary-rgb), 0.15);
 }
 
 .timestamp-btn:hover {
@@ -528,8 +531,8 @@ a {
   transform: scale(1.05);
 }
 
-.timestamp-btn:active {
-  transform: scale(0.98);
+.dark .timestamp-btn:hover {
+  background-color: rgba(var(--primary-rgb), 0.2);
 }
 
 /* Styles for pulse animation on click */

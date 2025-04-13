@@ -170,11 +170,11 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
 
   if (segments.length === 0) {
     return (
-      <div className="card bg-base-100 shadow-md h-full">
+      <div className="card bg-white dark:bg-gray-800 shadow-md h-full">
         <div className="card-body">
-          <h3 className="card-title text-lg">Transcript</h3>
+          <h3 className="card-title text-lg text-gray-900 dark:text-white">Transcript</h3>
           <div className="h-full flex items-center justify-center">
-            <p className="text-gray-400">No transcript available</p>
+            <p className="text-gray-500 dark:text-gray-400">No transcript available</p>
           </div>
         </div>
       </div>
@@ -182,15 +182,15 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   }
 
   return (
-    <div className="transcript-player-container card bg-base-100 shadow-md h-full">
+    <div className="transcript-player-container card bg-white dark:bg-gray-800 shadow-md h-full">
       <div className="card-body p-4 flex flex-col">
-        <div className="transcript-header">
-          <h3 className="card-title text-lg">Transcript</h3>
-          <p className="text-sm text-gray-500">Click any segment to jump to that point</p>
+        <div className="transcript-header bg-white dark:bg-gray-800">
+          <h3 className="card-title text-lg text-gray-900 dark:text-white">Transcript</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Click any segment to jump to that point</p>
         </div>
         <div 
           ref={transcriptContainerRef}
-          className="transcript-scroll-container transcript-body overflow-y-auto pr-2 space-y-2"
+          className="transcript-scroll-container transcript-body overflow-y-auto pr-2 space-y-2 bg-white dark:bg-gray-800"
         >
           {segments.map(segment => (
             <TranscriptSegment
