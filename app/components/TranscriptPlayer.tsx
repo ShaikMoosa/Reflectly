@@ -182,15 +182,26 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   }
 
   return (
-    <div className="transcript-player-container card bg-white dark:bg-gray-800 shadow-md h-full">
-      <div className="card-body p-4 flex flex-col">
-        <div className="transcript-header bg-white dark:bg-gray-800">
-          <h3 className="card-title text-lg text-gray-900 dark:text-white">Transcript</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Click any segment to jump to that point</p>
+    <div 
+      className="transcript-player-container card bg-white dark:bg-gray-800 shadow-md h-full"
+      style={{ backgroundColor: 'white' }}
+    >
+      <div className="card-body p-4 flex flex-col" style={{ backgroundColor: 'white' }}>
+        <div 
+          className="transcript-header bg-white dark:bg-gray-800" 
+          style={{ backgroundColor: 'white', borderBottomColor: '#e5e7eb' }}
+        >
+          <h3 className="card-title text-lg text-gray-900 dark:text-white" style={{ color: '#111827' }}>
+            Transcript
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400" style={{ color: '#6b7280' }}>
+            Click any segment to jump to that point
+          </p>
         </div>
         <div 
           ref={transcriptContainerRef}
           className="transcript-scroll-container transcript-body overflow-y-auto pr-2 space-y-2 bg-white dark:bg-gray-800"
+          style={{ backgroundColor: 'white' }}
         >
           {segments.map(segment => (
             <TranscriptSegment

@@ -68,6 +68,17 @@
   --primary-rgb: 79, 70, 229; /* Indigo-600 in RGB */
   --secondary-rgb: 99, 102, 241; /* Indigo-500 in RGB */
   --accent-rgb: 129, 140, 248; /* Indigo-400 in RGB */
+  
+  /* Add these explicitly for light/dark mode transcript styling */
+  --transcript-bg-light: white;
+  --transcript-text-light: #333333;
+  --transcript-border-light: #e5e7eb;
+  --transcript-header-light: white;
+  
+  --transcript-bg-dark: #1f2937;
+  --transcript-text-dark: #e5e7eb;
+  --transcript-border-dark: #374151;
+  --transcript-header-dark: #1f2937;
 }
 
 body {
@@ -485,25 +496,25 @@ a {
 /* TranscriptSegment styles */
 .transcript-segment {
   transition: all 0.2s ease-in-out;
-  background-color: white;
-  color: #333;
-  border: 1px solid #e5e7eb;
+  background-color: white !important;
+  color: #333 !important;
+  border: 1px solid #e5e7eb !important;
 }
 
 .dark .transcript-segment {
-  background-color: #1f2937;
-  color: #e5e7eb;
-  border-color: #374151;
+  background-color: #1f2937 !important;
+  color: #e5e7eb !important;
+  border-color: #374151 !important;
 }
 
 .transcript-segment:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  background-color: #f9fafb;
+  background-color: #f9fafb !important;
 }
 
 .dark .transcript-segment:hover {
-  background-color: #2d3748;
+  background-color: #2d3748 !important;
 }
 
 .transcript-segment-active {
@@ -589,12 +600,24 @@ a {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background-color: var(--transcript-bg-light) !important;
+  color: var(--transcript-text-light) !important;
+}
+
+.dark .transcript-player-container {
+  background-color: var(--transcript-bg-dark) !important;
+  color: var(--transcript-text-dark) !important;
 }
 
 /* Adjust the transcript scroll container to be taller */
 .transcript-scroll-container {
   height: calc(60vh - 80px); /* matches video height minus header */
   min-height: 300px;
+  background-color: var(--transcript-bg-light) !important;
+}
+
+.dark .transcript-scroll-container {
+  background-color: var(--transcript-bg-dark) !important;
 }
 
 /* Responsive adjustments */
@@ -613,11 +636,16 @@ a {
 .transcript-header {
   position: sticky;
   top: 0;
-  background-color: var(--bg-card);
   z-index: 10;
   padding-bottom: 8px;
   margin-bottom: 8px;
-  border-bottom: 1px solid var(--divider-color);
+  border-bottom: 1px solid var(--transcript-border-light);
+  background-color: var(--transcript-header-light) !important;
+}
+
+.dark .transcript-header {
+  background-color: var(--transcript-header-dark) !important;
+  border-bottom-color: var(--transcript-border-dark);
 }
 
 /* Ensure the transcript body takes all available space */

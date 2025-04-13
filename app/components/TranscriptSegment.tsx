@@ -77,9 +77,10 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
       role="button"
       tabIndex={0}
       aria-label={`Jump to ${formatTimestamp(segment.timestamp)}: ${segment.text.substring(0, 30)}...`}
+      style={{ backgroundColor: '#ffffff', color: '#333333' }}
     >
       <div className="flex justify-between items-start">
-        <div className="flex-1 text-gray-800 dark:text-gray-200">
+        <div className="flex-1 text-gray-800 dark:text-gray-200" style={{ color: '#333333' }}>
           {segment.text}
         </div>
         <button 
@@ -87,6 +88,7 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
                     flex items-center px-2 py-1 rounded transition-all"
           onClick={handleTimestampClick}
           aria-label={`Jump to ${formatTimestamp(segment.timestamp)}`}
+          style={{ backgroundColor: 'rgba(79, 70, 229, 0.1)', color: 'rgb(79, 70, 229)' }}
         >
           <Clock className="h-3 w-3 mr-1" />
           {formatTimestamp(segment.timestamp)}
