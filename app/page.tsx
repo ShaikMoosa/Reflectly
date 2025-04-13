@@ -13,6 +13,7 @@ import MultiStepFlow, { Step } from './components/MultiStepFlow';
 import ProjectInfoForm, { ProjectInfo } from './components/ProjectInfoForm';
 import FileUploadStep, { UploadedFile } from './components/FileUploadStep';
 import SummaryStep from './components/SummaryStep';
+import SideNavigation from './components/SideNavigation';
 
 // Debug utility for consistent logging
 const logDebug = (component: string, action: string, data?: any) => {
@@ -260,40 +261,70 @@ export default function Home() {
     }
   }, [currentTime, autoScroll]);
 
-  // ... other functions ...
+  // Handle page navigation
+  const handlePageNavigation = (page: PageType) => {
+    setActivePage(page);
+  };
 
-  // Main render logic for different pages
-  if (activePage === 'home') {
-    return (
-      <main className="container mx-auto py-8 px-4">
-        {/* Multi-step flow container */}
-        <div className="max-w-5xl mx-auto mb-8">
-          <MultiStepFlow 
-            steps={workflowSteps} 
-            onComplete={handleWorkflowComplete} 
-            onCancel={handleWorkflowCancel} 
-          />
-        </div>
-
-        {/* Rest of the content can be conditionally shown here */}
-        {isWorkflowComplete && (
-          <div>
-            {/* Original content here */}
+  // Main render based on active page
+  const renderPageContent = () => {
+    if (activePage === 'home') {
+      return (
+        <div className="container mx-auto py-8 px-4">
+          {/* Multi-step flow container */}
+          <div className="max-w-5xl mx-auto mb-8">
+            <MultiStepFlow 
+              steps={workflowSteps} 
+              onComplete={handleWorkflowComplete} 
+              onCancel={handleWorkflowCancel} 
+            />
           </div>
-        )}
-      </main>
-    );
-  } else if (activePage === 'projects') {
-    // Projects Page
-    // ... projects page content ...
+  
+          {/* Rest of the content can be conditionally shown here */}
+          {isWorkflowComplete && (
+            <div>
+              {/* Original content here */}
+            </div>
+          )}
+        </div>
+      );
+    } else if (activePage === 'projects') {
+      return (
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-3xl font-bold mb-6">My Projects</h1>
+          {/* Projects content here */}
+        </div>
+      );
+    } else if (activePage === 'whiteboard') {
+      return (
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-3xl font-bold mb-6">Whiteboard</h1>
+          {/* Whiteboard content here */}
+        </div>
+      );
+    } else if (activePage === 'planner') {
+      return (
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-3xl font-bold mb-6">Planner</h1>
+          {/* Planner content here */}
+        </div>
+      );
+    }
+    
     return null;
-  } else if (activePage === 'whiteboard') {
-    // ... whiteboard content ...
-    return null;
-  } else if (activePage === 'planner') {
-    // ... planner content ...
-    return null;
-  }
+  };
 
-  return null;
+  // Main layout with sidebar and content
+  return (
+    <div className="min-h-screen bg-base-100 text-base-content">
+      <SideNavigation 
+        activePage={activePage}
+        onNavigate={handlePageNavigation}
+      />
+      
+      <div className="p-4 lg:ml-64">
+        {renderPageContent()}
+      </div>
+    </div>
+  );
 } 
