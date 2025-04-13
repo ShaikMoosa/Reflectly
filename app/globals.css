@@ -1,5 +1,7 @@
-@import "tailwindcss/preflight";
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Remove Google Fonts import to improve LCP since we use next/font */
 /* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap'); */
 

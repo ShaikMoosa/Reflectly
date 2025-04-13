@@ -8,6 +8,13 @@ const nextConfig = {
   },
   experimental: {
     optimizeCss: true,
+    esmExternals: 'loose',
+  },
+  // Explicitly enable the CSS optimizations
+  optimizeFonts: true,
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 };
 
