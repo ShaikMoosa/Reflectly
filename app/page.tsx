@@ -106,7 +106,7 @@ export default function Home() {
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
   const [suggestedTags, setSuggestedTags] = useState(['Pain point', 'Goal', 'Role', 'Motivation', 'Behavior', 'User journey', 'Positive']);
-  // New state for navigation and projects
+  // Navigation state
   const [activePage, setActivePage] = useState<PageType>('home');
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -122,6 +122,11 @@ export default function Home() {
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const toast = useToast();
+
+  // Handle page navigation
+  const handlePageNavigation = (page: PageType) => {
+    setActivePage(page);
+  };
 
   // Handle project info updates
   const handleProjectInfoChange = (data: ProjectInfo) => {
@@ -182,7 +187,7 @@ export default function Home() {
     setProjects([...projects, newProject]);
   };
 
-  // Define the workflow steps
+  // Define the workflow steps with components
   const workflowSteps: Step[] = [
     {
       id: 1,
@@ -200,6 +205,30 @@ export default function Home() {
       component: <SummaryStep projectInfo={projectInfo} uploadedFiles={uploadedFiles} />
     }
   ];
+
+  // Function to navigate to the next step
+  const goToNextStep = useCallback(() => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    }
+  }, [currentStep, totalSteps]);
+
+  // Function to navigate to the previous step
+  const goToPreviousStep = useCallback(() => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  }, [currentStep]);
+
+  // Function to reset the workflow
+  const resetWorkflow = useCallback(() => {
+    setCurrentStep(1);
+    // Reset any other state as needed
+    setUploadedFiles([]);
+    setSelectedVideoIndex(null);
+    setTranscripts([]);
+    setCurrentProjectId(null);
+  }, []);
 
   // Update current time when video is playing
   useEffect(() => {
@@ -260,11 +289,6 @@ export default function Home() {
       }
     }
   }, [currentTime, autoScroll]);
-
-  // Handle page navigation
-  const handlePageNavigation = (page: PageType) => {
-    setActivePage(page);
-  };
 
   // Main render based on active page
   const renderPageContent = () => {

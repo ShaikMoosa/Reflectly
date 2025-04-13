@@ -3,9 +3,11 @@
 import React from 'react';
 import { Home as HomeIcon, FolderOpen, Pencil, Kanban } from 'lucide-react';
 
+type PageType = 'home' | 'projects' | 'whiteboard' | 'planner';
+
 interface SideNavigationProps {
-  activePage: 'home' | 'projects' | 'whiteboard' | 'planner';
-  onNavigate: (page: 'home' | 'projects' | 'whiteboard' | 'planner') => void;
+  activePage: PageType;
+  onNavigate: (page: PageType) => void;
 }
 
 const SideNavigation: React.FC<SideNavigationProps> = ({ 
