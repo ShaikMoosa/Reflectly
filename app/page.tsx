@@ -42,6 +42,7 @@ export default function Home() {
     notes: any[],
     createdAt: string
   }[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -124,6 +125,7 @@ export default function Home() {
       setIsUploading(true);
       setVideoFile(file);
       setError(null);
+      setCurrentProjectId(null); // Reset current project ID when uploading a new file
       
       // Set video title from file name
       const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove file extension
@@ -185,6 +187,7 @@ export default function Home() {
         setIsUploading(true);
         setVideoFile(file);
         setError(null);
+        setCurrentProjectId(null); // Reset current project ID when uploading a new file
         
         // Set video title from file name
         const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove file extension
@@ -566,7 +569,43 @@ export default function Home() {
         thumbnailUrl = canvas.toDataURL('image/jpeg');
       }
       
-      // Create new project
+      // Check if we're updating an existing project or creating a new one
+      if (currentProjectId) {
+        // Find the existing project
+        const projectIndex = projects.findIndex(p => p.id === currentProjectId);
+        
+        if (projectIndex !== -1) {
+          // Create updated project
+          const updatedProject = {
+            ...projects[projectIndex],
+            title: videoTitle,
+            thumbnail: thumbnailUrl || projects[projectIndex].thumbnail,
+            videoUrl: videoUrl,
+            transcripts: transcripts,
+            notes: notes,
+            // Keep the original creation date
+            createdAt: projects[projectIndex].createdAt
+          };
+          
+          // Update the project in the array
+          const updatedProjects = [...projects];
+          updatedProjects[projectIndex] = updatedProject;
+          
+          // Update state and localStorage
+          setProjects(updatedProjects);
+          localStorage.setItem('reflectly-projects', JSON.stringify(updatedProjects));
+          
+          // Show success toast
+          toast.addToast({
+            title: "Project Updated",
+            description: `${videoTitle} has been updated successfully`,
+            variant: "success",
+          });
+          return;
+        }
+      }
+      
+      // Create new project if not updating
       const newProject = {
         id: Date.now().toString(),
         title: videoTitle,
@@ -579,6 +618,7 @@ export default function Home() {
       
       // Add to projects array
       setProjects([...projects, newProject]);
+      setCurrentProjectId(newProject.id);
       
       // Save to localStorage
       const allProjects = [...projects, newProject];
@@ -587,7 +627,7 @@ export default function Home() {
       // Show success toast
       toast.addToast({
         title: "Project Saved",
-        description: `${videoTitle} has been saved successfully`,
+        description: `${videoTitle} has been saved as a new project`,
         variant: "success",
       });
     } catch (error) {
@@ -609,6 +649,7 @@ export default function Home() {
       setNotes(project.notes);
       setActivePage('home');
       setActiveTab('transcript');
+      setCurrentProjectId(project.id);
       
       // Reset other states
       setChatMessages([]);
@@ -770,10 +811,10 @@ export default function Home() {
                       <button 
                         className="save-project-button"
                         onClick={saveProject}
-                        title="Save as project"
+                        title={currentProjectId ? "Update current project" : "Save as new project"}
                       >
                         <Save size={18} />
-                        Save Project
+                        {currentProjectId ? 'Update Project' : 'Save Project'}
                       </button>
                     </div>
                     
@@ -1362,7 +1403,7 @@ export default function Home() {
                 {projects.map(project => (
                   <div 
                     key={project.id} 
-                    className="project-card"
+                    className={`project-card ${project.id === currentProjectId ? 'project-card-active' : ''}`}
                     onClick={() => loadProject(project)}
                   >
                     <div className="project-thumbnail">
@@ -1371,6 +1412,11 @@ export default function Home() {
                       ) : (
                         <div className="placeholder-thumbnail">
                           <FileVideo size={48} />
+                        </div>
+                      )}
+                      {project.id === currentProjectId && (
+                        <div className="currently-editing-badge">
+                          Current
                         </div>
                       )}
                     </div>

@@ -1286,6 +1286,12 @@ main {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
+  position: relative;
+}
+
+.project-card-active {
+  border: 2px solid var(--accent-purple);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .project-card:hover {
@@ -1299,6 +1305,20 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.currently-editing-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: var(--accent-purple);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 2;
 }
 
 .project-thumbnail img {
