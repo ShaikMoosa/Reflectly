@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { UploadCloud, FileText, X } from 'lucide-react';
+import { UploadCloud, FileVideo, X } from 'lucide-react';
 
 export interface UploadedFile {
   file: File;
@@ -29,7 +29,7 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
     const newFiles: UploadedFile[] = [];
     
     Array.from(files).forEach(file => {
-      if (file.type === 'text/csv') {
+      if (file.type === 'video/mp4') {
         newFiles.push({
           file,
           id: Math.random().toString(36).substring(2, 9)
@@ -77,7 +77,7 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
     const newFiles: UploadedFile[] = [];
     
     Array.from(files).forEach(file => {
-      if (file.type === 'text/csv') {
+      if (file.type === 'video/mp4') {
         newFiles.push({
           file,
           id: Math.random().toString(36).substring(2, 9)
@@ -105,7 +105,7 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Upload Files</h2>
+      <h2 className="text-2xl font-bold mb-6">Upload Videos</h2>
       
       <div 
         className={`border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-all ${
@@ -121,7 +121,7 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           type="file" 
           ref={fileInputRef}
           onChange={handleFileChange} 
-          accept=".csv" 
+          accept="video/mp4" 
           className="hidden"
           multiple
         />
@@ -129,13 +129,13 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           <div className="bg-blue-100 p-4 rounded-full">
             <UploadCloud size={48} className="text-blue-500" />
           </div>
-          <h3 className="text-xl font-semibold">Create or import a custom classification</h3>
+          <h3 className="text-xl font-semibold">Upload your video</h3>
           <p className="text-gray-500 max-w-md mx-auto">
             Maximum file size: 50 MB<br/>
-            Supported format: .CSV
+            Supported format: MP4
           </p>
           <button className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 mt-2">
-            Choose a file
+            Choose a video
           </button>
         </div>
       </div>
@@ -143,17 +143,17 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
       {/* Display uploaded files */}
       {uploadedFiles.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">Uploaded Files</h3>
+          <h3 className="text-lg font-semibold mb-4">Uploaded Videos</h3>
           <div className="space-y-4">
             {uploadedFiles.map((fileData) => (
               <div key={fileData.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between bg-white shadow-sm">
                 <div className="flex items-center">
                   <div className="bg-blue-100 p-2 rounded-full mr-4">
-                    <FileText size={24} className="text-blue-500" />
+                    <FileVideo size={24} className="text-blue-500" />
                   </div>
                   <div>
                     <p className="font-medium">{fileData.file.name}</p>
-                    <p className="text-gray-500 text-sm">{(fileData.file.size / 1024).toFixed(2)} KB</p>
+                    <p className="text-gray-500 text-sm">{(fileData.file.size / (1024 * 1024)).toFixed(2)} MB</p>
                   </div>
                 </div>
                 <button 

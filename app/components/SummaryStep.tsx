@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, CheckCircle } from 'lucide-react';
+import { FileVideo, CheckCircle } from 'lucide-react';
 import { ProjectInfo } from './ProjectInfoForm';
 import { UploadedFile } from './FileUploadStep';
 
@@ -49,28 +49,28 @@ const SummaryStep: React.FC<SummaryStepProps> = ({
         <div>
           <h3 className="text-lg font-medium mb-2 flex items-center">
             <CheckCircle size={20} className="text-green-500 mr-2" />
-            Files
+            Videos
           </h3>
           
           {uploadedFiles.length > 0 ? (
             <div className="space-y-2 mt-4">
               {uploadedFiles.map((fileData) => (
                 <div key={fileData.id} className="flex items-center p-2 border border-gray-100 rounded-md">
-                  <FileText size={16} className="text-blue-500 mr-2" />
+                  <FileVideo size={16} className="text-blue-500 mr-2" />
                   <span className="font-medium">{fileData.file.name}</span>
-                  <span className="text-gray-500 text-sm ml-2">({(fileData.file.size / 1024).toFixed(2)} KB)</span>
+                  <span className="text-gray-500 text-sm ml-2">({(fileData.file.size / (1024 * 1024)).toFixed(2)} MB)</span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 italic mt-4">No files uploaded</p>
+            <p className="text-gray-500 italic mt-4">No videos uploaded</p>
           )}
         </div>
         
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
           <h4 className="font-medium text-blue-700 mb-2">Ready to Process</h4>
           <p className="text-sm text-blue-600">
-            Your project setup is complete. Click "Finish" to create your project and proceed.
+            Your project setup is complete. Click "Finish" to create your project and process your videos.
           </p>
         </div>
       </div>
