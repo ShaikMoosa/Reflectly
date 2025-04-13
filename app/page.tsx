@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, FileVideo, Clock, Play, Download, Upload, Sun, Moon, FileText, MessageSquare, Send, Tag, Edit, Check, X, Home as HomeIcon, FolderOpen, Save, Trash2, Pencil, Kanban } from 'lucide-react';
 import { useToast } from './components/ui/toast';
+import { useTheme } from 'next-themes';
 import Whiteboard from './components/Whiteboard';
 import Planner from './components/Planner';
 import VideoPlayer from './components/VideoPlayer';
@@ -60,6 +61,7 @@ export default function Home() {
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const toast = useToast();
+  const { theme, setTheme } = useTheme();
 
   // Update current time when video is playing
   useEffect(() => {
@@ -87,21 +89,10 @@ export default function Home() {
 
   // Toggle theme function
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('light-mode');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    setIsDarkMode(newTheme === 'dark');
   };
-
-  // Apply theme class on mount and theme change
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove('light-mode');
-    } else {
-      document.documentElement.classList.add('light-mode');
-    }
-    
-    // Initial application of light mode
-    document.documentElement.classList.add('light-mode');
-  }, [isDarkMode]);
 
   // Auto-scroll to active transcript
   useEffect(() => {
@@ -747,7 +738,7 @@ export default function Home() {
       // No video uploaded yet, show upload UI
       return (
         <div 
-          className="upload-container"
+          className="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300"
           onClick={triggerFileInput}
           onDragOver={handleDragOver}
           onDragEnter={handleDragEnter}
@@ -761,22 +752,28 @@ export default function Home() {
             accept="video/mp4" 
             className="hidden"
           />
-          <div className="upload-content">
-            <UploadCloud size={48} className="mb-4" />
-            <h3 className="font-medium text-lg mb-2">Upload Video</h3>
-            <p className="text-sm text-gray-500">Click or drag and drop your MP4 video</p>
+          <div className="card-body items-center text-center p-10">
+            <UploadCloud size={48} className="text-primary mb-4" />
+            <h3 className="card-title text-lg mb-2">Upload Video</h3>
+            <p className="text-sm opacity-70">Click or drag and drop your MP4 video</p>
+            <div className="card-actions mt-4">
+              <button className="btn btn-primary">Choose File</button>
+            </div>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="video-section">
-        <div className="video-title-bar">
+      <div className="video-section w-full">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-medium">{videoTitle || 'Untitled Video'}</h2>
-          {/* Video controls would go here */}
+          <button className="btn btn-primary btn-sm" onClick={saveProject}>
+            <Save size={16} className="mr-2" />
+            {currentProjectId ? 'Update Project' : 'Save Project'}
+          </button>
         </div>
-        <div className="video-container">
+        <div className="video-container rounded-lg overflow-hidden mb-4">
           <VideoPlayer 
             videoUrl={videoUrl}
             currentTime={currentTime}
@@ -792,6 +789,49 @@ export default function Home() {
               }
             }}
           />
+        </div>
+        <div className="my-4 flex gap-2">
+          <button
+            onClick={handleTranscribe}
+            disabled={isTranscribing || !videoFile}
+            className="btn btn-primary"
+          >
+            {isTranscribing ? (
+              <>
+                <Clock className="animate-spin mr-2" size={16} />
+                Processing...
+              </>
+            ) : (
+              <>
+                <FileVideo size={16} className="mr-2" />
+                Generate Transcript
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={triggerImportTranscript}
+            className="btn btn-outline"
+          >
+            <Upload size={16} className="mr-2" />
+            Import
+          </button>
+          <input
+            ref={importTranscriptRef}
+            type="file"
+            accept="application/json"
+            onChange={handleImportTranscript}
+            className="hidden"
+          />
+          
+          <button
+            onClick={handleExportTranscript}
+            disabled={transcripts.length === 0}
+            className="btn btn-outline"
+          >
+            <Download size={16} className="mr-2" />
+            Export
+          </button>
         </div>
         {transcripts.length > 0 && (
           <TranscriptPlayer 
@@ -818,76 +858,94 @@ export default function Home() {
   };
 
   return (
-    <main className={`${isDarkMode ? '' : 'light-mode'} app-layout`}>
+    <main className="min-h-screen bg-base-100 text-base-content">
       {/* Side Navigation */}
-      <div className="side-navigation">
-        <div className="logo-container">
-          <h2 className="logo">Reflectly</h2>
+      <div className="drawer lg:drawer-open fixed">
+        <input id="drawer-toggle" type="checkbox" className="drawer-toggle" />
+        <div className="drawer-content flex flex-col">
+          {/* Page content here */}
+        </div> 
+        <div className="drawer-side">
+          <label htmlFor="drawer-toggle" aria-label="close sidebar" className="drawer-overlay"></label>
+          <ul className="menu p-4 w-64 h-full bg-base-200 text-base-content">
+            <li className="menu-title mb-4">
+              <h2 className="text-xl font-bold">Reflectly</h2>
+            </li>
+            <li>
+              <a 
+                className={activePage === 'home' ? 'active' : ''}
+                onClick={() => setActivePage('home')}
+              >
+                <HomeIcon size={20} />
+                Home
+              </a>
+            </li>
+            <li>
+              <a 
+                className={activePage === 'projects' ? 'active' : ''}
+                onClick={() => setActivePage('projects')}
+              >
+                <FolderOpen size={20} />
+                Projects
+              </a>
+            </li>
+            <li>
+              <a 
+                className={activePage === 'whiteboard' ? 'active' : ''}
+                onClick={() => setActivePage('whiteboard')}
+              >
+                <Pencil size={20} />
+                Whiteboard
+              </a>
+            </li>
+            <li>
+              <a 
+                className={activePage === 'planner' ? 'active' : ''}
+                onClick={() => setActivePage('planner')}
+              >
+                <Kanban size={20} />
+                Planner
+              </a>
+            </li>
+          </ul>
         </div>
-        <nav className="nav-links">
-          <button 
-            className={`nav-link ${activePage === 'home' ? 'active' : ''}`}
-            onClick={() => setActivePage('home')}
-          >
-            <HomeIcon size={20} />
-            <span>Home</span>
-          </button>
-          <button 
-            className={`nav-link ${activePage === 'projects' ? 'active' : ''}`}
-            onClick={() => setActivePage('projects')}
-          >
-            <FolderOpen size={20} />
-            <span>Projects</span>
-          </button>
-          <button 
-            className={`nav-link ${activePage === 'whiteboard' ? 'active' : ''}`}
-            onClick={() => setActivePage('whiteboard')}
-          >
-            <Pencil size={20} />
-            <span>Whiteboard</span>
-          </button>
-          <button 
-            className={`nav-link ${activePage === 'planner' ? 'active' : ''}`}
-            onClick={() => setActivePage('planner')}
-          >
-            <Kanban size={20} />
-            <span>Planner</span>
-          </button>
-        </nav>
       </div>
 
       {/* Main Content */}
-      <div className="main-area">
+      <div className="p-4 lg:ml-64">
         <div className="top-controls">
           <button 
-            className="theme-toggle" 
+            className="btn btn-circle btn-sm swap swap-rotate" 
             onClick={toggleTheme} 
             aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            {/* Sun icon */}
+            <Sun className={theme === 'dark' ? 'block' : 'hidden'} size={20} />
+            {/* Moon icon */}
+            <Moon className={theme === 'light' ? 'block' : 'hidden'} size={20} />
           </button>
 
           {videoUrl && activePage === 'home' && (
-            <div className="tab-menu">
+            <div className="tabs tabs-boxed">
               <button 
-                className={`tab-button ${activeTab === 'transcript' ? 'active' : ''}`}
+                className={`tab ${activeTab === 'transcript' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('transcript')}
               >
-                <FileText size={18} />
+                <FileText size={18} className="mr-2" />
                 Transcript
               </button>
               <button 
-                className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
+                className={`tab ${activeTab === 'notes' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('notes')}
               >
-                <FileText size={18} />
+                <FileText size={18} className="mr-2" />
                 Notes
               </button>
               <button 
-                className={`tab-button ${activeTab === 'ai-chat' ? 'active' : ''}`}
+                className={`tab ${activeTab === 'ai-chat' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('ai-chat')}
               >
-                <MessageSquare size={18} />
+                <MessageSquare size={18} className="mr-2" />
                 AI Chat
               </button>
             </div>
@@ -895,298 +953,93 @@ export default function Home() {
         </div>
 
         {activePage === 'home' ? (
-          <div className="app-container">
-            <div className={`main-content ${activeTab !== 'notes' ? 'main-content-half' : ''}`}>
-              <div className="modern-card content-card">
-                {renderVideoContent()}
-              </div>
-            </div>
-
-            {/* Notes sidebar - right side */}
-            {videoUrl && activeTab === 'notes' && (
-              <div className="notes-sidebar">
-                <div className="modern-card">
-                  <div className="card-header">
-                    <h3 className="notes-subheading">My Notes</h3>
-                    <div className="notes-actions">
-                      <button
-                        onClick={addNote}
-                        className="modern-button small"
-                      >
-                        <FileText size={14} />
-                        Add at {formatTime(currentTime)}
-                      </button>
-                    </div>
+          <div className="container mx-auto p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className={`w-full ${activeTab === 'notes' ? 'md:w-2/3' : 'md:w-full'}`}>
+                <div className="card bg-base-100 shadow-lg">
+                  <div className="card-body">
+                    {renderVideoContent()}
                   </div>
-                  
-                  {notes.length > 0 ? (
-                    <div className="user-notes">
-                      {notes.map((note, index) => (
-                        <div key={`note-${index}`} className="note-item">
-                          <div className="note-header">
-                            <span 
-                              className="timestamp" 
-                              onClick={() => handleTranscriptClick(note.timestamp)}
-                            >
-                              {formatTime(note.timestamp)}
-                            </span>
-                            <div className="note-actions">
-                              <button 
-                                className="note-action-btn"
-                                onClick={() => toggleHighlight(index)}
-                                aria-label={note.isHighlighted ? "Remove highlight" : "Highlight"}
-                              >
-                                <span className={`highlight-icon ${note.isHighlighted ? 'active' : ''}`}>
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                                  </svg>
-                                </span>
-                              </button>
-                              <button 
-                                className="note-action-btn"
-                                onClick={() => {
-                                  setIsAddingTag(true);
-                                  setEditingNoteIndex(index);
-                                  setTimeout(() => tagInputRef.current?.focus(), 0);
-                                }}
-                                aria-label="Add tag"
-                              >
-                                <Tag size={14} />
-                              </button>
-                              <button 
-                                className="note-action-btn"
-                                onClick={() => startEditingNote(index)}
-                                aria-label="Edit note"
-                              >
-                                <Edit size={14} />
-                              </button>
-                              <button 
-                                className="note-action-btn delete"
-                                onClick={() => {
-                                  const updatedNotes = [...notes];
-                                  updatedNotes.splice(index, 1);
-                                  setNotes(updatedNotes);
-                                }}
-                                aria-label="Delete note"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="note-content">
-                            {editingNoteIndex === index ? (
-                              <div className="note-edit">
-                                <textarea 
-                                  defaultValue={note.text}
-                                  className="note-edit-input"
-                                  autoFocus
-                                />
-                                <div className="note-edit-actions">
-                                  <button 
-                                    className="note-edit-btn save"
-                                    onClick={(e) => {
-                                      const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
-                                      saveNoteEdit(index, textarea.value);
-                                    }}
-                                  >
-                                    <Check size={14} />
-                                  </button>
-                                  <button 
-                                    className="note-edit-btn cancel"
-                                    onClick={cancelNoteEdit}
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <span className={`note-text ${note.isHighlighted ? 'highlighted' : ''}`}>
-                                {note.text}
-                              </span>
-                            )}
-
-                            {/* Tags */}
-                            {note.tags && note.tags.length > 0 && (
-                              <div className="note-tags">
-                                {note.tags.map((tag, tagIndex) => (
-                                  <span key={tagIndex} className="note-tag">
-                                    {tag}
-                                    <button 
-                                      className="remove-tag-btn"
-                                      onClick={() => removeTagFromNote(index, tagIndex)}
-                                      aria-label={`Remove ${tag} tag`}
-                                    >
-                                      <X size={12} />
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Comment */}
-                            {note.comment && (
-                              <div className="note-comment">
-                                <p>{note.comment}</p>
-                              </div>
-                            )}
-
-                            {/* Add comment button if no comment exists */}
-                            {!note.comment && !isAddingComment && (
-                              <button 
-                                className="add-comment-btn"
-                                onClick={() => {
-                                  setIsAddingComment(true);
-                                  setEditingNoteIndex(index);
-                                  setTimeout(() => commentInputRef.current?.focus(), 0);
-                                }}
-                              >
-                                Add a comment...
-                              </button>
-                            )}
-
-                            {/* Tag input form */}
-                            {isAddingTag && editingNoteIndex === index && (
-                              <div className="tag-input-container">
-                                <input
-                                  ref={tagInputRef}
-                                  type="text"
-                                  value={tagInput}
-                                  onChange={(e) => setTagInput(e.target.value)}
-                                  placeholder="Enter a tag..."
-                                  className="tag-input"
-                                />
-                                <div className="tag-input-actions">
-                                  <button 
-                                    className="tag-input-btn save"
-                                    onClick={() => addTagToNote(index)}
-                                  >
-                                    <Check size={14} />
-                                  </button>
-                                  <button 
-                                    className="tag-input-btn cancel"
-                                    onClick={() => {
-                                      setIsAddingTag(false);
-                                      setTagInput('');
-                                    }}
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                                {/* Suggested tags */}
-                                {tagInput.length === 0 && (
-                                  <div className="suggested-tags">
-                                    <p className="suggested-tags-title">Get started with a tag</p>
-                                    <div className="suggested-tags-list">
-                                      {suggestedTags.map((tag, i) => (
-                                        <button 
-                                          key={i} 
-                                          className="suggested-tag-btn"
-                                          onClick={() => {
-                                            setTagInput(tag);
-                                            addTagToNote(index);
-                                          }}
-                                        >
-                                          {tag}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Comment input form */}
-                            {isAddingComment && editingNoteIndex === index && (
-                              <div className="comment-input-container">
-                                <textarea
-                                  ref={commentInputRef}
-                                  value={commentInput}
-                                  onChange={(e) => setCommentInput(e.target.value)}
-                                  placeholder="Add your comment..."
-                                  className="comment-input"
-                                  rows={3}
-                                />
-                                <div className="comment-input-actions">
-                                  <button 
-                                    className="comment-input-btn save"
-                                    onClick={() => addCommentToNote(index)}
-                                  >
-                                    <Check size={14} />
-                                  </button>
-                                  <button 
-                                    className="comment-input-btn cancel"
-                                    onClick={() => {
-                                      setIsAddingComment(false);
-                                      setCommentInput('');
-                                    }}
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="empty-notes">
-                      <p>No notes yet. Add notes by clicking the button above or from the transcript.</p>
-                    </div>
-                  )}
                 </div>
               </div>
-            )}
+
+              {videoUrl && activeTab === 'notes' && (
+                <div className="w-full md:w-1/3">
+                  <div className="card bg-base-100 shadow-lg h-full">
+                    <div className="card-body">
+                      <h3 className="card-title">My Notes</h3>
+                      <div className="mt-2">
+                        <button
+                          onClick={addNote}
+                          className="btn btn-primary btn-sm"
+                        >
+                          <FileText size={14} className="mr-2" />
+                          Add at {formatTime(currentTime)}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ) : activePage === 'projects' ? (
           /* Projects Page */
-          <div className="projects-page">
-            <h1 className="page-title">My Projects</h1>
+          <div className="container mx-auto py-6">
+            <h1 className="text-3xl font-bold mb-6">My Projects</h1>
             
             {projects.length > 0 ? (
-              <div className="projects-grid">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map(project => (
                   <div 
                     key={project.id} 
-                    className={`project-card ${project.id === currentProjectId ? 'project-card-active' : ''}`}
+                    className={`card bg-base-100 shadow-xl cursor-pointer transition-all hover:shadow-2xl 
+                              ${project.id === currentProjectId ? 'border-2 border-primary' : ''}`}
                     onClick={() => loadProject(project)}
                   >
-                    <div className="project-thumbnail">
+                    <figure className="relative h-40">
                       {project.thumbnail ? (
-                        <img src={project.thumbnail} alt={project.title} />
+                        <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="placeholder-thumbnail">
-                          <FileVideo size={48} />
+                        <div className="w-full h-full flex items-center justify-center bg-base-200">
+                          <FileVideo size={48} className="opacity-50" />
                         </div>
                       )}
                       {project.id === currentProjectId && (
-                        <div className="currently-editing-badge">
+                        <div className="badge badge-primary absolute top-2 right-2">
                           Current
                         </div>
                       )}
-                    </div>
-                    <div className="project-info">
-                      <div className="project-header">
-                        <h3 className="project-title">{project.title}</h3>
+                    </figure>
+                    <div className="card-body">
+                      <div className="flex justify-between items-start">
+                        <h2 className="card-title">{project.title}</h2>
                         <button 
-                          className="project-delete-btn"
+                          className="btn btn-sm btn-circle btn-ghost"
                           onClick={(e) => deleteProject(e, project.id)}
                           aria-label="Delete project"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
-                      <p className="project-date">
+                      <p className="text-sm opacity-70">
                         {new Date(project.createdAt).toLocaleDateString()}
                       </p>
+                      <div className="card-actions justify-end mt-2">
+                        <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); loadProject(project); }}>
+                          Open
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="empty-projects">
-                <p>No saved projects yet. Upload a video and save it as a project from the Home page.</p>
+              <div className="alert">
+                <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-info flex-shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <span>No saved projects yet. Upload a video and save it as a project from the Home page.</span>
+                </div>
               </div>
             )}
           </div>

@@ -42,14 +42,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   return (
-    <video
-      ref={videoRef}
-      src={videoUrl}
-      className="w-full rounded-lg"
-      controls
-      onTimeUpdate={handleTimeUpdate}
-      onClick={onPlayPause}
-    />
+    <div className="w-full rounded-xl overflow-hidden shadow-lg">
+      <video
+        ref={videoRef}
+        src={videoUrl}
+        className="w-full"
+        controls
+        onTimeUpdate={handleTimeUpdate}
+        onClick={onPlayPause}
+      />
+    </div>
   );
 };
 

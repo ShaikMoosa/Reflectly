@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="light">
       <head>
         {/* Preload critical assets for better LCP */}
         <link
@@ -34,7 +34,7 @@ export default function RootLayout({
         {/* Preconnect to critical domains */}
         <link rel="preconnect" href="https://localhost" />
       </head>
-      <body className={`${inter.className} bg-gray-50`}>
+      <body className={inter.className}>
         <Providers>
           {children}
         </Providers>

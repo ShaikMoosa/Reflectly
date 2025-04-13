@@ -34,17 +34,19 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   }, [segments, currentTime, activeSegmentId]);
 
   return (
-    <div className="transcript-container">
-      <h3 className="font-medium mb-4">Transcript</h3>
-      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-        {segments.map(segment => (
-          <TranscriptSegment
-            key={segment.id}
-            segment={segment}
-            isActive={segment.id === activeSegmentId}
-            onSegmentClick={onSegmentClick}
-          />
-        ))}
+    <div className="card bg-base-100 shadow-md">
+      <div className="card-body">
+        <h3 className="card-title text-lg">Transcript</h3>
+        <div className="h-[400px] overflow-y-auto pr-2 space-y-2">
+          {segments.map(segment => (
+            <TranscriptSegment
+              key={segment.id}
+              segment={segment}
+              isActive={segment.id === activeSegmentId}
+              onSegmentClick={onSegmentClick}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

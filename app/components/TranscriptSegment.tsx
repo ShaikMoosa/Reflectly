@@ -27,11 +27,17 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
 
   return (
     <div 
-      className={`transcript-segment ${isActive ? 'active' : ''}`}
+      id={`segment-${segment.id}`}
+      className={`flex p-3 rounded-md mb-2 cursor-pointer transition-all hover:bg-base-200 
+                ${isActive ? 'bg-primary bg-opacity-10 border border-primary' : 'bg-base-100'}`}
       onClick={() => onSegmentClick(segment.timestamp)}
     >
-      <div className="timestamp">{formatTimestamp(segment.timestamp)}</div>
-      <div className="text">{segment.text}</div>
+      <div className="text-primary font-medium min-w-[50px] mr-3">
+        {formatTimestamp(segment.timestamp)}
+      </div>
+      <div className="flex-1">
+        {segment.text}
+      </div>
     </div>
   );
 };
