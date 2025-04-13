@@ -9,9 +9,16 @@ import Planner from './components/Planner';
 import VideoPlayer from './components/VideoPlayer';
 import TranscriptPlayer from './components/TranscriptPlayer';
 
+// Debug utility for consistent logging
+const logDebug = (component: string, action: string, data?: any) => {
+  console.log(`[${component}] ${action}`, data !== undefined ? data : '');
+};
+
 const LazyWhiteboard = lazy(() => import('./components/Whiteboard'));
 
 export default function Home() {
+  console.log('[Home] Component rendering');
+
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [videoTitle, setVideoTitle] = useState<string>('');
@@ -66,6 +73,7 @@ export default function Home() {
 
   // Update current time when video is playing
   useEffect(() => {
+    console.log('[Home] Video URL changed:', videoUrl);
     const video = videoRef.current;
     if (!video) return;
 
@@ -73,8 +81,10 @@ export default function Home() {
       setCurrentTime(video.currentTime);
     };
 
+    logDebug('Home', 'Adding timeupdate event listener');
     video.addEventListener('timeupdate', updateTime);
     return () => {
+      logDebug('Home', 'Removing timeupdate event listener');
       video.removeEventListener('timeupdate', updateTime);
     };
   }, [videoUrl]);
@@ -121,8 +131,10 @@ export default function Home() {
   }, [currentTime, autoScroll]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    logDebug('Home', 'File upload triggered');
     const file = event.target.files?.[0];
     if (file && file.type === 'video/mp4') {
+      logDebug('Home', 'Valid MP4 file selected', { fileName: file.name, fileSize: file.size });
       setIsUploading(true);
       setVideoFile(file);
       setError(null);
@@ -135,24 +147,28 @@ export default function Home() {
       try {
         // Clean up previous URL object
         if (videoUrl && videoUrl.startsWith('blob:')) {
+          logDebug('Home', 'Revoking previous blob URL', videoUrl);
           URL.revokeObjectURL(videoUrl);
         }
         
         // Create new object URL
         const newUrl = URL.createObjectURL(file);
+        logDebug('Home', 'Created new blob URL', newUrl);
         
         // Simulate loading for better UX
         setTimeout(() => {
           setVideoUrl(newUrl);
           setTranscripts([]);
           setIsUploading(false);
+          logDebug('Home', 'Video loaded successfully');
         }, 500);
       } catch (error) {
-        console.error('Error creating object URL:', error);
+        console.error('[Home] Error creating object URL:', error);
         setIsUploading(false);
         setError('Failed to process video file. Please try again.');
       }
     } else if (file) {
+      logDebug('Home', 'Invalid file type selected', { type: file.type });
       setError('Please upload an MP4 file. Other formats are not supported at this time.');
     }
   };
@@ -228,20 +244,22 @@ export default function Home() {
   };
 
   const handleTranscribe = async () => {
-    if (!videoFile) return;
+    if (!videoFile) {
+      logDebug('Home', 'Transcribe attempted without video file');
+      return;
+    }
 
+    logDebug('Home', 'Starting transcription process', { fileName: videoFile.name });
     setIsTranscribing(true);
     setError(null);
     
     try {
-      console.log('Starting transcription process...');
-      
       // Create a FormData object to send the video file
       const formData = new FormData();
       formData.append('file', videoFile);
       
       // Call our API endpoint
-      console.log('Calling API endpoint...');
+      logDebug('Home', 'Calling transcription API');
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
@@ -249,23 +267,28 @@ export default function Home() {
       
       if (!response.ok) {
         const errorData = await response.json();
+        logDebug('Home', 'API error response', errorData);
         throw new Error(errorData.error || 'Failed to transcribe video');
       }
       
       const data = await response.json();
-      console.log('Received transcript data:', data);
+      logDebug('Home', 'Transcription completed successfully', { 
+        segmentsCount: data.transcripts?.length || 0 
+      });
       
       if (data.transcripts && data.transcripts.length > 0) {
         setTranscripts(data.transcripts);
       } else {
         // Fallback in case no transcripts were generated
+        logDebug('Home', 'No transcripts generated');
         setError('No speech detected in the video or the transcription failed.');
       }
     } catch (error: any) {
-      console.error('Error transcribing video:', error);
+      console.error('[Home] Error transcribing video:', error);
       setError(error.message || 'Failed to generate transcript. Please try again.');
     } finally {
       setIsTranscribing(false);
+      logDebug('Home', 'Transcription process completed');
     }
   };
 
@@ -273,18 +296,25 @@ export default function Home() {
    * Jumps to specific timestamp in video when clicking on transcript
    */
   const handleTranscriptClick = (timestamp: number) => {
+    logDebug('Home', 'Transcript segment clicked', { timestamp });
     if (videoRef.current) {
       // Update video position
       videoRef.current.currentTime = timestamp;
+      logDebug('Home', 'Video time updated', { newTime: timestamp });
       
       // Only trigger play if the video is currently paused
       // This prevents repeated play/pause cycles when clicking timestamps
       if (videoRef.current.paused) {
+        logDebug('Home', 'Video was paused, starting playback');
         videoRef.current.play().catch(err => {
-          console.error("Playback error:", err);
+          console.error("[Home] Playback error:", err);
           setError('Failed to play video at the selected timestamp.');
         });
+      } else {
+        logDebug('Home', 'Video already playing, not triggering play');
       }
+    } else {
+      logDebug('Home', 'Video reference not available');
     }
   };
 
@@ -304,10 +334,12 @@ export default function Home() {
   // Add import/export transcript functions
   const handleExportTranscript = () => {
     if (transcripts.length === 0) {
+      logDebug('Home', 'Export attempted with no transcripts');
       setError('No transcript available to export');
       return;
     }
 
+    logDebug('Home', 'Exporting transcript', { transcriptsCount: transcripts.length });
     try {
       // Create transcript data object with metadata
       const transcriptData = {
@@ -334,9 +366,9 @@ export default function Home() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      console.log('Transcript exported successfully');
+      logDebug('Home', 'Transcript exported successfully');
     } catch (error) {
-      console.error('Error exporting transcript:', error);
+      console.error('[Home] Error exporting transcript:', error);
       setError('Failed to export transcript');
     }
   };
@@ -580,6 +612,7 @@ export default function Home() {
   // Function to save current project
   const saveProject = () => {
     if (!videoUrl || !videoTitle) {
+      logDebug('Home', 'Cannot save project: no video loaded');
       toast.addToast({
         title: "Error",
         description: "Cannot save project: No video loaded",
@@ -588,6 +621,10 @@ export default function Home() {
       return;
     }
 
+    logDebug('Home', 'Saving project', { 
+      title: videoTitle, 
+      isUpdate: !!currentProjectId 
+    });
     try {
       // Create thumbnail from current video frame
       const video = videoRef.current;
@@ -600,6 +637,7 @@ export default function Home() {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
         thumbnailUrl = canvas.toDataURL('image/jpeg');
+        logDebug('Home', 'Created thumbnail from video frame');
       }
       
       // Check if we're updating an existing project or creating a new one
@@ -666,7 +704,7 @@ export default function Home() {
         variant: "success",
       });
     } catch (error) {
-      console.error('Error saving project:', error);
+      console.error('[Home] Error saving project:', error);
       toast.addToast({
         title: "Error",
         description: "Failed to save project",
@@ -732,14 +770,27 @@ export default function Home() {
 
   // Load projects from localStorage on mount
   useEffect(() => {
+    logDebug('Home', 'Loading saved projects from localStorage');
     try {
       const savedProjects = localStorage.getItem('reflectly-projects');
       if (savedProjects) {
-        setProjects(JSON.parse(savedProjects));
+        const parsed = JSON.parse(savedProjects);
+        setProjects(parsed);
+        logDebug('Home', 'Loaded saved projects', { count: parsed.length });
+      } else {
+        logDebug('Home', 'No saved projects found');
       }
     } catch (error) {
-      console.error('Error loading saved projects:', error);
+      console.error('[Home] Error loading saved projects:', error);
     }
+  }, []);
+
+  // Component mount logging
+  useEffect(() => {
+    logDebug('Home', 'Component mounted');
+    return () => {
+      logDebug('Home', 'Component unmounting');
+    };
   }, []);
 
   // Update video-related component rendering section

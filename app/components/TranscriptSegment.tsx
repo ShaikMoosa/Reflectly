@@ -1,7 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Clock } from 'lucide-react';
+
+// Debug utility for consistent logging
+const logDebug = (component: string, action: string, data?: any) => {
+  console.log(`[${component}] ${action}`, data !== undefined ? data : '');
+};
 
 export interface TranscriptSegmentData {
   id: string;
@@ -20,6 +25,20 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
   isActive,
   onSegmentClick
 }) => {
+  // Log when the component renders, especially active state changes
+  logDebug('TranscriptSegment', `Rendering segment ${segment.id}`, { 
+    timestamp: segment.timestamp, 
+    isActive,
+    textLength: segment.text.length
+  });
+
+  // Monitor active state changes
+  useEffect(() => {
+    if (isActive) {
+      logDebug('TranscriptSegment', `Segment ${segment.id} became active`);
+    }
+  }, [isActive, segment.id]);
+
   const formatTimestamp = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -29,6 +48,10 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({
   // Use a separate handler for timestamp clicks to prevent event bubbling
   const handleTimestampClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent bubbling to the parent div
+    logDebug('TranscriptSegment', `Timestamp clicked on segment ${segment.id}`, {
+      timestamp: segment.timestamp,
+      formattedTime: formatTimestamp(segment.timestamp)
+    });
     onSegmentClick(segment.timestamp);
   };
 
