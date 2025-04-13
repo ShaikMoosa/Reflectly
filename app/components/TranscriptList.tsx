@@ -1,110 +1,154 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { PlayCircle, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { Tag, MessageSquare, FileText } from 'lucide-react';
 
-interface TranscriptListProps {
-  transcripts: Array<{ text: string; start: number; speaker?: string }>;
-  onTranscriptClick: (timestamp: number) => void;
-  currentVideoTime: number;
+interface Transcript {
+  start: number;
+  end?: number;
+  text: string;
+  speaker?: string;
 }
 
-const formatTime = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
+interface Note {
+  text: string;
+  timestamp: number;
+  tags?: string[];
+  comment?: string;
+  isHighlighted?: boolean;
+}
 
-const TranscriptList = ({ transcripts, onTranscriptClick, currentVideoTime }: TranscriptListProps) => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  
-  // Assign speaker names if not provided
-  const processedTranscripts = transcripts.map((transcript, index) => ({
-    ...transcript,
-    speaker: transcript.speaker || `Speaker ${(index % 2) + 1}`
-  }));
-  
-  useEffect(() => {
-    // Find the current active transcript based on video time
-    const currentIndex = processedTranscripts.findIndex((transcript, index) => {
-      const nextStart = index < processedTranscripts.length - 1 ? processedTranscripts[index + 1].start : Infinity;
-      return currentVideoTime >= transcript.start && currentVideoTime < nextStart;
-    });
-    
-    if (currentIndex !== -1) {
-      setActiveIndex(currentIndex);
-    }
-  }, [currentVideoTime, processedTranscripts]);
-  
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+interface TranscriptListProps {
+  transcripts: Transcript[];
+  currentTime: number;
+  autoScroll: boolean;
+  onTimestampClick: (time: number) => void;
+  onHighlight: (index: number) => void;
+  onAddTag: (index: number) => void;
+  onAddComment: (index: number) => void;
+  onAddToNotes: (index: number) => void;
+  notes: Note[];
+}
+
+const TranscriptList: React.FC<TranscriptListProps> = ({
+  transcripts,
+  currentTime,
+  autoScroll,
+  onTimestampClick,
+  onHighlight,
+  onAddTag,
+  onAddComment,
+  onAddToNotes,
+  notes
+}) => {
+  const transcriptListRef = useRef<HTMLDivElement>(null);
+  const activeItemRef = useRef<HTMLDivElement>(null);
+
+  // Format time in seconds to MM:SS format
+  const formatTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  return (
-    <div className="bg-white rounded-xl shadow-sm hover-scale transition-all">
-      <div 
-        className="flex items-center justify-between p-4 border-b cursor-pointer"
-        onClick={toggleCollapse}
-      >
-        <div className="flex items-center">
-          <h2 className="text-xl font-semibold text-gray-800 mr-2">Transcript</h2>
-          <span className="text-sm text-gray-500">
-            {processedTranscripts.length} segments, {formatTime(processedTranscripts[processedTranscripts.length - 1]?.start || 0)} total
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            className="text-gray-500 hover:text-gray-700"
-            title="Was this transcript accurate?"
-          >
-            <ThumbsUp size={18} />
-          </button>
-          <button 
-            className="text-gray-500 hover:text-gray-700"
-            title="Was this transcript inaccurate?"
-          >
-            <ThumbsDown size={18} />
-          </button>
-          {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-        </div>
-      </div>
+  // Find active transcript based on current time
+  const activeTranscriptIndex = transcripts.findIndex(
+    (transcript) => currentTime >= transcript.start && 
+    (transcript.end ? currentTime <= transcript.end : true)
+  );
+
+  // Auto-scroll to active transcript
+  useEffect(() => {
+    if (autoScroll && activeItemRef.current && transcriptListRef.current) {
+      // Calculate position of active item relative to transcript container
+      const container = transcriptListRef.current;
+      const activeItem = activeItemRef.current;
       
-      {!isCollapsed && (
-        <div className="max-h-[500px] overflow-y-auto p-4">
-          {processedTranscripts.map((transcript, index) => {
-            const isActive = activeIndex === index;
-            const speakerNumber = transcript.speaker?.split(' ')[1] || '1';
-            
-            return (
-              <div
-                key={index}
-                className={`mb-4 ${isActive ? 'bg-blue-50 rounded' : ''}`}
+      // Get positions and dimensions
+      const containerRect = container.getBoundingClientRect();
+      const activeItemRect = activeItem.getBoundingClientRect();
+      
+      // Check if active item is not fully visible in the container
+      const isAboveVisible = activeItemRect.top < containerRect.top;
+      const isBelowVisible = activeItemRect.bottom > containerRect.bottom;
+      
+      if (isAboveVisible || isBelowVisible) {
+        // Scroll the item into view within the container
+        activeItem.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      }
+    }
+  }, [currentTime, autoScroll]);
+
+  return (
+    <div className="transcript-container">
+      <div className="transcript-list" ref={transcriptListRef}>
+        {transcripts.map((transcript, index) => (
+          <div
+            key={index}
+            ref={index === activeTranscriptIndex ? activeItemRef : null}
+            className={`transcript-item ${index === activeTranscriptIndex ? 'active' : ''}`}
+          >
+            <div className="transcript-item-content">
+              <span 
+                className="timestamp" 
+                onClick={() => onTimestampClick(transcript.start)}
+                title="Jump to this timestamp"
               >
-                <div className="flex items-center mb-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 text-white bg-blue-${speakerNumber === '1' ? '600' : '400'}`}>
-                    S{speakerNumber}
-                  </div>
-                  <span className="font-medium">{transcript.speaker}</span>
-                  <div className="flex items-center ml-auto">
-                    <button
-                      onClick={() => onTranscriptClick(transcript.start)}
-                      className="text-blue-600 hover:text-blue-700 transition-colors flex items-center"
-                      title="Play from this timestamp"
-                    >
-                      <span className="text-sm font-mono text-gray-500 mr-1">{formatTime(transcript.start)}</span>
-                      <PlayCircle size={16} />
-                    </button>
-                  </div>
-                </div>
-                <p className={`pl-10 text-gray-700 ${isActive ? 'font-medium' : ''}`}>
-                  {transcript.text}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                {formatTime(transcript.start)}
+              </span>
+              <span className="text-transcript">
+                {transcript.text}
+                {transcript.speaker && (
+                  <span className="block text-xs mt-1 text-secondary">
+                    {transcript.speaker}
+                  </span>
+                )}
+              </span>
+            </div>
+            
+            <div className="transcript-actions">
+              <button 
+                className="note-action-btn"
+                onClick={() => onHighlight(index)}
+                title="Highlight"
+              >
+                <span className="highlight-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                  </svg>
+                </span>
+              </button>
+              
+              <button 
+                className="note-action-btn"
+                onClick={() => onAddTag(index)}
+                title="Add tag"
+              >
+                <Tag size={14} />
+              </button>
+              
+              <button 
+                className="note-action-btn"
+                onClick={() => onAddComment(index)}
+                title="Add comment"
+              >
+                <MessageSquare size={14} />
+              </button>
+              
+              <button 
+                className="note-action-btn"
+                onClick={() => onAddToNotes(index)}
+                title="Add to notes"
+              >
+                <FileText size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
