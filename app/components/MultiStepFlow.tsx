@@ -1,147 +1,150 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import React, { useState, ReactNode } from 'react';
+import { CheckCircle2, Circle, ArrowLeft, ArrowRight } from 'lucide-react';
 
-export interface Step {
-  id: number;
-  name: string;
-  component: React.ReactNode;
+interface Step {
+  id: string;
+  title: string;
+  component: ReactNode;
+  optional?: boolean;
 }
 
-export interface MultiStepFlowProps {
+interface MultiStepFlowProps {
   steps: Step[];
-  onComplete: () => void;
-  onCancel: () => void;
+  onComplete?: () => void;
+  onCancel?: () => void;
+  className?: string;
 }
 
-const MultiStepFlow: React.FC<MultiStepFlowProps> = ({
-  steps,
-  onComplete,
-  onCancel
-}) => {
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const totalSteps = steps.length;
+const MultiStepFlow: React.FC<MultiStepFlowProps> = ({ steps, onComplete, onCancel, className = '' }) => {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
 
-  // Function to navigate to the next step
-  const goToNextStep = useCallback(() => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      onComplete();
+  const currentStep = steps[currentStepIndex];
+  const isFirstStep = currentStepIndex === 0;
+  const isLastStep = currentStepIndex === steps.length - 1;
+
+  const goToNextStep = () => {
+    if (isLastStep) {
+      onComplete?.();
+      return;
     }
-  }, [currentStep, totalSteps, onComplete]);
 
-  // Function to navigate to the previous step
-  const goToPreviousStep = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    // Mark current step as completed
+    if (!completedSteps.includes(currentStep.id)) {
+      setCompletedSteps([...completedSteps, currentStep.id]);
     }
-  }, [currentStep]);
 
-  // Function to reset the workflow
-  const handleCancel = useCallback(() => {
-    onCancel();
-  }, [onCancel]);
-
-  // Render the progress indicators
-  const renderProgressIndicators = () => {
-    return (
-      <div className="mb-8">
-        <div className="flex items-center justify-between relative">
-          {/* Progress bar connecting the steps */}
-          <div className="absolute left-0 right-0 h-1 bg-gray-200 top-1/2 transform -translate-y-1/2 z-0"></div>
-          <div 
-            className="absolute left-0 h-1 bg-blue-500 top-1/2 transform -translate-y-1/2 z-0 transition-all" 
-            style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }}
-          ></div>
-          
-          {/* Step indicators */}
-          {steps.map((step) => (
-            <div key={step.id} className="flex flex-col items-center relative z-10">
-              <div 
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  step.id < currentStep 
-                    ? 'bg-blue-500 text-white' 
-                    : step.id === currentStep 
-                      ? 'bg-white border-2 border-blue-500 text-blue-500'
-                      : 'bg-white border-2 border-gray-300 text-gray-400'
-                }`}
-              >
-                {step.id < currentStep ? (
-                  <Check size={18} />
-                ) : (
-                  <span>{step.id}</span>
-                )}
-              </div>
-              <span className={`mt-2 text-sm font-medium ${
-                step.id <= currentStep ? 'text-blue-500' : 'text-gray-400'
-              }`}>
-                {step.name}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    // Proceed to next step
+    setCurrentStepIndex(currentStepIndex + 1);
   };
 
-  // Render navigation buttons
-  const renderNavigationButtons = () => {
-    return (
-      <div className="flex justify-between mt-8">
-        <button
-          onClick={handleCancel}
-          className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 flex items-center"
-        >
-          <X size={18} className="mr-1" />
-          Cancel
-        </button>
-        
-        <div className="flex gap-2">
-          {currentStep > 1 && (
-            <button
-              onClick={goToPreviousStep}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 flex items-center"
-            >
-              <ChevronLeft size={18} className="mr-1" />
-              Back
-            </button>
-          )}
-          
-          <button
-            onClick={goToNextStep}
-            className={`px-6 py-2 rounded-md text-white flex items-center ${
-              currentStep === totalSteps ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'
-            }`}
-          >
-            {currentStep === totalSteps ? (
-              <>
-                <Check size={18} className="mr-1" />
-                Finish
-              </>
-            ) : (
-              <>
-                Next
-                <ChevronRight size={18} className="ml-1" />
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    );
+  const goToPreviousStep = () => {
+    if (!isFirstStep) {
+      setCurrentStepIndex(currentStepIndex - 1);
+    }
   };
 
-  // Find the current step component
-  const currentStepData = steps.find(step => step.id === currentStep);
+  const jumpToStep = (index: number) => {
+    // Only allow jumping to completed steps or the next available step
+    if (
+      completedSteps.includes(steps[index].id) ||
+      index === 0 ||
+      (completedSteps.includes(steps[index - 1].id) && index <= currentStepIndex + 1)
+    ) {
+      setCurrentStepIndex(index);
+    }
+  };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {renderProgressIndicators()}
-      <div className="bg-white rounded-lg p-8 shadow-sm">
-        {currentStepData?.component}
+    <div className={`w-full ${className}`}>
+      {/* Progress Bar */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          {steps.map((step, index) => {
+            const isActive = index === currentStepIndex;
+            const isCompleted = completedSteps.includes(step.id);
+            const isClickable = isCompleted || index === 0 || (completedSteps.includes(steps[index - 1].id) && index <= currentStepIndex + 1);
+
+            return (
+              <React.Fragment key={step.id}>
+                {/* Step indicator */}
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => jumpToStep(index)}
+                    disabled={!isClickable}
+                    className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+                      isActive
+                        ? 'bg-primary text-white scale-110 shadow-md'
+                        : isCompleted
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    } ${isClickable ? 'cursor-pointer hover:scale-105' : 'cursor-not-allowed opacity-70'}`}
+                    aria-label={`Go to step ${index + 1}: ${step.title}`}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 size={20} className="animate-fadeIn" />
+                    ) : (
+                      <span className={isActive ? 'animate-pulse' : ''}>{index + 1}</span>
+                    )}
+                  </button>
+                  <span
+                    className={`mt-2 text-sm font-medium transition-all duration-300 ${
+                      isActive ? 'text-primary' : isCompleted ? 'text-green-500' : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    {step.title}
+                    {step.optional && <span className="text-xs ml-1 opacity-70">(Optional)</span>}
+                  </span>
+                </div>
+
+                {/* Connector line between steps */}
+                {index < steps.length - 1 && (
+                  <div
+                    className={`flex-grow h-1 mx-2 rounded-full transition-all duration-500 ${
+                      index < currentStepIndex
+                        ? 'bg-green-500'
+                        : index === currentStepIndex
+                        ? 'bg-gradient-to-r from-green-500 to-gray-200 dark:to-gray-700'
+                        : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
-      {renderNavigationButtons()}
+
+      {/* Step Content */}
+      <div className="py-4 animate-fadeIn">
+        {currentStep.component}
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="flex justify-between mt-8">
+        <button
+          onClick={goToPreviousStep}
+          disabled={isFirstStep}
+          className={`flex items-center px-6 py-2 rounded-lg transition-all duration-200 ${
+            isFirstStep
+              ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400'
+              : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+          }`}
+        >
+          <ArrowLeft size={16} className="mr-2" />
+          Back
+        </button>
+
+        <button
+          onClick={goToNextStep}
+          className="flex items-center px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white transition-all duration-200 shadow-sm hover:shadow"
+        >
+          {isLastStep ? 'Complete' : 'Next'}
+          {!isLastStep && <ArrowRight size={16} className="ml-2" />}
+        </button>
+      </div>
     </div>
   );
 };

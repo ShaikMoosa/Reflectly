@@ -82,6 +82,10 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           file,
           id: Math.random().toString(36).substring(2, 9)
         });
+      } else {
+        // Show error for non-MP4 files
+        console.error('Only MP4 files are allowed');
+        // You could add toast notification here
       }
     });
     
@@ -105,7 +109,11 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Upload Videos</h2>
+      <h2 className="text-2xl font-bold mb-6">Upload Video</h2>
+      <p className="text-gray-600 mb-6">
+        Upload an MP4 video file that you want to transcribe and analyze.
+        You can either drag and drop your video file here or click to browse your files.
+      </p>
       
       <div 
         className={`border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-all ${
@@ -123,7 +131,6 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           onChange={handleFileChange} 
           accept="video/mp4" 
           className="hidden"
-          multiple
         />
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="bg-blue-100 p-4 rounded-full">
@@ -143,7 +150,7 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
       {/* Display uploaded files */}
       {uploadedFiles.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">Uploaded Videos</h3>
+          <h3 className="text-lg font-semibold mb-4">Uploaded Video</h3>
           <div className="space-y-4">
             {uploadedFiles.map((fileData) => (
               <div key={fileData.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between bg-white shadow-sm">
@@ -167,6 +174,17 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
                 </button>
               </div>
             ))}
+            
+            {/* Preview container for the video */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-6 rounded-lg overflow-hidden border border-gray-200">
+                <video 
+                  src={URL.createObjectURL(uploadedFiles[0].file)}
+                  controls
+                  className="w-full h-auto"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
