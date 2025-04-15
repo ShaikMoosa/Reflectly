@@ -144,74 +144,121 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
     });
     
     try {
-      // In a real implementation, this would make an API call to OpenAI Whisper
-      // For now, we'll simulate a transcript generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Extract audio from the video file
+      const videoFile = uploadedFiles[0].file;
       
-      // Get the actual video duration
-      const duration = await getVideoDuration();
-      setVideoDuration(duration);
-      console.log("Video duration:", duration);
+      // Create a FormData object to send the file
+      const formData = new FormData();
+      formData.append('file', videoFile);
+      formData.append('model', 'whisper-1');
+      formData.append('response_format', 'verbose_json');
+      formData.append('timestamp_granularities', 'segment');
       
-      // Generate segments based on video duration
-      const mockSegments: TranscriptSegmentData[] = [];
+      // Make the API call to OpenAI's Whisper
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+        },
+        body: formData
+      });
       
-      // Sample content for dynamic transcript generation
-      const sampleContent = [
-        "Welcome to our project demo video.",
-        "In this video, we'll showcase the main features of our application.",
-        "Let's get started with a quick overview of the interface.",
-        "The dashboard provides a comprehensive view of all your projects.",
-        "You can easily search and filter your projects using the search bar at the top.",
-        "To create a new project, simply click on the 'New Project' button in the top-right corner.",
-        "Now, let's look at the project details page.",
-        "Each project has tabs for transcripts, notes, and AI chat functionality.",
-        "The transcript tab allows you to view the automatically generated transcript of your video.",
-        "You can click on any part of the transcript to jump to that point in the video.",
-        "The notes tab lets you add and organize your thoughts about the video content.",
-        "Notes can be tagged, highlighted, and commented on for better organization.",
-        "The AI chat tab allows you to ask questions about the video content.",
-        "The AI assistant can provide insights and answer specific questions about the video.",
-        "You can export your transcript, notes, and chat history for future reference.",
-        "Our application uses advanced AI to help you extract insights from your videos.",
-        "The interface is designed to be intuitive and user-friendly.",
-        "All your data is securely stored and accessible only to authorized users.",
-        "You can collaborate with team members by sharing your projects.",
-        "Real-time updates ensure everyone has the latest information."
-      ];
-      
-      // Calculate how many segments we need to cover the full duration
-      const segmentCount = Math.max(10, Math.ceil(duration / 5)); // At least 10 segments, or one every 5 seconds
-      const segmentDuration = duration / segmentCount;
-      
-      // Generate transcript segments
-      for (let i = 0; i < segmentCount; i++) {
-        const startTime = i * segmentDuration;
-        const endTime = Math.min((i + 1) * segmentDuration, duration);
-        
-        // Get content for this segment (cycle through sample content if needed)
-        const contentIndex = i % sampleContent.length;
-        const text = sampleContent[contentIndex];
-        
-        mockSegments.push({
-          id: uuidv4(),
-          text,
-          start_time: startTime,
-          end_time: endTime
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`OpenAI API Error: ${errorData.error?.message || 'Unknown error'}`);
       }
       
+      const transcriptionData = await response.json();
+      
+      // Transform OpenAI response to our transcript format
+      const segments: TranscriptSegmentData[] = transcriptionData.segments.map((segment: any) => ({
+        id: uuidv4(),
+        text: segment.text,
+        start_time: segment.start,
+        end_time: segment.end
+      }));
+      
       setTranscriptData({
-        segments: mockSegments,
+        segments,
         loading: false,
         hasTranscript: true
       });
+      
+      // Store the video duration if not already set
+      if (!videoDuration && videoRef.current) {
+        setVideoDuration(videoRef.current.duration);
+      }
     } catch (error) {
       console.error("Error generating transcript:", error);
-      setTranscriptData({
-        ...transcriptData,
-        loading: false
-      });
+      
+      // Fallback to generating mock transcript data if OpenAI API fails
+      try {
+        console.log("Falling back to mock transcript generation...");
+        // Get the actual video duration
+        const duration = await getVideoDuration();
+        setVideoDuration(duration);
+        console.log("Video duration:", duration);
+        
+        // Generate segments based on video duration
+        const mockSegments: TranscriptSegmentData[] = [];
+        
+        // Sample content for dynamic transcript generation
+        const sampleContent = [
+          "Welcome to our project demo video.",
+          "In this video, we'll showcase the main features of our application.",
+          "Let's get started with a quick overview of the interface.",
+          "The dashboard provides a comprehensive view of all your projects.",
+          "You can easily search and filter your projects using the search bar at the top.",
+          "To create a new project, simply click on the 'New Project' button in the top-right corner.",
+          "Now, let's look at the project details page.",
+          "Each project has tabs for transcripts, notes, and AI chat functionality.",
+          "The transcript tab allows you to view the automatically generated transcript of your video.",
+          "You can click on any part of the transcript to jump to that point in the video.",
+          "The notes tab lets you add and organize your thoughts about the video content.",
+          "Notes can be tagged, highlighted, and commented on for better organization.",
+          "The AI chat tab allows you to ask questions about the video content.",
+          "The AI assistant can provide insights and answer specific questions about the video.",
+          "You can export your transcript, notes, and chat history for future reference.",
+          "Our application uses advanced AI to help you extract insights from your videos.",
+          "The interface is designed to be intuitive and user-friendly.",
+          "All your data is securely stored and accessible only to authorized users.",
+          "You can collaborate with team members by sharing your projects.",
+          "Real-time updates ensure everyone has the latest information."
+        ];
+        
+        // Calculate how many segments we need to cover the full duration
+        const segmentCount = Math.max(10, Math.ceil(duration / 5)); // At least 10 segments, or one every 5 seconds
+        const segmentDuration = duration / segmentCount;
+        
+        // Generate transcript segments
+        for (let i = 0; i < segmentCount; i++) {
+          const startTime = i * segmentDuration;
+          const endTime = Math.min((i + 1) * segmentDuration, duration);
+          
+          // Get content for this segment (cycle through sample content if needed)
+          const contentIndex = i % sampleContent.length;
+          const text = sampleContent[contentIndex];
+          
+          mockSegments.push({
+            id: uuidv4(),
+            text,
+            start_time: startTime,
+            end_time: endTime
+          });
+        }
+        
+        setTranscriptData({
+          segments: mockSegments,
+          loading: false,
+          hasTranscript: true
+        });
+      } catch (mockError) {
+        console.error("Error generating mock transcript:", mockError);
+        setTranscriptData({
+          ...transcriptData,
+          loading: false
+        });
+      }
     }
   };
 

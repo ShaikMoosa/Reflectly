@@ -40,7 +40,7 @@ Reflectly is a modern web application that allows users to upload video files an
 
 3. Create a `.env.local` file in the project root with your OpenAI API key:
    ```
-   OPENAI_API_KEY=your_api_key_here
+   NEXT_PUBLIC_OPENAI_API_KEY=your_api_key_here
    ```
 
 4. Start the development server:
@@ -54,8 +54,9 @@ Reflectly is a modern web application that allows users to upload video files an
 
 1. Upload a video file by clicking on the upload area
 2. Wait for the video to process
-3. Click "Generate AI Transcript" to create a transcript
+3. Click "Generate Transcript" to create a transcript using OpenAI's Whisper API
 4. Browse through the transcript and click on any segment to navigate the video
+5. If OpenAI API is not configured or encounters an error, the app will fall back to generating mock transcript data
 
 ## License
 
