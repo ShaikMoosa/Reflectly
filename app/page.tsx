@@ -8,7 +8,6 @@ import Planner from './components/Planner';
 import VideoPlayer from './components/VideoPlayer';
 import TranscriptPlayer from './components/TranscriptPlayer';
 import { v4 as uuidv4 } from 'uuid';
-import Whiteboard from './components/Whiteboard';
 import MultiStepFlow from './components/MultiStepFlow';
 import ProjectInfoForm, { ProjectInfo } from './components/ProjectInfoForm';
 import FileUploadStep, { UploadedFile } from './components/FileUploadStep';
@@ -19,8 +18,6 @@ import SideNavigation from './components/SideNavigation';
 const logDebug = (component: string, action: string, data?: any) => {
   console.log(`[${component}] ${action}`, data !== undefined ? data : '');
 };
-
-const LazyWhiteboard = lazy(() => import('./components/Whiteboard'));
 
 // Define types
 interface TranscriptSegment {
@@ -62,383 +59,234 @@ interface Project {
 }
 
 // Define a type for the active page
-type PageType = 'home' | 'projects' | 'whiteboard' | 'planner';
+type PageType = 'home' | 'projects' | 'planner';
 
 export default function Home() {
   console.log('[Home] Component rendering');
 
-  // Project workflow data
-  const [projectInfo, setProjectInfo] = useState<ProjectInfo>({
-    name: '',
-    description: '',
-    category: ''
-  });
+  // --- Step 1: Project Info (name, description only) ---
+  const [projectInfo, setProjectInfo] = useState<ProjectInfo>({ name: '', description: '' });
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [isWorkflowComplete, setIsWorkflowComplete] = useState(false);
-
-  // Step management for the workflow
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const totalSteps = 3;
-
-  const steps = [
-    { id: '1', title: 'Information' },
-    { id: '2', title: 'Upload Video' },
-    { id: '3', title: 'Transcript Options' }
-  ];
-
-  const [uploadedVideos, setUploadedVideos] = useState<{ file: File, url: string, title: string }[]>([]);
-  const [selectedVideoIndex, setSelectedVideoIndex] = useState<number | null>(null);
-
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
-  const [videoTitle, setVideoTitle] = useState('');
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([]);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcript' | 'chat' | 'planner'>('transcript');
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [showTimestamps, setShowTimestamps] = useState(true);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [tagInput, setTagInput] = useState('');
-  const [isAddingTag, setIsAddingTag] = useState(false);
-  const [commentInput, setCommentInput] = useState('');
-  const [isAddingComment, setIsAddingComment] = useState(false);
-  const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
-  const [suggestedTags, setSuggestedTags] = useState(['Pain point', 'Goal', 'Role', 'Motivation', 'Behavior', 'User journey', 'Positive']);
-  // Navigation state
-  const [activePage, setActivePage] = useState<PageType>('home');
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [isLoadingChat, setIsLoadingChat] = useState(false);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activePage, setActivePage] = useState<PageType>('home');
+  const [isWorkflowComplete, setIsWorkflowComplete] = useState(false);
+  const [showTimestamps, setShowTimestamps] = useState(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const importTranscriptRef = useRef<HTMLInputElement>(null);
-  const transcriptListRef = useRef<HTMLDivElement>(null);
-  const activeItemRef = useRef<HTMLDivElement>(null);
-  const chatInputRef = useRef<HTMLInputElement>(null);
-  const tagInputRef = useRef<HTMLInputElement>(null);
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
-
   const toast = useToast();
 
-  // Handle page navigation
-  const handlePageNavigation = (page: PageType) => {
-    setActivePage(page);
-    
-    // If navigating to projects and we just completed workflow
-    if (page === 'projects' && isWorkflowComplete) {
-      setIsWorkflowComplete(false);
-    }
-  };
-
-  // Handle project info updates
+  // --- Step 1: Project Info ---
   const handleProjectInfoChange = (data: ProjectInfo) => {
     setProjectInfo(data);
   };
 
-  // Handle file uploads
+  // --- Step 2: Video Upload ---
   const handleFilesChange = (files: UploadedFile[]) => {
     setUploadedFiles(files);
-    
-    // Process the first video file to get URL
     if (files.length > 0) {
-      const videoFile = files[0].file;
-      setVideoFile(videoFile);
-      const url = URL.createObjectURL(videoFile);
-      setVideoUrl(url);
-      setVideoTitle(videoFile.name);
+      const file = files[0].file;
+      setVideoFile(file);
+      setVideoUrl(URL.createObjectURL(file));
+    } else {
+      setVideoFile(null);
+      setVideoUrl('');
     }
   };
 
-  // Handle workflow completion
-  const handleWorkflowComplete = () => {
-    setIsWorkflowComplete(true);
-    // Process the collected data
-    processWorkflowData();
-    
-    // Navigate to projects page
-    setActivePage('projects');
-    
-    toast.addToast({
-      title: "Project Created",
-      description: "Your project has been successfully created",
-      variant: "success"
-    });
-  };
-
-  // Handle workflow cancellation
-  const handleWorkflowCancel = () => {
-    // Reset workflow state
-    setProjectInfo({
-      name: '',
-      description: '',
-      category: ''
-    });
-    setUploadedFiles([]);
-    setIsWorkflowComplete(false);
-  };
-
-  // Process the collected workflow data
-  const processWorkflowData = () => {
-    // This is where you would actually process the data
-    console.log('Processing project data:', {
-      projectInfo,
-      uploadedFiles
-    });
-    
-    // Create a proper URL for the video if available
-    let videoFileUrl = '';
-    if (uploadedFiles.length > 0 && uploadedFiles[0].file) {
-      videoFileUrl = URL.createObjectURL(uploadedFiles[0].file);
-    }
-    
-    // Create a new project
-    const newProject: Project = {
-      id: uuidv4(),
-      title: projectInfo.name,
-      description: projectInfo.description,
-      thumbnail: '',  // You would generate this
-      videoUrl: videoFileUrl,
-      transcripts: [],
-      notes: [],
-      chatMessages: [],
-      createdAt: new Date().toISOString()
-    };
-    
-    // Add to projects
-    setProjects([...projects, newProject]);
-    
-    // Set as current project
-    setCurrentProjectId(newProject.id);
-  };
-
-  // Handle transcript generation
-  const handleGenerateTranscript = () => {
-    if (!currentProjectId) return;
-    
-    // Find the current project
-    const project = projects.find(p => p.id === currentProjectId);
-    if (!project) return;
-    
+  // --- Step 3: Transcript Actions ---
+  const handleGenerateTranscript = async () => {
+    if (!videoFile) return;
     setIsTranscribing(true);
-    
-    // Mock transcript generation - would be replaced with actual API call
-    setTimeout(() => {
-      // Generate some sample transcript segments
-      const mockTranscripts: TranscriptSegment[] = Array.from({ length: 10 }, (_, i) => ({
-        id: uuidv4(),
-        text: `This is transcript segment ${i+1}. It contains sample text that would normally be generated by a transcription service.`,
-        timestamp: i * 30,
-        start_time: i * 30,
-        end_time: (i + 1) * 30 - 1
-      }));
+
+    try {
+      // Create form data for the API request
+      const formData = new FormData();
+      formData.append('file', videoFile);
       
-      // Update the project with transcripts
-      const updatedProjects = projects.map(p => {
-        if (p.id === currentProjectId) {
-          return {...p, transcripts: mockTranscripts};
-        }
-        return p;
+      // Call the transcribe API endpoint
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
       });
       
-      setProjects(updatedProjects);
-      setTranscripts(mockTranscripts);
-      setIsTranscribing(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to transcribe video');
+      }
       
-      toast.addToast({
-        title: "Transcript Generated",
-        description: "The transcript has been successfully generated",
-        variant: "success"
-      });
+      const data = await response.json();
       
-      // Navigate to projects page
-      setActivePage('projects');
-    }, 3000);
-  };
-  
-  // Handle transcript import
-  const handleImportTranscript = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !currentProjectId) return;
-    
-    // Read the file
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const importedData = JSON.parse(content);
+      // Transform the API response to match our expected format
+      if (data.transcripts && data.transcripts.length > 0) {
+        const processedTranscripts: TranscriptSegment[] = data.transcripts.map((item: any) => ({
+          id: uuidv4(),
+          text: item.text,
+          timestamp: item.start,
+          start_time: item.start,
+          end_time: item.end
+        }));
         
-        // Validate and process the imported data
-        if (Array.isArray(importedData)) {
-          const processedTranscripts: TranscriptSegment[] = importedData.map((item, index) => ({
-            id: uuidv4(),
-            text: item.text || '',
-            timestamp: item.timestamp || index * 30,
-            start_time: item.start_time || index * 30,
-            end_time: item.end_time || (index + 1) * 30 - 1
-          }));
-          
-          // Update the project with transcripts
-          const updatedProjects = projects.map(p => {
-            if (p.id === currentProjectId) {
-              return {...p, transcripts: processedTranscripts};
-            }
-            return p;
-          });
-          
-          setProjects(updatedProjects);
-          setTranscripts(processedTranscripts);
-          
-          toast.addToast({
-            title: "Transcript Imported",
-            description: "The transcript has been successfully imported",
-            variant: "success"
-          });
-          
-          // Navigate to projects page
-          setActivePage('projects');
-        }
-      } catch (error) {
-        console.error('Error parsing imported transcript:', error);
-        toast.addToast({
-          title: "Import Failed",
-          description: "Failed to parse the imported transcript file",
-          variant: "destructive"
+        setTranscripts(processedTranscripts);
+        createProject(processedTranscripts);
+      } else {
+        toast.addToast({ 
+          title: 'Transcription Failed', 
+          description: 'No speech detected or transcription failed', 
+          variant: 'destructive' 
         });
       }
-    };
-    
-    reader.readAsText(file);
-  };
-  
-  // Handle export transcript
-  const handleExportTranscript = () => {
-    if (!currentProjectId) return;
-    
-    // Find the current project
-    const project = projects.find(p => p.id === currentProjectId);
-    if (!project || !project.transcripts.length) {
-      toast.addToast({
-        title: "Export Failed",
-        description: "No transcript available to export",
-        variant: "destructive"
+    } catch (error: any) {
+      console.error('Error transcribing video:', error);
+      toast.addToast({ 
+        title: 'Transcription Error', 
+        description: error.message || 'Failed to generate transcript', 
+        variant: 'destructive' 
       });
-      return;
+    } finally {
+      setIsTranscribing(false);
     }
-    
-    // Prepare the transcript data for export
-    const exportData = project.transcripts.map(segment => ({
+  };
+
+  const handleImportTranscript = (event?: React.ChangeEvent<HTMLInputElement>) => {
+    if (event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedData = JSON.parse(e.target?.result as string);
+          let processedTranscripts: TranscriptSegment[] = [];
+          
+          // Handle different JSON formats
+          if (Array.isArray(importedData)) {
+            // Direct array of transcript segments
+            processedTranscripts = importedData.map((item, index) => ({
+              id: uuidv4(),
+              text: item.text || '',
+              timestamp: item.timestamp || item.start_time || index * 30,
+              start_time: item.start_time || index * 30,
+              end_time: item.end_time || (index + 1) * 30 - 1
+            }));
+          } else if (importedData.transcripts && Array.isArray(importedData.transcripts)) {
+            // Object with transcripts array property
+            processedTranscripts = importedData.transcripts.map((item: any, index: number) => ({
+              id: uuidv4(),
+              text: item.text || '',
+              timestamp: item.timestamp || item.start_time || index * 30,
+              start_time: item.start_time || index * 30,
+              end_time: item.end_time || (index + 1) * 30 - 1
+            }));
+          } else {
+            throw new Error("Invalid transcript format");
+          }
+          
+          if (processedTranscripts.length > 0) {
+            setTranscripts(processedTranscripts);
+            createProject(processedTranscripts);
+          } else {
+            toast.addToast({ title: 'Import Failed', description: 'No valid transcript segments found in the file', variant: 'destructive' });
+          }
+        } catch (error) {
+          console.error('Transcript import error:', error);
+          toast.addToast({ title: 'Import Failed', description: 'Failed to parse the imported transcript file', variant: 'destructive' });
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      importTranscriptRef.current?.click();
+    }
+  };
+
+  const handleExportTranscript = () => {
+    if (!transcripts.length) return;
+    const exportData = transcripts.map(segment => ({
       id: segment.id,
       text: segment.text,
       start_time: segment.start_time,
       end_time: segment.end_time
     }));
-    
-    // Create a blob and download link
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${project.title}-transcript.json`;
+    a.download = `${projectInfo.name}-transcript.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    toast.addToast({
-      title: "Transcript Exported",
-      description: "The transcript has been successfully exported",
-      variant: "success"
-    });
   };
 
-  // Define the workflow steps with components
+  // --- Create Project and Redirect ---
+  const createProject = (transcriptSegments: TranscriptSegment[]) => {
+    const newProject: Project = {
+      id: uuidv4(),
+      title: projectInfo.name,
+      description: projectInfo.description,
+      thumbnail: '',
+      videoUrl: videoUrl,
+      transcripts: transcriptSegments,
+      notes: [],
+      chatMessages: [],
+      createdAt: new Date().toISOString()
+    };
+    setProjects([...projects, newProject]);
+    setCurrentProjectId(newProject.id);
+    setActivePage('projects');
+    setIsWorkflowComplete(true);
+    toast.addToast({ title: 'Project Created', description: 'Your project has been successfully created', variant: 'success' });
+  };
+
+  // --- Step Definitions ---
   const workflowSteps = [
     {
       id: '1',
       title: 'Information',
-      component: <ProjectInfoForm onDataChange={handleProjectInfoChange} initialData={projectInfo} />
+      component: (
+        <ProjectInfoForm value={projectInfo} onChange={setProjectInfo} />
+      ),
+      validate: () => !!projectInfo.name.trim()
     },
     {
       id: '2',
       title: 'Upload Video',
-      component: <FileUploadStep onFilesChange={handleFilesChange} initialFiles={uploadedFiles} />
+      component: <FileUploadStep onFilesChange={handleFilesChange} initialFiles={uploadedFiles} />,
+      validate: () => uploadedFiles.length > 0
     },
     {
       id: '3',
       title: 'Transcript Options',
       component: (
-        <div className="space-y-8">
-          <h2 className="text-2xl font-bold mb-6">Transcript Options</h2>
-          
-          {/* Video preview if available */}
+        <div>
           {videoUrl && (
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3">Video Preview</h3>
-              <video 
-                className="w-full max-h-[300px] object-contain bg-black rounded-lg"
-                src={videoUrl} 
-                controls
-              />
+              <video ref={videoRef} className="w-full max-h-[300px] object-contain bg-black rounded-lg" src={videoUrl} controls />
             </div>
           )}
-          
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Transcript Generation</h3>
-            <p className="text-gray-600">Select how you would like to proceed with the transcript:</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <button
-                onClick={handleGenerateTranscript}
-                className="p-6 border rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors flex flex-col items-center gap-3"
-              >
-                <FileText size={32} />
-                <span className="font-medium">Generate Transcript</span>
-                <span className="text-sm text-center">
-                  Automatically generate transcript from your video
-                </span>
-              </button>
-              
-              <div 
-                onClick={() => importTranscriptRef.current?.click()}
-                className="p-6 border rounded-lg bg-secondary hover:bg-secondary-hover transition-colors flex flex-col items-center gap-3 cursor-pointer"
-              >
-                <Upload size={32} />
-                <span className="font-medium">Import JSON</span>
-                <span className="text-sm text-center">
-                  Import existing transcript in JSON format
-                </span>
-                <input 
-                  type="file" 
-                  ref={importTranscriptRef}
-                  onChange={handleImportTranscript}
-                  accept=".json"
-                  className="hidden"
-                />
-              </div>
-              
-              <button
-                onClick={handleExportTranscript}
-                disabled={!transcripts.length}
-                className="p-6 border rounded-lg bg-accent hover:bg-accent-hover transition-colors flex flex-col items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download size={32} />
-                <span className="font-medium">Export Transcript</span>
-                <span className="text-sm text-center">
-                  Export the generated transcript as JSON
-                </span>
-              </button>
-            </div>
+          <div className="flex gap-4 mb-4">
+            <button onClick={handleGenerateTranscript} className="btn btn-primary" disabled={isTranscribing}>
+              Generate Transcript
+            </button>
+            <button onClick={() => handleImportTranscript()} className="btn btn-secondary">
+              Import Transcript (JSON)
+              <input type="file" ref={importTranscriptRef} onChange={handleImportTranscript} accept=".json" className="hidden" />
+            </button>
+            <button onClick={handleExportTranscript} className="btn btn-accent" disabled={!transcripts.length}>
+              Export Transcript (JSON)
+            </button>
           </div>
+          {isTranscribing && <div className="text-blue-600">Generating transcript...</div>}
         </div>
-      )
+      ),
+      validate: () => true // Always allow next, as project is created on transcript action
     }
   ];
 
@@ -449,7 +297,9 @@ export default function Home() {
 
   // Handle play/pause from video
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    if (videoRef.current) {
+      videoRef.current.paused ? videoRef.current.play() : videoRef.current.pause();
+    }
   };
 
   // Handle seeking to a specific timestamp
@@ -480,7 +330,7 @@ export default function Home() {
                   videoUrl={project.videoUrl}
                   currentTime={currentTime}
                   onTimeUpdate={handleTimeUpdate}
-                  isPlaying={isPlaying}
+                  isPlaying={videoRef.current?.paused === false}
                   onPlayPause={handlePlayPause}
                 />
               </div>
@@ -573,8 +423,13 @@ export default function Home() {
           <div className="max-w-5xl mx-auto mb-8">
             <MultiStepFlow 
               steps={workflowSteps} 
-              onComplete={handleWorkflowComplete} 
+              onComplete={() => {}}
+              onCancel={() => {}}
             />
+            {/* Add help text for users */}
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+              <p><strong>Tip:</strong> Fill in all required fields marked with * to proceed to the next step.</p>
+            </div>
           </div>
         </div>
       );
@@ -646,15 +501,6 @@ export default function Home() {
           )}
         </div>
       );
-    } else if (activePage === 'whiteboard') {
-      return (
-        <div className="container mx-auto py-8 px-4">
-          <h1 className="text-3xl font-bold mb-6">Whiteboard</h1>
-          <Suspense fallback={<div>Loading whiteboard...</div>}>
-            <LazyWhiteboard />
-          </Suspense>
-        </div>
-      );
     } else if (activePage === 'planner') {
       return (
         <div className="container mx-auto py-8 px-4">
@@ -672,7 +518,7 @@ export default function Home() {
     <div className="min-h-screen bg-base-100 text-base-content">
       <SideNavigation 
         activePage={activePage}
-        onNavigate={handlePageNavigation}
+        onNavigate={setActivePage}
       />
       
       <div className="p-4 lg:ml-64">

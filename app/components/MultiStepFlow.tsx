@@ -8,6 +8,7 @@ interface Step {
   title: string;
   component: ReactNode;
   optional?: boolean;
+  validate?: () => boolean;
 }
 
 interface MultiStepFlowProps {
@@ -20,34 +21,70 @@ interface MultiStepFlowProps {
 const MultiStepFlow: React.FC<MultiStepFlowProps> = ({ steps, onComplete, onCancel, className = '' }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   const currentStep = steps[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === steps.length - 1;
 
   const goToNextStep = () => {
+    // Set showValidation to true first, to trigger UI validations
+    setShowValidation(true);
+    
+    // Clear previous validation errors
+    setValidationError(null);
+    
+    // Check if the current step has a validation function
+    const validationFn = currentStep.validate;
+    
+    if (validationFn) {
+      try {
+        const isValid = validationFn();
+        
+        // If validation fails, show error and return
+        if (!isValid) {
+          setValidationError('Please complete all required fields before proceeding.');
+          return;
+        }
+      } catch (error) {
+        console.error('Validation error:', error);
+        setValidationError('An error occurred during validation.');
+        return;
+      }
+    }
+    
+    // If we reach here, validation passed or there was no validation function
+    
+    // Reset showValidation since we're moving to the next step
+    setShowValidation(false);
+    
+    // If this is the last step, call onComplete
     if (isLastStep) {
       onComplete?.();
       return;
     }
-
-    // Mark current step as completed
+    
+    // Add current step to completed steps if not already there
     if (!completedSteps.includes(currentStep.id)) {
       setCompletedSteps([...completedSteps, currentStep.id]);
     }
-
-    // Proceed to next step
+    
+    // Move to the next step
     setCurrentStepIndex(currentStepIndex + 1);
   };
 
   const goToPreviousStep = () => {
+    setValidationError(null);
+    setShowValidation(false);
     if (!isFirstStep) {
       setCurrentStepIndex(currentStepIndex - 1);
     }
   };
 
   const jumpToStep = (index: number) => {
-    // Only allow jumping to completed steps or the next available step
+    setValidationError(null);
+    setShowValidation(false);
     if (
       completedSteps.includes(steps[index].id) ||
       index === 0 ||
@@ -57,8 +94,18 @@ const MultiStepFlow: React.FC<MultiStepFlowProps> = ({ steps, onComplete, onCanc
     }
   };
 
+  // If the step's component is a React element, clone it and pass showValidation
+  const stepContent = React.isValidElement(currentStep.component)
+    ? React.cloneElement(
+        currentStep.component as React.ReactElement,
+        typeof currentStep.component.type === 'string' 
+          ? {} // Don't pass showValidation to DOM elements (like div, span)
+          : { showValidation } // Only pass to custom React components
+      )
+    : currentStep.component;
+
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full ${className}`} data-multistep-container data-showvalidation={showValidation ? "true" : "false"}>
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex justify-between items-center">
@@ -117,9 +164,16 @@ const MultiStepFlow: React.FC<MultiStepFlowProps> = ({ steps, onComplete, onCanc
         </div>
       </div>
 
+      {/* Validation Error Message */}
+      {validationError && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+          {validationError}
+        </div>
+      )}
+
       {/* Step Content */}
       <div className="py-4 animate-fadeIn">
-        {currentStep.component}
+        {stepContent}
       </div>
 
       {/* Navigation Buttons */}
@@ -140,6 +194,7 @@ const MultiStepFlow: React.FC<MultiStepFlowProps> = ({ steps, onComplete, onCanc
         <button
           onClick={goToNextStep}
           className="flex items-center px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white transition-all duration-200 shadow-sm hover:shadow"
+          type="button"
         >
           {isLastStep ? 'Complete' : 'Next'}
           {!isLastStep && <ArrowRight size={16} className="ml-2" />}

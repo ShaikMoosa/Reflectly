@@ -44,32 +44,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Handle seek operations (setting currentTime) from external sources
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || isInternalUpdate || !isVideoLoaded) return;
+    if (!video || isInternalUpdate) return;
     
-    // Check if currentTime has significantly changed from last value
-    // This ensures we only act on deliberate timestamp clicks, not small updates
-    if (Math.abs(currentTime - lastCurrentTimeRef.current) > 0.5) {
-      logDebug('VideoPlayer', 'Significant time jump detected', { 
-        from: lastCurrentTimeRef.current, 
-        to: currentTime,
-        diff: currentTime - lastCurrentTimeRef.current
+    // Always update when time changes from transcript click
+    // This ensures we respond to all seek requests
+    if (Math.abs(currentTime - video.currentTime) > 0.2) {
+      logDebug('VideoPlayer', 'External seek detected', { 
+        from: video.currentTime, 
+        to: currentTime
       });
       
       try {
-        // Directly set video position
+        // Set the video's current time
         video.currentTime = currentTime;
         
-        // If video is paused, try to play it
-        if (video.paused) {
-          logDebug('VideoPlayer', 'Attempting to play after time jump');
-          // Use promise to handle autoplay restrictions
-          video.play()
-            .then(() => {
-              logDebug('VideoPlayer', 'Successfully started playing after time jump');
-            })
-            .catch(err => {
-              logDebug('VideoPlayer', 'Failed to play after time jump', { error: err });
-            });
+        // If video is paused and this appears to be a seek from transcript,
+        // attempt to play the video automatically
+        if (video.paused && Math.abs(currentTime - lastCurrentTimeRef.current) > 1) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => logDebug('VideoPlayer', 'Successfully played after seek'))
+              .catch(err => logDebug('VideoPlayer', 'Failed to play after seek', { error: err }));
+          }
         }
       } catch (err) {
         logDebug('VideoPlayer', 'Error during time jump', { error: err });
@@ -78,7 +75,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     // Update last known currentTime
     lastCurrentTimeRef.current = currentTime;
-  }, [currentTime, isInternalUpdate, isVideoLoaded]);
+  }, [currentTime, isInternalUpdate]);
 
   // Handle play/pause state from external sources
   useEffect(() => {
