@@ -40,7 +40,7 @@ Reflectly is a modern web application that allows users to upload video files an
 
 3. Create a `.env.local` file in the project root with your OpenAI API key:
    ```
-   NEXT_PUBLIC_OPENAI_API_KEY=your_api_key_here
+   OPENAI_API_KEY=your_api_key_here
    ```
 
 4. Start the development server:
