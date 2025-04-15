@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, forwardRef, Ref } from 'react';
 
 // Debug logging utility
 const logDebug = (component: string, action: string, data?: any) => {
@@ -15,14 +15,18 @@ interface VideoPlayerProps {
   onPlayPause: () => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({
+const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   videoUrl,
   currentTime,
   onTimeUpdate,
   isPlaying,
   onPlayPause
-}) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+}, forwardedRef) => {
+  // Use internal ref if no ref is forwarded
+  const localRef = useRef<HTMLVideoElement>(null);
+  // This ensures we always have a ref object with current property
+  const videoRef = (forwardedRef as React.RefObject<HTMLVideoElement>) || localRef;
+  
   const [isInternalUpdate, setIsInternalUpdate] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
@@ -65,7 +69,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           if (playPromise !== undefined) {
             playPromise
               .then(() => logDebug('VideoPlayer', 'Successfully played after seek'))
-              .catch(err => logDebug('VideoPlayer', 'Failed to play after seek', { error: err }));
+              .catch((err: Error) => logDebug('VideoPlayer', 'Failed to play after seek', { error: err }));
           }
         }
       } catch (err) {
@@ -87,7 +91,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     try {
       if (isPlaying && video.paused) {
         video.play()
-          .catch(error => {
+          .catch((error: Error) => {
             logDebug('VideoPlayer', 'Playback error during play', { error });
           });
       } else if (!isPlaying && !video.paused) {
@@ -158,7 +162,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   return (
     <div className="video-player w-full rounded-xl overflow-hidden shadow-lg relative">
       <video
-        ref={videoRef}
+        ref={videoRef as React.RefObject<HTMLVideoElement>}
         src={videoUrl}
         className="w-full"
         controls
@@ -172,6 +176,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       />
     </div>
   );
-};
+});
+
+// Add display name for better debugging
+VideoPlayer.displayName = 'VideoPlayer';
 
 export default VideoPlayer; 

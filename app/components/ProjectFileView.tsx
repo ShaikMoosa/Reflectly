@@ -37,6 +37,8 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   
   // Transcript state
   const [transcriptData, setTranscriptData] = useState<TranscriptData>({
@@ -110,6 +112,29 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
     }
   };
 
+  // Helper function to get video metadata
+  const getVideoDuration = async (): Promise<number> => {
+    return new Promise((resolve) => {
+      if (videoRef.current) {
+        // If we already have a reference to the video element
+        resolve(videoRef.current.duration);
+      } else {
+        // Create a temporary video element to get duration
+        const tempVideo = document.createElement('video');
+        tempVideo.src = videoUrl;
+        tempVideo.onloadedmetadata = () => {
+          const duration = tempVideo.duration;
+          resolve(duration);
+          tempVideo.remove(); // Clean up
+        };
+        tempVideo.onerror = () => {
+          console.error('Failed to load video for duration check');
+          resolve(300); // Fallback to 5 minutes if we can't get the duration
+        };
+      }
+    });
+  };
+
   const handleGenerateTranscript = async () => {
     if (uploadedFiles.length === 0) return;
     
@@ -123,105 +148,58 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
       // For now, we'll simulate a transcript generation
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock transcript data with more segments covering a longer duration
-      const mockSegments: TranscriptSegmentData[] = [
-        {
-          id: uuidv4(),
-          text: "Welcome to our project demo video.",
-          start_time: 0,
-          end_time: 3.5
-        },
-        {
-          id: uuidv4(),
-          text: "In this video, we'll showcase the main features of our application.",
-          start_time: 3.5,
-          end_time: 7.2
-        },
-        {
-          id: uuidv4(),
-          text: "Let's get started with a quick overview of the interface.",
-          start_time: 7.2,
-          end_time: 10.5
-        },
-        {
-          id: uuidv4(),
-          text: "The dashboard provides a comprehensive view of all your projects.",
-          start_time: 10.5,
-          end_time: 15.8
-        },
-        {
-          id: uuidv4(),
-          text: "You can easily search and filter your projects using the search bar at the top.",
-          start_time: 15.8,
-          end_time: 20.2
-        },
-        {
-          id: uuidv4(),
-          text: "To create a new project, simply click on the 'New Project' button in the top-right corner.",
-          start_time: 20.2,
-          end_time: 25.9
-        },
-        {
-          id: uuidv4(),
-          text: "Now, let's look at the project details page.",
-          start_time: 25.9,
-          end_time: 29.4
-        },
-        {
-          id: uuidv4(),
-          text: "Each project has tabs for transcripts, notes, and AI chat functionality.",
-          start_time: 29.4,
-          end_time: 35.1
-        },
-        {
-          id: uuidv4(),
-          text: "The transcript tab allows you to view the automatically generated transcript of your video.",
-          start_time: 35.1,
-          end_time: 42.3
-        },
-        {
-          id: uuidv4(),
-          text: "You can click on any part of the transcript to jump to that point in the video.",
-          start_time: 42.3,
-          end_time: 47.5
-        },
-        {
-          id: uuidv4(),
-          text: "The notes tab lets you add and organize your thoughts about the video content.",
-          start_time: 47.5,
-          end_time: 53.8
-        },
-        {
-          id: uuidv4(),
-          text: "Notes can be tagged, highlighted, and commented on for better organization.",
-          start_time: 53.8,
-          end_time: 59.2
-        },
-        {
-          id: uuidv4(),
-          text: "Finally, the AI chat tab allows you to ask questions about the video content.",
-          start_time: 59.2,
-          end_time: 65.7
-        },
-        {
-          id: uuidv4(),
-          text: "The AI assistant can provide insights and answer specific questions about the video.",
-          start_time: 65.7,
-          end_time: 72.6
-        },
-        {
-          id: uuidv4(),
-          text: "You can export your transcript, notes, and chat history for future reference.",
-          start_time: 72.6,
-          end_time: 78.4
-        },
-        {
-          id: uuidv4(),
-          text: "That concludes our overview of the application. Thanks for watching!",
-          start_time: 78.4,
-          end_time: 85.0
-        }
+      // Get the actual video duration
+      const duration = await getVideoDuration();
+      setVideoDuration(duration);
+      console.log("Video duration:", duration);
+      
+      // Generate segments based on video duration
+      const mockSegments: TranscriptSegmentData[] = [];
+      
+      // Sample content for dynamic transcript generation
+      const sampleContent = [
+        "Welcome to our project demo video.",
+        "In this video, we'll showcase the main features of our application.",
+        "Let's get started with a quick overview of the interface.",
+        "The dashboard provides a comprehensive view of all your projects.",
+        "You can easily search and filter your projects using the search bar at the top.",
+        "To create a new project, simply click on the 'New Project' button in the top-right corner.",
+        "Now, let's look at the project details page.",
+        "Each project has tabs for transcripts, notes, and AI chat functionality.",
+        "The transcript tab allows you to view the automatically generated transcript of your video.",
+        "You can click on any part of the transcript to jump to that point in the video.",
+        "The notes tab lets you add and organize your thoughts about the video content.",
+        "Notes can be tagged, highlighted, and commented on for better organization.",
+        "The AI chat tab allows you to ask questions about the video content.",
+        "The AI assistant can provide insights and answer specific questions about the video.",
+        "You can export your transcript, notes, and chat history for future reference.",
+        "Our application uses advanced AI to help you extract insights from your videos.",
+        "The interface is designed to be intuitive and user-friendly.",
+        "All your data is securely stored and accessible only to authorized users.",
+        "You can collaborate with team members by sharing your projects.",
+        "Real-time updates ensure everyone has the latest information."
       ];
+      
+      // Calculate how many segments we need to cover the full duration
+      const segmentCount = Math.max(10, Math.ceil(duration / 5)); // At least 10 segments, or one every 5 seconds
+      const segmentDuration = duration / segmentCount;
+      
+      // Generate transcript segments
+      for (let i = 0; i < segmentCount; i++) {
+        const startTime = i * segmentDuration;
+        const endTime = Math.min((i + 1) * segmentDuration, duration);
+        
+        // Get content for this segment (cycle through sample content if needed)
+        const contentIndex = i % sampleContent.length;
+        const text = sampleContent[contentIndex];
+        
+        mockSegments.push({
+          id: uuidv4(),
+          text,
+          start_time: startTime,
+          end_time: endTime
+        });
+      }
       
       setTranscriptData({
         segments: mockSegments,
@@ -344,6 +322,7 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
           onTimeUpdate={handleTimeUpdate}
           isPlaying={isPlaying}
           onPlayPause={handlePlayPause}
+          ref={videoRef}
         />
       ) : (
         <div className="border rounded-lg p-6 flex flex-col items-center justify-center bg-gray-50 text-center">
