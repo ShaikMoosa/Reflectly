@@ -30,14 +30,6 @@ const SummaryStep: React.FC<SummaryStepProps> = ({
               <p className="text-sm text-gray-500">Project Name</p>
               <p className="font-medium">{projectInfo.name || 'Not specified'}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Category</p>
-              <p className="font-medium">
-                {projectInfo.category ? 
-                  projectInfo.category.charAt(0).toUpperCase() + projectInfo.category.slice(1) : 
-                  'Not specified'}
-              </p>
-            </div>
           </div>
           
           <div className="mt-4">

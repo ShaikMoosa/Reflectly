@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   output: 'standalone',
-  swcMinify: false,
+  // swcMinify: false,
   images: {
     domains: ['localhost'],
   },
@@ -22,7 +22,7 @@ const nextConfig = {
       exclude: ['error', 'warn', 'debug', 'info'],
     } : false,
   },
-  // Configure webpack to properly handle TLDraw and improve debugging
+  // Configure webpack for better optimization
   webpack: (config, { isServer, dev }) => {
     // Enable source maps in development
     if (dev) {
@@ -41,20 +41,13 @@ const nextConfig = {
     // Add module name debug information
     config.optimization.moduleIds = 'named';
 
-    // Optimize chunks for TLDraw
+    // Optimize chunks
     config.optimization.runtimeChunk = 'single';
     config.optimization.splitChunks = {
       chunks: 'all',
       maxInitialRequests: Infinity,
       minSize: 0,
       cacheGroups: {
-        tldraw: {
-          test: /[\\/]node_modules[\\/]@tldraw[\\/]/,
-          name: 'vendor-tldraw',
-          priority: 10,
-          enforce: true,
-          chunks: 'all',
-        },
         vendor: {
           test: /[\\/]node_modules[\\/]/,
           name(module) {

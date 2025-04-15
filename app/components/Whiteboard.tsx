@@ -1,148 +1,217 @@
 'use client';
 
-import React, { useEffect, useState, Dispatch, SetStateAction } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import dynamic from 'next/dynamic';
-import type { Editor, Tldraw as TldrawType } from '@tldraw/tldraw';
+import './Whiteboard.css';
 
-// Import TLDraw dynamically with SSR disabled
-const TldrawComponent = dynamic(
-  () => import('@tldraw/tldraw').then(mod => ({ default: mod.Tldraw })),
-  { ssr: false }
-);
+interface Point {
+  x: number;
+  y: number;
+}
 
-// Simple loading component
-const LoadingPlaceholder = () => (
-  <div className="flex items-center justify-center h-full w-full">
-    <div className="text-center p-8">
-      <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
-      <p className="mt-4">Loading Whiteboard...</p>
-    </div>
-  </div>
-);
+interface Line {
+  points: Point[];
+  color: string;
+  width: number;
+}
 
-const Whiteboard = () => {
+export default function Whiteboard() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [currentLine, setCurrentLine] = useState<Line | null>(null);
+  const [color, setColor] = useState('#000000');
+  const [strokeWidth, setStrokeWidth] = useState(3);
   const { resolvedTheme } = useTheme();
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  // Ensure we're on client side before rendering
+  // Set up canvas
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  // Update editor theme when theme changes
-  useEffect(() => {
-    if (editor && mounted) {
-      try {
-        editor.user.updateUserPreferences({
-          colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light'
-        });
-      } catch (err) {
-        console.error('Error updating TLDraw theme:', err);
-      }
-    }
-  }, [editor, resolvedTheme, mounted]);
-
-  // Remove watermarks
-  useEffect(() => {
-    if (!mounted) return;
-
-    const removeWatermarks = () => {
-      const watermarks = document.querySelectorAll('[data-watermark="true"]');
-      watermarks.forEach(watermark => watermark.remove());
+    // Handle resize
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      
+      const rect = parent.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      
+      redrawCanvas();
     };
 
-    // Initial removal
-    removeWatermarks();
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    // Setup MutationObserver to continuously remove watermarks
-    const observer = new MutationObserver(removeWatermarks);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, []);
+
+  // Handle theme changes
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    redrawCanvas();
+  }, [resolvedTheme]);
+
+  // Draw all lines
+  const redrawCanvas = () => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw background based on theme
+    ctx.fillStyle = resolvedTheme === 'dark' ? '#333333' : '#f5f5f5';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw all stored lines
+    lines.forEach(line => {
+      if (line.points.length < 2) return;
+      
+      ctx.beginPath();
+      ctx.moveTo(line.points[0].x, line.points[0].y);
+      
+      for (let i = 1; i < line.points.length; i++) {
+        ctx.lineTo(line.points[i].x, line.points[i].y);
+      }
+      
+      ctx.strokeStyle = line.color;
+      ctx.lineWidth = line.width;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
     });
+  };
 
-    return () => observer.disconnect();
-  }, [mounted]);
+  // Mouse and touch event handlers
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!canvasRef.current) return;
+    
+    setIsDrawing(true);
+    
+    const point = getPointFromEvent(e);
+    const newLine: Line = {
+      points: [point],
+      color: color,
+      width: strokeWidth
+    };
+    
+    setCurrentLine(newLine);
+  };
 
-  // Don't render anything on server or if not mounted
-  if (!mounted) return null;
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing || !currentLine || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    e.preventDefault();
+    
+    const point = getPointFromEvent(e);
+    const updatedLine = {
+      ...currentLine,
+      points: [...currentLine.points, point]
+    };
+    
+    setCurrentLine(updatedLine);
+    
+    // Draw the current line segment
+    const lastPoint = currentLine.points[currentLine.points.length - 1];
+    
+    ctx.beginPath();
+    ctx.moveTo(lastPoint.x, lastPoint.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.strokeStyle = currentLine.color;
+    ctx.lineWidth = currentLine.width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  };
 
-  // Show error state if something went wrong
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full w-full">
-        <div className="text-center p-8">
-          <h3 className="text-xl mb-4">Unable to load whiteboard</h3>
-          <p className="mb-4">Please refresh the page or check your connection.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const stopDrawing = () => {
+    if (!isDrawing || !currentLine) return;
+    
+    setIsDrawing(false);
+    setLines([...lines, currentLine]);
+    setCurrentLine(null);
+  };
+
+  const getPointFromEvent = (e: React.MouseEvent | React.TouchEvent): Point => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    let clientX, clientY;
+    
+    if ('touches' in e) {
+      // Touch event
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      // Mouse event
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
+
+  const clearCanvas = () => {
+    setLines([]);
+    redrawCanvas();
+  };
 
   return (
-    <div className="h-full w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-      <React.Suspense fallback={<LoadingPlaceholder />}>
-        <ErrorBoundary onError={(err: Error) => setError(err)}>
-          <TldrawComponent 
-            onMount={(editor: Editor) => setEditor(editor)}
-            className="h-full w-full"
-          />
-        </ErrorBoundary>
-      </React.Suspense>
+    <div className="whiteboard-container h-full w-full relative">
+      <div className="controls absolute top-2 left-2 z-10 flex gap-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-md">
+        <input 
+          type="color" 
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          className="w-8 h-8 cursor-pointer"
+        />
+        <select 
+          value={strokeWidth}
+          onChange={(e) => setStrokeWidth(Number(e.target.value))}
+          className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2"
+        >
+          <option value="1">Thin</option>
+          <option value="3">Medium</option>
+          <option value="5">Thick</option>
+          <option value="10">Extra Thick</option>
+        </select>
+        <button 
+          onClick={clearCanvas}
+          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+        >
+          Clear
+        </button>
+      </div>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+        className="touch-none h-full w-full"
+      />
     </div>
   );
-};
-
-// Error boundary component with proper types
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  onError?: (error: Error) => void;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(): ErrorBoundaryState {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error): void {
-    console.error("TLDraw error:", error);
-    if (this.props.onError) {
-      this.props.onError(error);
-    }
-  }
-
-  render(): React.ReactNode {
-    if (this.state.hasError) {
-      return (
-        <div className="flex items-center justify-center h-full w-full">
-          <div className="text-center p-8">
-            <h3 className="text-xl mb-4">Something went wrong</h3>
-            <p>We encountered an error while loading the whiteboard.</p>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-export default Whiteboard; 
+} 

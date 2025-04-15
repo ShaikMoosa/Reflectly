@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { UploadCloud, FileVideo, X } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { UploadCloud, FileVideo, X, AlertCircle } from 'lucide-react';
 
 export interface UploadedFile {
   file: File;
@@ -19,7 +19,19 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
 }) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(initialFiles);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showRequiredError, setShowRequiredError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear error when files are uploaded
+  useEffect(() => {
+    if (uploadedFiles.length > 0) {
+      setError(null);
+      setShowRequiredError(false);
+    } else if (showRequiredError) {
+      setError("Please upload a video file to continue");
+    }
+  }, [uploadedFiles, showRequiredError]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -34,6 +46,8 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           file,
           id: Math.random().toString(36).substring(2, 9)
         });
+      } else {
+        setError("Only MP4 video files are supported");
       }
     });
     
@@ -75,6 +89,7 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
     
     // Process each file
     const newFiles: UploadedFile[] = [];
+    let unsupportedFiles = false;
     
     Array.from(files).forEach(file => {
       if (file.type === 'video/mp4') {
@@ -83,11 +98,13 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           id: Math.random().toString(36).substring(2, 9)
         });
       } else {
-        // Show error for non-MP4 files
-        console.error('Only MP4 files are allowed');
-        // You could add toast notification here
+        unsupportedFiles = true;
       }
     });
+    
+    if (unsupportedFiles) {
+      setError("Some files were not added. Only MP4 video files are supported.");
+    }
     
     const updatedFiles = [...uploadedFiles, ...newFiles];
     setUploadedFiles(updatedFiles);
@@ -105,6 +122,11 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
     const filteredFiles = uploadedFiles.filter(f => f.id !== fileId);
     setUploadedFiles(filteredFiles);
     onFilesChange(filteredFiles);
+    
+    // Show required error if all files are removed
+    if (filteredFiles.length === 0) {
+      setShowRequiredError(true);
+    }
   };
 
   return (
@@ -115,9 +137,21 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
         You can either drag and drop your video file here or click to browse your files.
       </p>
       
+      {/* Error message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md flex items-center">
+          <AlertCircle size={16} className="mr-2" />
+          {error}
+        </div>
+      )}
+      
       <div 
-        className={`border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-all ${
-          isDragActive ? 'border-blue-500 bg-blue-50' : ''
+        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
+          isDragActive 
+            ? 'border-blue-500 bg-blue-50' 
+            : error 
+              ? 'border-red-300 hover:border-red-500' 
+              : 'border-gray-300 hover:border-blue-500'
         }`}
         onClick={triggerFileInput}
         onDragOver={handleDragOver}
@@ -133,15 +167,17 @@ const FileUploadStep: React.FC<FileUploadStepProps> = ({
           className="hidden"
         />
         <div className="flex flex-col items-center justify-center gap-4">
-          <div className="bg-blue-100 p-4 rounded-full">
-            <UploadCloud size={48} className="text-blue-500" />
+          <div className={`p-4 rounded-full ${error ? 'bg-red-100' : 'bg-blue-100'}`}>
+            <UploadCloud size={48} className={error ? 'text-red-500' : 'text-blue-500'} />
           </div>
           <h3 className="text-xl font-semibold">Upload your video</h3>
           <p className="text-gray-500 max-w-md mx-auto">
             Maximum file size: 50 MB<br/>
             Supported format: MP4
           </p>
-          <button className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 mt-2">
+          <button className={`px-6 py-3 text-white rounded-md mt-2 ${
+            error ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+          }`}>
             Choose a video
           </button>
         </div>

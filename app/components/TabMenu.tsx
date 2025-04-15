@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, MessageSquare, Sun, Moon } from 'lucide-react';
+import { FileText, MessageSquare, Moon, Sun } from 'lucide-react';
 
 interface TabMenuProps {
   activeTab: 'transcript' | 'notes' | 'ai-chat';
@@ -17,30 +17,48 @@ const TabMenu: React.FC<TabMenuProps> = ({
   onToggleTheme
 }) => {
   return (
-    <div className="top-controls">
-      <div className="tab-menu">
+    <div className="flex justify-between items-center">
+      <div className="flex space-x-1">
         <button
-          className={`tab-button ${activeTab === 'transcript' ? 'active' : ''}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'transcript' 
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+          }`}
           onClick={() => onTabChange('transcript')}
         >
-          <FileText size={16} />
-          <span>Transcript</span>
+          <div className="flex items-center gap-2">
+            <FileText size={16} />
+            <span>Transcript</span>
+          </div>
         </button>
         
         <button
-          className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'notes' 
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+          }`}
           onClick={() => onTabChange('notes')}
         >
-          <FileText size={16} />
-          <span>Notes</span>
+          <div className="flex items-center gap-2">
+            <FileText size={16} />
+            <span>Notes</span>
+          </div>
         </button>
         
         <button
-          className={`tab-button ${activeTab === 'ai-chat' ? 'active' : ''}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'ai-chat' 
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+          }`}
           onClick={() => onTabChange('ai-chat')}
         >
-          <MessageSquare size={16} />
-          <span>AI Chat</span>
+          <div className="flex items-center gap-2">
+            <MessageSquare size={16} />
+            <span>AI Chat</span>
+          </div>
         </button>
       </div>
       
