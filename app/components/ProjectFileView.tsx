@@ -258,7 +258,7 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   };
 
   const renderVideoSection = () => (
-    <div className="video-section mb-6">
+    <div className="video-section w-full">
       {videoUrl ? (
         <VideoPlayer
           videoUrl={videoUrl}
@@ -283,78 +283,98 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
 
   const renderTranscriptTab = () => (
     <div className="transcript-tab">
-      {renderVideoSection()}
-      
-      {videoUrl && !transcriptData.hasTranscript && !transcriptData.loading && (
-        <div className="transcript-actions flex gap-4 mb-6">
-          <button
-            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-all"
-            onClick={handleGenerateTranscript}
-          >
-            <Play size={16} />
-            Generate Transcript
-          </button>
-          <button
-            className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-all"
-            onClick={handleImportTranscript}
-          >
-            Import
-          </button>
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="md:w-1/2">
+          {renderVideoSection()}
         </div>
-      )}
-      
-      {videoUrl && transcriptData.hasTranscript && (
-        <div className="transcript-actions flex gap-4 mb-6">
-          <button
-            className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-all"
-            onClick={handleExportTranscript}
-          >
-            Export
-          </button>
+        
+        <div className="md:w-1/2 flex flex-col">
+          {videoUrl && !transcriptData.hasTranscript && !transcriptData.loading && (
+            <div className="transcript-actions flex gap-4 mb-6">
+              <button
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-all"
+                onClick={handleGenerateTranscript}
+              >
+                <Play size={16} />
+                Generate Transcript
+              </button>
+              <button
+                className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-all"
+                onClick={handleImportTranscript}
+              >
+                Import
+              </button>
+            </div>
+          )}
+          
+          {videoUrl && transcriptData.hasTranscript && (
+            <div className="transcript-actions flex gap-4 mb-6">
+              <button
+                className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-all"
+                onClick={handleExportTranscript}
+              >
+                Export
+              </button>
+            </div>
+          )}
+          
+          <TranscriptPlayer
+            segments={transcriptData.segments}
+            currentTime={currentTime}
+            onSegmentClick={handleSegmentClick}
+            loading={transcriptData.loading}
+            hasTranscript={transcriptData.hasTranscript}
+            showTimestamps={showTimestamps}
+            playbackSpeed={playbackSpeed}
+            isExpanded={isTranscriptExpanded}
+            onToggleTimestamps={handleToggleTimestamps}
+            onChangePlaybackSpeed={handleChangePlaybackSpeed}
+            onToggleExpand={handleToggleExpand}
+          />
         </div>
-      )}
-      
-      <TranscriptPlayer
-        segments={transcriptData.segments}
-        currentTime={currentTime}
-        onSegmentClick={handleSegmentClick}
-        loading={transcriptData.loading}
-        hasTranscript={transcriptData.hasTranscript}
-        showTimestamps={showTimestamps}
-        playbackSpeed={playbackSpeed}
-        isExpanded={isTranscriptExpanded}
-        onToggleTimestamps={handleToggleTimestamps}
-        onChangePlaybackSpeed={handleChangePlaybackSpeed}
-        onToggleExpand={handleToggleExpand}
-      />
+      </div>
     </div>
   );
 
   const renderNotesTab = () => (
-    <div className="notes-tab flex flex-col h-full">
-      {renderVideoSection()}
-      <NotesPanel 
-        notes={notes}
-        onNoteClick={handleNoteClick}
-        onNoteEdit={handleNoteEdit}
-        onNoteDelete={handleNoteDelete}
-        onToggleHighlight={handleToggleHighlight}
-        onAddTag={handleAddTag}
-        onRemoveTag={handleRemoveTag}
-        onAddComment={handleAddComment}
-        suggestedTags={['important', 'question', 'insight', 'follow-up']}
-      />
+    <div className="notes-tab">
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="md:w-1/2">
+          {renderVideoSection()}
+        </div>
+        
+        <div className="md:w-1/2 flex flex-col">
+          <NotesPanel 
+            notes={notes}
+            onNoteClick={handleNoteClick}
+            onNoteEdit={handleNoteEdit}
+            onNoteDelete={handleNoteDelete}
+            onToggleHighlight={handleToggleHighlight}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            onAddComment={handleAddComment}
+            suggestedTags={['important', 'question', 'insight', 'follow-up']}
+          />
+        </div>
+      </div>
     </div>
   );
 
   const renderAIChatTab = () => (
-    <div className="ai-chat-tab flex flex-col h-full">
-      {renderVideoSection()}
-      <ChatPanel
-        messages={chatMessages}
-        onSendMessage={handleSendMessage}
-        transcriptAvailable={transcriptData.hasTranscript}
-      />
+    <div className="ai-chat-tab">
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="md:w-1/2">
+          {renderVideoSection()}
+        </div>
+        
+        <div className="md:w-1/2 flex flex-col">
+          <ChatPanel
+            messages={chatMessages}
+            onSendMessage={handleSendMessage}
+            transcriptAvailable={transcriptData.hasTranscript}
+          />
+        </div>
+      </div>
     </div>
   );
 
