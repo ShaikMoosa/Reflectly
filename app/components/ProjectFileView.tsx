@@ -123,7 +123,7 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
       // For now, we'll simulate a transcript generation
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock transcript data
+      // Mock transcript data with more segments covering a longer duration
       const mockSegments: TranscriptSegmentData[] = [
         {
           id: uuidv4(),
@@ -142,6 +142,84 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
           text: "Let's get started with a quick overview of the interface.",
           start_time: 7.2,
           end_time: 10.5
+        },
+        {
+          id: uuidv4(),
+          text: "The dashboard provides a comprehensive view of all your projects.",
+          start_time: 10.5,
+          end_time: 15.8
+        },
+        {
+          id: uuidv4(),
+          text: "You can easily search and filter your projects using the search bar at the top.",
+          start_time: 15.8,
+          end_time: 20.2
+        },
+        {
+          id: uuidv4(),
+          text: "To create a new project, simply click on the 'New Project' button in the top-right corner.",
+          start_time: 20.2,
+          end_time: 25.9
+        },
+        {
+          id: uuidv4(),
+          text: "Now, let's look at the project details page.",
+          start_time: 25.9,
+          end_time: 29.4
+        },
+        {
+          id: uuidv4(),
+          text: "Each project has tabs for transcripts, notes, and AI chat functionality.",
+          start_time: 29.4,
+          end_time: 35.1
+        },
+        {
+          id: uuidv4(),
+          text: "The transcript tab allows you to view the automatically generated transcript of your video.",
+          start_time: 35.1,
+          end_time: 42.3
+        },
+        {
+          id: uuidv4(),
+          text: "You can click on any part of the transcript to jump to that point in the video.",
+          start_time: 42.3,
+          end_time: 47.5
+        },
+        {
+          id: uuidv4(),
+          text: "The notes tab lets you add and organize your thoughts about the video content.",
+          start_time: 47.5,
+          end_time: 53.8
+        },
+        {
+          id: uuidv4(),
+          text: "Notes can be tagged, highlighted, and commented on for better organization.",
+          start_time: 53.8,
+          end_time: 59.2
+        },
+        {
+          id: uuidv4(),
+          text: "Finally, the AI chat tab allows you to ask questions about the video content.",
+          start_time: 59.2,
+          end_time: 65.7
+        },
+        {
+          id: uuidv4(),
+          text: "The AI assistant can provide insights and answer specific questions about the video.",
+          start_time: 65.7,
+          end_time: 72.6
+        },
+        {
+          id: uuidv4(),
+          text: "You can export your transcript, notes, and chat history for future reference.",
+          start_time: 72.6,
+          end_time: 78.4
+        },
+        {
+          id: uuidv4(),
+          text: "That concludes our overview of the application. Thanks for watching!",
+          start_time: 78.4,
+          end_time: 85.0
         }
       ];
       
