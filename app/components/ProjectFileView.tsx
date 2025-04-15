@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Play, Pause } from 'lucide-react';
+import { ArrowLeft, Play, Pause, X } from 'lucide-react';
 import TabMenu from './TabMenu';
 import VideoPlayer from './VideoPlayer';
 import TranscriptPlayer from './TranscriptPlayer';
@@ -407,31 +407,52 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
       
       {/* Upload modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-all">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+            {/* Modal header */}
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Upload Video</h2>
+              <button
+                className="p-1.5 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setShowUploadModal(false)}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            {/* Modal body */}
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Upload Video</h2>
-              <FileUploadStep onFilesChange={handleFilesChange} />
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Upload an MP4 video file to transcribe and analyze. You can either drag and drop your file or browse to select.
+              </p>
               
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => setShowUploadModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                  onClick={() => {
-                    if (uploadedFiles.length > 0) {
-                      setShowUploadModal(false);
-                    }
-                  }}
-                  disabled={uploadedFiles.length === 0}
-                >
-                  Upload
-                </button>
-              </div>
+              <FileUploadStep onFilesChange={handleFilesChange} initialFiles={uploadedFiles} />
+            </div>
+            
+            {/* Modal footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">
+              <button
+                className="px-4 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
+                onClick={() => setShowUploadModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md text-white text-sm font-medium transition-colors ${
+                  uploadedFiles.length > 0 
+                    ? 'bg-blue-500 hover:bg-blue-600' 
+                    : 'bg-blue-400/70 cursor-not-allowed'
+                }`}
+                onClick={() => {
+                  if (uploadedFiles.length > 0) {
+                    setShowUploadModal(false);
+                  }
+                }}
+                disabled={uploadedFiles.length === 0}
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
