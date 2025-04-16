@@ -17,6 +17,9 @@ export interface TranscriptPlayerProps {
   isExpanded?: boolean;
   highlightedSegments?: string[];
   onAddToNotes?: (segment: TranscriptSegmentData) => void;
+  onHighlightSegment?: (segmentId: string) => void;
+  onAddTagToSegment?: (segmentId: string) => void;
+  onAddCommentToSegment?: (segmentId: string) => void;
   onToggleTimestamps?: () => void;
   onChangePlaybackSpeed?: (speed: number) => void;
   onToggleExpand?: () => void;
@@ -34,6 +37,9 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
   isExpanded = true,
   highlightedSegments = [],
   onAddToNotes,
+  onHighlightSegment,
+  onAddTagToSegment,
+  onAddCommentToSegment,
   onToggleTimestamps,
   onChangePlaybackSpeed,
   onToggleExpand
@@ -68,6 +74,25 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
       if (segment) {
         onAddToNotes(segment);
       }
+    }
+  };
+
+  // Handle segment actions
+  const handleAddTag = (segmentId: string) => {
+    if (onAddTagToSegment) {
+      onAddTagToSegment(segmentId);
+    }
+  };
+
+  const handleAddComment = (segmentId: string) => {
+    if (onAddCommentToSegment) {
+      onAddCommentToSegment(segmentId);
+    }
+  };
+
+  const handleHighlight = (segmentId: string) => {
+    if (onHighlightSegment) {
+      onHighlightSegment(segmentId);
     }
   };
 
@@ -187,6 +212,15 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
             highlighted={highlightedSegments.includes(segment.id) || lastClickedId === segment.id}
             onClick={handleSegmentClick}
             onTimestampClick={handleTimestampClick}
+            onAddTag={handleAddTag}
+            onAddComment={handleAddComment}
+            onHighlight={handleHighlight}
+            onAddToNotes={onAddToNotes && ((segmentId: string) => {
+              const segment = segments.find(s => s.id === segmentId);
+              if (segment) {
+                onAddToNotes(segment);
+              }
+            })}
           />
         ))}
       </div>

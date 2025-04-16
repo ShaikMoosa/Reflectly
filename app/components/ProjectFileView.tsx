@@ -11,6 +11,7 @@ import ChatPanel from './ChatPanel';
 import FileUploadStep, { UploadedFile } from './FileUploadStep';
 import { Project } from './ProjectPage';
 import { v4 as uuidv4 } from 'uuid';
+import MyNotesPanel, { Annotation } from './MyNotesPanel';
 
 export interface ProjectFileViewProps {
   project: Project;
@@ -22,6 +23,14 @@ interface TranscriptData {
   segments: TranscriptSegmentData[];
   loading: boolean;
   hasTranscript: boolean;
+}
+
+interface Note {
+  text: string;
+  timestamp: number;
+  tags?: string[];
+  comment?: string;
+  isHighlighted?: boolean;
 }
 
 const ProjectFileView: React.FC<ProjectFileViewProps> = ({
@@ -57,14 +66,15 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(true);
 
-  // Notes state
-  const [notes, setNotes] = useState<{
-    text: string;
-    timestamp: number;
-    tags?: string[];
-    comment?: string;
-    isHighlighted?: boolean;
-  }[]>([]);
+  // Notes and annotations state
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [highlightedSegments, setHighlightedSegments] = useState<string[]>([]);
+  const [showTagDialog, setShowTagDialog] = useState(false);
+  const [showCommentDialog, setShowCommentDialog] = useState(false);
+  const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState('');
+  const [commentInput, setCommentInput] = useState('');
   
   const [chatMessages, setChatMessages] = useState<{
     role: 'user' | 'assistant';
@@ -375,50 +385,132 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
     setIsTranscriptExpanded(!isTranscriptExpanded);
   };
 
-  const handleNoteClick = (timestamp: number) => {
+  const handleSegmentHighlight = (segmentId: string) => {
+    if (highlightedSegments.includes(segmentId)) {
+      // Remove highlight
+      setHighlightedSegments(highlightedSegments.filter(id => id !== segmentId));
+      
+      // Remove annotation if exists
+      setAnnotations(prev => prev.filter(a => !(a.type === 'highlight' && a.id.includes(segmentId))));
+    } else {
+      // Add highlight
+      setHighlightedSegments([...highlightedSegments, segmentId]);
+      
+      // Find segment data
+      const segment = transcriptData.segments.find(s => s.id === segmentId);
+      if (segment) {
+        // Create an annotation
+        const annotation: Annotation = {
+          id: `highlight-${segmentId}-${Date.now()}`,
+          type: 'highlight',
+          timestamp: segment.start_time,
+          text: '',
+          segmentText: segment.text
+        };
+        
+        setAnnotations(prev => [...prev, annotation]);
+      }
+    }
+  };
+  
+  const handleAddTagToSegment = (segmentId: string) => {
+    setActiveSegmentId(segmentId);
+    setTagInput('');
+    setShowTagDialog(true);
+  };
+  
+  const handleAddCommentToSegment = (segmentId: string) => {
+    setActiveSegmentId(segmentId);
+    setCommentInput('');
+    setShowCommentDialog(true);
+  };
+  
+  const handleSaveTag = () => {
+    if (!activeSegmentId || !tagInput.trim()) return;
+    
+    // Find segment data
+    const segment = transcriptData.segments.find(s => s.id === activeSegmentId);
+    if (segment) {
+      // Create an annotation
+      const annotation: Annotation = {
+        id: `tag-${activeSegmentId}-${Date.now()}`,
+        type: 'tag',
+        timestamp: segment.start_time,
+        text: tagInput,
+        segmentText: segment.text,
+        tag: tagInput
+      };
+      
+      setAnnotations(prev => [...prev, annotation]);
+    }
+    
+    setShowTagDialog(false);
+    setActiveSegmentId(null);
+  };
+  
+  const handleSaveComment = () => {
+    if (!activeSegmentId || !commentInput.trim()) return;
+    
+    // Find segment data
+    const segment = transcriptData.segments.find(s => s.id === activeSegmentId);
+    if (segment) {
+      // Create an annotation
+      const annotation: Annotation = {
+        id: `comment-${activeSegmentId}-${Date.now()}`,
+        type: 'comment',
+        timestamp: segment.start_time,
+        text: commentInput,
+        segmentText: segment.text,
+        comment: commentInput
+      };
+      
+      setAnnotations(prev => [...prev, annotation]);
+    }
+    
+    setShowCommentDialog(false);
+    setActiveSegmentId(null);
+  };
+  
+  const handleAddToNotes = (segment: TranscriptSegmentData) => {
+    const newNote: Note = {
+      text: segment.text,
+      timestamp: segment.start_time
+    };
+    
+    setNotes(prev => [...prev, newNote]);
+  };
+  
+  const handleAnnotationClick = (timestamp: number) => {
     setCurrentTime(timestamp);
     if (!isPlaying) {
       setIsPlaying(true);
     }
   };
   
-  const handleNoteEdit = (index: number, newText: string) => {
-    const updatedNotes = [...notes];
-    updatedNotes[index].text = newText;
-    setNotes(updatedNotes);
-  };
-  
-  const handleNoteDelete = (index: number) => {
-    const updatedNotes = [...notes];
-    updatedNotes.splice(index, 1);
-    setNotes(updatedNotes);
-  };
-  
-  const handleToggleHighlight = (index: number) => {
-    const updatedNotes = [...notes];
-    updatedNotes[index].isHighlighted = !updatedNotes[index].isHighlighted;
-    setNotes(updatedNotes);
-  };
-  
-  const handleAddTag = (noteIndex: number, tag: string) => {
-    const updatedNotes = [...notes];
-    if (!updatedNotes[noteIndex].tags) {
-      updatedNotes[noteIndex].tags = [];
+  const handleAnnotationEdit = (id: string) => {
+    const annotation = annotations.find(a => a.id === id);
+    if (!annotation) return;
+    
+    if (annotation.type === 'tag') {
+      setTagInput(annotation.tag || '');
+      setActiveSegmentId(id);
+      setShowTagDialog(true);
+    } else if (annotation.type === 'comment') {
+      setCommentInput(annotation.comment || '');
+      setActiveSegmentId(id);
+      setShowCommentDialog(true);
     }
-    updatedNotes[noteIndex].tags?.push(tag);
-    setNotes(updatedNotes);
   };
   
-  const handleRemoveTag = (noteIndex: number, tagIndex: number) => {
-    const updatedNotes = [...notes];
-    updatedNotes[noteIndex].tags?.splice(tagIndex, 1);
-    setNotes(updatedNotes);
-  };
-  
-  const handleAddComment = (noteIndex: number, comment: string) => {
-    const updatedNotes = [...notes];
-    updatedNotes[noteIndex].comment = comment;
-    setNotes(updatedNotes);
+  const handleAnnotationDelete = (id: string) => {
+    // Remove the annotation
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+    
+    // If it's a highlight, also update highlightedSegments
+    const segmentMatch = id.match(/^highlight-(.+?)-/);
+    if (segmentMatch && segmentMatch[1]) {
+      setHighlightedSegments(prev => prev.filter(segId => segId !== segmentMatch[1]));
+    }
   };
   
   const handleSendMessage = async (message: string) => {
@@ -521,6 +613,11 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
             showTimestamps={showTimestamps}
             playbackSpeed={playbackSpeed}
             isExpanded={isTranscriptExpanded}
+            highlightedSegments={highlightedSegments}
+            onHighlightSegment={handleSegmentHighlight}
+            onAddTagToSegment={handleAddTagToSegment}
+            onAddCommentToSegment={handleAddCommentToSegment}
+            onAddToNotes={handleAddToNotes}
             onToggleTimestamps={handleToggleTimestamps}
             onChangePlaybackSpeed={handleChangePlaybackSpeed}
             onToggleExpand={handleToggleExpand}
@@ -531,26 +628,113 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   );
 
   const renderNotesTab = () => (
-    <div className="notes-tab">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/2">
-          {renderVideoSection()}
+    <div className="notes-tab h-full">
+      <div className="flex flex-col md:flex-row h-full">
+        <div className="md:w-2/3 flex flex-col h-full overflow-hidden">
+          <div className="video-section mb-4">
+            {renderVideoSection()}
+          </div>
+          
+          <div className="transcript-section flex-1 overflow-hidden border rounded-lg">
+            <TranscriptPlayer
+              segments={transcriptData.segments}
+              currentTime={currentTime}
+              onSegmentClick={handleSegmentClick}
+              loading={transcriptData.loading}
+              hasTranscript={transcriptData.hasTranscript}
+              showTimestamps={showTimestamps}
+              playbackSpeed={playbackSpeed}
+              isExpanded={isTranscriptExpanded}
+              highlightedSegments={highlightedSegments}
+              onHighlightSegment={handleSegmentHighlight}
+              onAddTagToSegment={handleAddTagToSegment}
+              onAddCommentToSegment={handleAddCommentToSegment}
+              onAddToNotes={handleAddToNotes}
+              onToggleTimestamps={handleToggleTimestamps}
+              onChangePlaybackSpeed={handleChangePlaybackSpeed}
+              onToggleExpand={handleToggleExpand}
+            />
+          </div>
         </div>
         
-        <div className="md:w-1/2 flex flex-col">
-          <NotesPanel 
-            notes={notes}
-            onNoteClick={handleNoteClick}
-            onNoteEdit={handleNoteEdit}
-            onNoteDelete={handleNoteDelete}
-            onToggleHighlight={handleToggleHighlight}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-            onAddComment={handleAddComment}
-            suggestedTags={['important', 'question', 'insight', 'follow-up']}
+        <div className="md:w-1/3 flex flex-col h-full">
+          <MyNotesPanel 
+            annotations={annotations}
+            onAnnotationClick={handleAnnotationClick}
+            onAnnotationEdit={handleAnnotationEdit}
+            onAnnotationDelete={handleAnnotationDelete}
           />
         </div>
       </div>
+      
+      {/* Tag Dialog */}
+      {showTagDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-medium mb-4">Add Tag</h3>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              placeholder="Enter tag..."
+              className="w-full p-2 border rounded-md mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                onClick={() => {
+                  setShowTagDialog(false);
+                  setActiveSegmentId(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={handleSaveTag}
+                disabled={!tagInput.trim()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Comment Dialog */}
+      {showCommentDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-medium mb-4">Add Comment</h3>
+            <textarea
+              value={commentInput}
+              onChange={(e) => setCommentInput(e.target.value)}
+              placeholder="Enter comment..."
+              className="w-full p-2 border rounded-md mb-4 min-h-[100px]"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                onClick={() => {
+                  setShowCommentDialog(false);
+                  setActiveSegmentId(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={handleSaveComment}
+                disabled={!commentInput.trim()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
