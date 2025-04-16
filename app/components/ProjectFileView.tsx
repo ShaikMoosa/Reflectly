@@ -50,6 +50,7 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   // Video upload state
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   
   // Playback preferences
   const [showTimestamps, setShowTimestamps] = useState(true);
@@ -154,6 +155,9 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
       formData.append('response_format', 'verbose_json');
       formData.append('timestamp_granularities', 'segment');
       
+      // Log that we're using the API
+      console.log("Sending file to OpenAI Whisper API...");
+      
       // Make the API call to OpenAI's Whisper
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
@@ -165,10 +169,12 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("OpenAI API Error:", errorData);
         throw new Error(`OpenAI API Error: ${errorData.error?.message || 'Unknown error'}`);
       }
       
       const transcriptionData = await response.json();
+      console.log("OpenAI API Response:", transcriptionData);
       
       // Transform OpenAI response to our transcript format
       const segments: TranscriptSegmentData[] = transcriptionData.segments.map((segment: any) => ({
@@ -263,7 +269,57 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   };
 
   const handleImportTranscript = () => {
-    // Implementation for importing existing transcript
+    // Create a hidden file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    
+    // Handle file selection
+    fileInput.onchange = (event) => {
+      const files = (event.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+      
+      const file = files[0];
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const importedData = JSON.parse(content);
+          
+          // Validate the imported JSON structure
+          if (!importedData.transcripts || !Array.isArray(importedData.transcripts)) {
+            setImportError('Invalid transcript format. The file must contain a "transcripts" array.');
+            return;
+          }
+          
+          // Convert imported data to our format if needed
+          const segments = importedData.transcripts.map((segment: any) => ({
+            id: segment.id || uuidv4(),
+            text: segment.text,
+            start_time: segment.start_time || segment.start,
+            end_time: segment.end_time || segment.end
+          }));
+          
+          // Update the transcript data
+          setTranscriptData({
+            segments,
+            loading: false,
+            hasTranscript: true
+          });
+          
+          setImportError(null);
+        } catch (error) {
+          console.error('Error importing transcript:', error);
+          setImportError('Failed to parse the transcript file. Please ensure it is a valid JSON file.');
+        }
+      };
+      
+      reader.readAsText(file);
+    };
+    
+    // Trigger the file selection dialog
+    fileInput.click();
   };
 
   const handleExportTranscript = () => {
@@ -396,14 +452,14 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
           {videoUrl && !transcriptData.hasTranscript && !transcriptData.loading && (
             <div className="transcript-actions flex gap-4 mb-6">
               <button
-                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-all"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-md shadow-sm transition-all"
                 onClick={handleGenerateTranscript}
               >
                 <Play size={16} />
                 Generate Transcript
               </button>
               <button
-                className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-all"
+                className="flex items-center gap-2 border border-gray-300 bg-white text-gray-700 font-medium px-5 py-2.5 rounded-md hover:bg-gray-100 transition-all"
                 onClick={handleImportTranscript}
               >
                 Import
@@ -411,14 +467,27 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
             </div>
           )}
           
+          {importError && (
+            <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
+              {importError}
+            </div>
+          )}
+          
           {videoUrl && transcriptData.hasTranscript && (
             <div className="transcript-actions flex gap-4 mb-6">
               <button
-                className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-all"
+                className="flex items-center gap-2 border border-gray-300 bg-white text-gray-700 font-medium px-5 py-2.5 rounded-md hover:bg-gray-100 transition-all"
                 onClick={handleExportTranscript}
               >
                 Export
               </button>
+            </div>
+          )}
+          
+          {transcriptData.loading && (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+              <span className="ml-3 text-gray-700">Generating transcript...</span>
             </div>
           )}
           
