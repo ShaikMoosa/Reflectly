@@ -145,45 +145,63 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
     });
     
     try {
-      // Extract audio from the video file
+      // Extract the video file
       const videoFile = uploadedFiles[0].file;
+      console.log("Processing video file:", videoFile.name, "Size:", videoFile.size, "Type:", videoFile.type);
       
-      // Create a FormData object to send the file
+      if (!videoFile.type.startsWith('video/')) {
+        throw new Error("The uploaded file is not a valid video format");
+      }
+      
+      // Create a FormData object to send the file to our server API
       const formData = new FormData();
       formData.append('file', videoFile);
-      formData.append('model', 'whisper-1');
-      formData.append('response_format', 'verbose_json');
-      formData.append('timestamp_granularities', 'segment');
       
-      // Log that we're using the API
-      console.log("Sending file to OpenAI Whisper API...");
-      
-      // Make the API call to OpenAI's Whisper
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      // Use the server-side API route instead of calling OpenAI directly
+      console.log("Sending file to server-side API for processing...");
+      const response = await fetch('/api/transcribe', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
         body: formData
       });
       
+      // Check for response status
+      console.log("API Response status:", response.status, response.statusText);
+      
+      // Handle API errors
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("OpenAI API Error:", errorData);
-        throw new Error(`OpenAI API Error: ${errorData.error?.message || 'Unknown error'}`);
+        let errorMessage = `Transcription API Error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.error("API Error details:", errorData);
+          errorMessage = `Transcription API Error: ${errorData.error || errorMessage}`;
+        } catch (e) {
+          console.error("Could not parse error response:", e);
+        }
+        throw new Error(errorMessage);
       }
       
-      const transcriptionData = await response.json();
-      console.log("OpenAI API Response:", transcriptionData);
+      // Parse the API response
+      const responseData = await response.json();
+      console.log("API Response:", responseData);
       
-      // Transform OpenAI response to our transcript format
-      const segments: TranscriptSegmentData[] = transcriptionData.segments.map((segment: any) => ({
+      if (!responseData.transcripts || !Array.isArray(responseData.transcripts)) {
+        console.error("Unexpected API response format:", responseData);
+        throw new Error("API response does not contain transcript data");
+      }
+      
+      console.log("Found", responseData.transcripts.length, "segments in the transcript");
+      
+      // Transform API response to our transcript format
+      const segments: TranscriptSegmentData[] = responseData.transcripts.map((segment: any) => ({
         id: uuidv4(),
         text: segment.text,
         start_time: segment.start,
         end_time: segment.end
       }));
       
+      console.log("Transcript segments processed:", segments.length);
+      
+      // Update the state with the real transcript
       setTranscriptData({
         segments,
         loading: false,
@@ -194,10 +212,13 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
       if (!videoDuration && videoRef.current) {
         setVideoDuration(videoRef.current.duration);
       }
+      
+      console.log("Transcript generation completed successfully");
     } catch (error) {
       console.error("Error generating transcript:", error);
+      alert(`Failed to generate transcript: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
-      // Fallback to generating mock transcript data if OpenAI API fails
+      // Fallback to generating mock transcript data if API fails
       try {
         console.log("Falling back to mock transcript generation...");
         // Get the actual video duration

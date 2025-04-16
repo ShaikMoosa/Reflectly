@@ -10,6 +10,10 @@ const nextConfig = {
     optimizeCss: false,
     esmExternals: 'loose',
   },
+  // Make environment variables available to the client
+  env: {
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  },
   // Configure server port
   serverRuntimeConfig: {
     port: 3001, // Use port 3001 as an alternative
@@ -75,5 +79,10 @@ const nextConfig = {
 
 // Force disable telemetry
 process.env.NEXT_TELEMETRY_DISABLED = '1';
+
+// Log environment variables without exposing sensitive values
+console.log('Environment configuration:',  {
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***SET***' : '***NOT SET***',
+});
 
 module.exports = nextConfig; 
