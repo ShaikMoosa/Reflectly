@@ -67,30 +67,99 @@ Guidelines:
 - If asked to highlight or tag content, identify important segments
 - If the user asks about content at a specific timestamp, focus your response on that part
 - If asked about something not in the transcript, acknowledge that limitation politely
-- Format your responses in a clear, organized way using bullets or numbers when appropriate`
+- Format your responses in a clear, organized way using bullets or numbers when appropriate
+
+Response Formatting Requirements:
+1. Always use proper Markdown formatting for structure and readability
+2. For summaries, use clear headings (## Main Points: or ## Summary:)
+3. Use bullet points (- ) for lists of features, steps, or key points
+4. Include bold text (**important terms**) for emphasis on key concepts
+5. Add timestamps in parentheses when referencing specific points in the video
+6. Use short paragraphs with adequate spacing between sections
+7. For technical content, use code blocks where appropriate
+8. When listing sequential steps, use numbered lists (1., 2., 3.)
+9. Put important quotes or statements in blockquotes (> text)
+10. Keep your overall structure consistent throughout the response`
     };
 
     // Create the API request with system message, chat history, and user's new message
-    const chatCompletion = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      messages: [
-        systemMessage,
-        ...formattedChatHistory,
-        { role: "user", content: message }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
-
-    // Extract the AI's response
-    const aiResponse = chatCompletion.choices[0].message.content;
-
-    return NextResponse.json({ 
-      response: aiResponse,
-      message: 'Response generated successfully'
-    });
+    try {
+      const chatCompletion = await openai.chat.completions.create({
+        model: "gpt-4-turbo",
+        messages: [
+          systemMessage,
+          ...formattedChatHistory,
+          { role: "user", content: message }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+      
+      // Extract the AI's response
+      const aiResponse = chatCompletion.choices[0]?.message?.content || '';
+      console.log('AI response received successfully:', aiResponse.substring(0, 50) + '...');
+      
+      return NextResponse.json({ 
+        response: aiResponse,
+        message: 'Response generated successfully'
+      });
+    } catch (modelError) {
+      console.error('Error with GPT-4-turbo model, trying fallback model:', modelError);
+      
+      // Try with a fallback model
+      try {
+        const fallbackCompletion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            systemMessage,
+            ...formattedChatHistory,
+            { role: "user", content: message }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        });
+        
+        const fallbackResponse = fallbackCompletion.choices[0]?.message?.content || '';
+        console.log('Fallback model response:', fallbackResponse.substring(0, 50) + '...');
+        
+        return NextResponse.json({ 
+          response: fallbackResponse,
+          message: 'Response generated with fallback model'
+        });
+      } catch (fallbackError) {
+        throw fallbackError; // Re-throw to be caught by the outer catch block
+      }
+    }
   } catch (error: any) {
     console.error('Error generating AI response:', error);
+    
+    // Log more detailed error information
+    if (error.response) {
+      console.error('OpenAI API error details:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      });
+    }
+    
+    // Check if it's an OpenAI API key issue
+    if (error.message && error.message.includes('API key')) {
+      console.error('API key error detected:', error.message);
+      return NextResponse.json(
+        { error: 'Invalid API key. Please check your OpenAI API key configuration.' },
+        { status: 401 }
+      );
+    }
+    
+    // Check if it's a rate limit issue
+    if (error.message && error.message.includes('rate limit')) {
+      console.error('Rate limit exceeded:', error.message);
+      return NextResponse.json(
+        { error: 'OpenAI API rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
       { error: `Failed to generate response: ${error.message}` },
       { status: 500 }

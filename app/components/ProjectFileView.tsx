@@ -594,6 +594,36 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
         // Process response
         const data = await response.json();
         
+        // Check if there's an error in the response
+        if (!response.ok || data.error) {
+          console.error('API response error:', data.error || response.statusText);
+          
+          // Handle specific error cases
+          let errorMessage = 'I encountered an error processing your request.';
+          
+          if (response.status === 401) {
+            errorMessage = 'API configuration error. Please check the OpenAI API key.';
+          } else if (response.status === 429) {
+            errorMessage = 'API rate limit exceeded. Please try again later.';
+          } else if (data.error) {
+            errorMessage = `Error: ${data.error}`;
+          }
+          
+          // Replace loading message with error message
+          setChatMessages(prevMessages => {
+            const filteredMessages = prevMessages.filter(msg => !msg.isLoading);
+            return [
+              ...filteredMessages,
+              {
+                role: 'assistant' as const,
+                content: errorMessage,
+                timestamp
+              }
+            ];
+          });
+          return;
+        }
+        
         // Replace loading message with actual response
         setChatMessages(prevMessages => {
           // Remove the last message if it's a loading message
