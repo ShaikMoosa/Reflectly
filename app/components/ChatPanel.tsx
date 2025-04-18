@@ -7,6 +7,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
+  isLoading?: boolean;
 }
 
 interface ChatPanelProps {
@@ -85,9 +86,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       {/* Header */}
       <div className="chat-header p-4 border-b border-gray-200">
         <h2 className="text-lg font-medium text-gray-800">AI Chat</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Chat with AI about this video. Ask questions, get summaries, or generate tags.
-        </p>
       </div>
       
       {/* Messages */}
@@ -131,6 +129,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   {message.timestamp && (
                     <div className="message-timestamp text-xs text-gray-500 mt-1">
                       {message.timestamp}
+                    </div>
+                  )}
+                  {message.isLoading && (
+                    <div className="loading-indicator flex space-x-1 mt-1">
+                      <div className="dot w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                      <div className="dot w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                      <div className="dot w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse" style={{ animationDelay: '600ms' }}></div>
                     </div>
                   )}
                 </div>

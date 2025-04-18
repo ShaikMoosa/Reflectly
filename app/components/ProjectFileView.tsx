@@ -80,6 +80,7 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
+    isLoading?: boolean;
   }[]>([]);
 
   // Initialize video and transcript data if available
@@ -519,98 +520,120 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     // Add user message with timestamp
-    setChatMessages([
+    const updatedChatMessages = [
       ...chatMessages, 
       { 
-        role: 'user', 
+        role: 'user' as const, 
         content: message,
         timestamp
       }
-    ]);
+    ];
     
-    // Process user query to identify actions for notes, tags, or highlights
-    const messageLC = message.toLowerCase();
-    let aiResponse = '';
+    setChatMessages(updatedChatMessages);
     
-    // Simulate different AI response behaviors based on message content
     try {
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Identify request type and generate appropriate response
-      if (messageLC.includes('summarize') || messageLC.includes('summary')) {
-        aiResponse = generateSummaryResponse(currentTime);
-      } else if (messageLC.includes('highlight') || messageLC.includes('tag')) {
-        aiResponse = generateHighlightResponse(currentTime);
-        
-        // Auto-create AI-generated annotation when tagging is requested
-        if (transcriptData.segments.length > 0) {
-          // Find the current segment
-          const currentSegment = transcriptData.segments.find(segment => 
-            currentTime >= segment.start_time && currentTime < segment.end_time
-          );
-          
-          if (currentSegment) {
-            const tagType = messageLC.includes('highlight') ? 'highlight' : 'tag';
-            const tagValue = messageLC.includes('highlight') ? 'AI Highlight' : 'AI Tag';
-            
-            // Create a new annotation
-            const newAnnotation: Annotation = {
-              id: `ai-${tagType}-${currentSegment.id}-${Date.now()}`,
-              type: tagType as 'highlight' | 'tag',
-              timestamp: currentSegment.start_time,
-              text: tagValue,
-              segmentText: currentSegment.text,
-              tag: tagType === 'tag' ? tagValue : undefined
-            };
-            
-            // Add to annotations
-            setAnnotations(prev => [...prev, newAnnotation]);
-            
-            // Add to highlighted segments if it's a highlight
-            if (tagType === 'highlight') {
-              setHighlightedSegments(prev => [...prev, currentSegment.id]);
-            }
+      // Check if transcript exists, if not generate one
+      if (!transcriptData.hasTranscript && videoUrl) {
+        // Inform user that we're generating transcript first
+        setChatMessages([
+          ...updatedChatMessages,
+          {
+            role: 'assistant' as const,
+            content: "I need to understand the video content first. Generating transcript...",
+            timestamp
           }
-        }
-      } else if (messageLC.includes('at') && /\d+:\d+/.test(messageLC)) {
-        // Extract timestamp pattern like "1:30" and respond about that point
-        const timeMatch = messageLC.match(/(\d+):(\d+)/);
-        if (timeMatch) {
-          const mins = parseInt(timeMatch[1]);
-          const secs = parseInt(timeMatch[2]);
-          const targetTime = mins * 60 + secs;
-          
-          // Optional: Jump to that timestamp
-          handleSegmentClick(targetTime);
-          
-          aiResponse = `At ${mins}:${secs.toString().padStart(2, '0')}, the content discusses ${getRandomTopic()}. Would you like me to tag this moment or add it to your notes?`;
-        } else {
-          aiResponse = generateGenericResponse();
-        }
-      } else {
-        aiResponse = generateGenericResponse();
+        ]);
+        
+        // Generate transcript
+        await handleGenerateTranscript();
+        
+        // Wait for transcript to be available
+        setChatMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant' as const,
+            content: "Transcript generated. Now I can answer your question.",
+            timestamp
+          }
+        ]);
       }
       
-      // Add AI response with timestamp
-      setChatMessages(prev => [
-        ...prev, 
-        { 
-          role: 'assistant', 
-          content: aiResponse,
-          timestamp
-        }
-      ]);
+      // If we have transcript data, send message to OpenAI
+      if (transcriptData.hasTranscript || videoUrl) {
+        // Show loading indicator
+        setChatMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant' as const,
+            content: "Thinking...",
+            timestamp,
+            isLoading: true
+          }
+        ]);
+        
+        // Prepare the history (without timestamps for API)
+        const chatHistoryForAPI = updatedChatMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        // Call API with message, transcript, and current timestamp
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            transcript: transcriptData.segments,
+            currentTime,
+            chatHistory: chatHistoryForAPI
+          }),
+        });
+        
+        // Process response
+        const data = await response.json();
+        
+        // Replace loading message with actual response
+        setChatMessages(prevMessages => {
+          // Remove the last message if it's a loading message
+          const filteredMessages = prevMessages.filter(msg => !msg.isLoading);
+          
+          return [
+            ...filteredMessages,
+            {
+              role: 'assistant' as const,
+              content: data.response || "I'm sorry, I couldn't generate a response.",
+              timestamp
+            }
+          ];
+        });
+      } else {
+        // If no video is uploaded, let the user know
+        setChatMessages(prevMessages => [
+          ...prevMessages,
+          {
+            role: 'assistant' as const,
+            content: "Please upload a video first so I can analyze the content.",
+            timestamp
+          }
+        ]);
+      }
     } catch (error) {
       console.error('Error generating AI response:', error);
-      setChatMessages(prev => [
-        ...prev, 
-        { 
-          role: 'assistant', 
-          content: 'I encountered an error processing your request. Please try again.',
-          timestamp
-        }
-      ]);
+      setChatMessages(prevMessages => {
+        // Remove the loading message if it exists
+        const filteredMessages = prevMessages.filter(msg => !msg.isLoading);
+        
+        return [
+          ...filteredMessages,
+          {
+            role: 'assistant' as const,
+            content: 'I encountered an error processing your request. Please try again.',
+            timestamp
+          }
+        ];
+      });
     }
   };
   
