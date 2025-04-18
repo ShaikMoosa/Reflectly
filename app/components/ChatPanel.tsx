@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, CornerUpRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import type { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -132,7 +132,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       <div>{message.content}</div>
                     ) : (
                       <div className="markdown prose prose-sm max-w-none prose-headings:font-bold prose-headings:my-1 prose-p:my-1 prose-ul:pl-4 prose-ol:pl-4 prose-li:my-0.5 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-blockquote:pl-2 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                       </div>
                     )}
                   </div>
