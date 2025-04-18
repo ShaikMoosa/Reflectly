@@ -2,6 +2,7 @@
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: #f5f5f5;
 }
 
 .whiteboard-container canvas {
@@ -30,8 +31,51 @@
   justify-content: center;
 }
 
-@media (max-width: 640px) {
-  .controls {
-    flex-wrap: wrap;
+.whiteboard-toolbar, 
+.color-toolbar,
+.file-toolbar {
+  display: flex;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Make toolbar responsive */
+@media (max-width: 768px) {
+  .whiteboard-toolbar {
+    flex-direction: row;
+    top: auto;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+  }
+  
+  .color-toolbar {
+    flex-direction: row;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .file-toolbar {
+    bottom: 10px;
+    top: auto;
+    right: 10px;
   }
 } 
