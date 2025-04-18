@@ -35,6 +35,10 @@ export default function Whiteboard() {
   const [startPoint, setStartPoint] = useState<{x: number, y: number} | null>(null);
   const [history, setHistory] = useState<WhiteboardElement[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [activeTextElement, setActiveTextElement] = useState<string | null>(null);
+  const [textInputValue, setTextInputValue] = useState('');
+  const [textInputPosition, setTextInputPosition] = useState({ x: 0, y: 0 });
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
   
   const pastelColors = [
     '#CDF0EA', // Teal
@@ -94,6 +98,11 @@ export default function Whiteboard() {
     
     // Draw all elements
     elements.forEach(element => {
+      // Skip the text element being edited
+      if (element.type === 'text' && element.id === activeTextElement) {
+        return;
+      }
+      
       ctx.save();
       
       switch (element.type) {
@@ -216,6 +225,11 @@ export default function Whiteboard() {
   
   // Handle mouse down
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Don't start drawing if we're in text mode or editing text
+    if (selectedTool === 'text' || activeTextElement) {
+      return;
+    }
+    
     const point = getMousePosition(e);
     setStartPoint(point);
     setIsDrawing(true);
@@ -328,27 +342,141 @@ export default function Whiteboard() {
   
   // Placeholder for text input
   const handleCanvasClick = (e: React.MouseEvent) => {
+    // If we're already editing text, save that first
+    if (activeTextElement) {
+      let updatedElements;
+      
+      // Remove the text element if it's empty
+      if (!textInputValue.trim()) {
+        updatedElements = elements.filter(el => el.id !== activeTextElement);
+      } else {
+        updatedElements = elements.map(el => 
+          el.id === activeTextElement 
+            ? { ...el, content: textInputValue }
+            : el
+        );
+      }
+      
+      setElements(updatedElements);
+      setActiveTextElement(null);
+      
+      // Add to history
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(updatedElements);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+      return;
+    }
+    
     if (selectedTool === 'text') {
       const point = getMousePosition(e);
-      const text = prompt('Enter text:');
       
-      if (text) {
-        const newElement: WhiteboardElement = {
-          id: generateId(),
-          type: 'text',
-          x: point.x,
-          y: point.y,
-          width: 100,
-          height: 20,
-          color: selectedColor,
-          content: text
-        };
+      // Create a new empty text element
+      const newElement: WhiteboardElement = {
+        id: generateId(),
+        type: 'text',
+        x: point.x,
+        y: point.y,
+        width: 150,
+        height: 30,
+        color: selectedColor,
+        content: ''
+      };
+      
+      const newElements = [...elements, newElement];
+      setElements(newElements);
+      
+      // Set as active for editing
+      setActiveTextElement(newElement.id);
+      setTextInputValue('');
+      setTextInputPosition({ x: point.x, y: point.y });
+      
+      // Focus on the text input after rendering
+      setTimeout(() => {
+        if (textInputRef.current) {
+          textInputRef.current.focus();
+        }
+      }, 10);
+    }
+  };
+  
+  // Special handler for clicking on existing text elements
+  const handleElementClick = (e: React.MouseEvent) => {
+    if (activeTextElement) {
+      return; // Don't do anything if already editing
+    }
+    
+    const point = getMousePosition(e);
+    
+    // Check if clicked on a text element
+    for (let i = elements.length - 1; i >= 0; i--) {
+      const el = elements[i];
+      if (el.type === 'text' &&
+          point.x >= el.x && point.x <= el.x + el.width &&
+          point.y >= el.y && point.y <= el.y + el.height) {
         
-        setElements([...elements, newElement]);
+        // Set as active for editing
+        setActiveTextElement(el.id);
+        setTextInputValue(el.content || '');
+        setTextInputPosition({ x: el.x, y: el.y });
+        
+        // Focus on the text input after rendering
+        setTimeout(() => {
+          if (textInputRef.current) {
+            textInputRef.current.focus();
+          }
+        }, 10);
+        
+        e.stopPropagation();
+        break;
       }
     }
   };
-
+  
+  // Handle text input changes
+  const handleTextInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setTextInputValue(e.target.value);
+  };
+  
+  // Handle text input blur
+  const handleTextInputBlur = () => {
+    if (activeTextElement) {
+      let updatedElements;
+      
+      // Remove the text element if it's empty
+      if (!textInputValue.trim()) {
+        updatedElements = elements.filter(el => el.id !== activeTextElement);
+      } else {
+        updatedElements = elements.map(el => 
+          el.id === activeTextElement 
+            ? { ...el, content: textInputValue }
+            : el
+        );
+      }
+      
+      setElements(updatedElements);
+      
+      // Add to history
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(updatedElements);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+      
+      setActiveTextElement(null);
+    }
+  };
+  
+  // Handle key events for text input
+  const handleTextInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape') {
+      setActiveTextElement(null);
+      e.preventDefault();
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      handleTextInputBlur();
+      e.preventDefault();
+    }
+  };
+  
   // Undo last action
   const handleUndo = () => {
     if (historyIndex > 0) {
@@ -369,6 +497,32 @@ export default function Whiteboard() {
   
   // Handle tool selection
   const handleToolSelect = (tool: ElementType) => {
+    // If we're editing text, save it first
+    if (activeTextElement) {
+      let updatedElements;
+      
+      // Remove the text element if it's empty
+      if (!textInputValue.trim()) {
+        updatedElements = elements.filter(el => el.id !== activeTextElement);
+      } else {
+        updatedElements = elements.map(el => 
+          el.id === activeTextElement 
+            ? { ...el, content: textInputValue }
+            : el
+        );
+      }
+      
+      setElements(updatedElements);
+      
+      // Add to history
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(updatedElements);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+      
+      setActiveTextElement(null);
+    }
+    
     setSelectedTool(tool);
   };
   
@@ -449,12 +603,41 @@ export default function Whiteboard() {
       <canvas
         ref={canvasRef}
         className="touch-none h-full w-full cursor-crosshair"
-        onClick={selectedTool === 'text' ? handleCanvasClick : undefined}
+        onClick={(e) => {
+          if (selectedTool === 'text') {
+            handleCanvasClick(e);
+          } else {
+            handleElementClick(e);
+          }
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
+      
+      {/* Text input overlay */}
+      {activeTextElement && (
+        <textarea
+          ref={textInputRef}
+          className="absolute bg-transparent border-none outline-none resize-none overflow-hidden"
+          style={{
+            left: `${textInputPosition.x}px`,
+            top: `${textInputPosition.y}px`,
+            minWidth: '150px',
+            minHeight: '30px',
+            color: theme === 'dark' ? '#fff' : '#000',
+            fontFamily: 'sans-serif',
+            fontSize: '16px',
+            padding: '0',
+          }}
+          value={textInputValue}
+          onChange={handleTextInputChange}
+          onBlur={handleTextInputBlur}
+          onKeyDown={handleTextInputKeyDown}
+          autoFocus
+        />
+      )}
     </div>
   );
 } 

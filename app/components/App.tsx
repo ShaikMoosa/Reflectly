@@ -7,21 +7,18 @@ import SideNavigation, { PageType } from './SideNavigation';
 import { useMediaQuery } from 'react-responsive';
 import dynamic from 'next/dynamic';
 
-// Add this dynamic import to prevent SSR issues with canvas
-const WhiteboardComponent = dynamic(
-  () => import('./Whiteboard'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full w-full p-10">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4">Loading Whiteboard...</p>
-        </div>
+// Dynamically import Whiteboard to prevent SSR issues with canvas
+const Whiteboard = dynamic(() => import('./Whiteboard'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full w-full">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="mt-4">Loading Whiteboard...</p>
       </div>
-    )
-  }
-);
+    </div>
+  )
+});
 
 const App: React.FC = () => {
   // Project state
@@ -168,12 +165,9 @@ const App: React.FC = () => {
                 />
               )}
               {activePage === 'whiteboard' && (
-                <div className="h-full">
-                  <h1 className="text-2xl font-bold mb-4">Whiteboard</h1>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Use this whiteboard to sketch out your ideas.</p>
-                  
-                  <div className="bg-base-200 dark:bg-gray-800 rounded-lg shadow-xl h-[600px]">
-                    <WhiteboardComponent />
+                <div className="h-[calc(100vh-48px)] w-full">
+                  <div className="h-full w-full bg-base-200 dark:bg-gray-800 rounded-lg shadow-xl">
+                    <Whiteboard />
                   </div>
                 </div>
               )}
