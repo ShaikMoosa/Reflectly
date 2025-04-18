@@ -555,55 +555,12 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   );
 
   const renderTranscriptTab = () => (
-    <div className="transcript-tab">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/2">
-          {renderVideoSection()}
-        </div>
-        
-        <div className="md:w-1/2 flex flex-col">
-          {videoUrl && !transcriptData.hasTranscript && !transcriptData.loading && (
-            <div className="transcript-actions flex gap-4 mb-6">
-              <button
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-md shadow-sm transition-all"
-                onClick={handleGenerateTranscript}
-              >
-                <Play size={16} />
-                Generate Transcript
-              </button>
-              <button
-                className="flex items-center gap-2 border border-gray-300 bg-white text-gray-700 font-medium px-5 py-2.5 rounded-md hover:bg-gray-100 transition-all"
-                onClick={handleImportTranscript}
-              >
-                Import
-              </button>
-            </div>
-          )}
-          
-          {importError && (
-            <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
-              {importError}
-            </div>
-          )}
-          
-          {videoUrl && transcriptData.hasTranscript && (
-            <div className="transcript-actions flex gap-4 mb-6">
-              <button
-                className="flex items-center gap-2 border border-gray-300 bg-white text-gray-700 font-medium px-5 py-2.5 rounded-md hover:bg-gray-100 transition-all"
-                onClick={handleExportTranscript}
-              >
-                Export
-              </button>
-            </div>
-          )}
-          
-          {transcriptData.loading && (
-            <div className="flex items-center justify-center p-8">
-              <div className="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full"></div>
-              <span className="ml-3 text-gray-700">Generating transcript...</span>
-            </div>
-          )}
-          
+    <div className="transcript-tab h-full w-full flex flex-col md:flex-row">
+      <div className="video-section w-full md:w-1/2">
+        {renderVideoSection()}
+      </div>
+      <div className="transcript-section h-full w-full md:w-1/2 overflow-auto">
+        {transcriptData.hasTranscript ? (
           <TranscriptPlayer
             segments={transcriptData.segments}
             currentTime={currentTime}
@@ -622,7 +579,65 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
             onChangePlaybackSpeed={handleChangePlaybackSpeed}
             onToggleExpand={handleToggleExpand}
           />
-        </div>
+        ) : (
+          <div className="flex flex-col h-full">
+            <div className="p-6 bg-gray-50 dark:bg-gray-800 border rounded-lg shadow-sm mb-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">Transcript Options</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Generate a transcript of your video using AI or import an existing transcript file.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleGenerateTranscript}
+                  disabled={!videoUrl || transcriptData.loading}
+                  className={`flex items-center justify-center w-full px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                    !videoUrl || transcriptData.loading
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30'
+                  }`}
+                >
+                  {transcriptData.loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating Transcript...
+                    </>
+                  ) : (
+                    'Generate Transcript with AI'
+                  )}
+                </button>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-2 bg-gray-50 dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400">or</span>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={handleImportTranscript}
+                  className="w-full px-4 py-2.5 rounded-md text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Import Transcript (JSON)
+                </button>
+              </div>
+              
+              {importError && (
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-md">
+                  {importError}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">No transcript available</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

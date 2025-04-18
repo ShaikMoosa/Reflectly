@@ -107,21 +107,10 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
     
     if (activeSegment) {
       setActiveSegmentId(activeSegment.id);
-      
-      // Auto-scroll to active segment if not manually clicked
-      if (activeSegment.id !== lastClickedId && transcriptContainerRef.current) {
-        const activeElement = document.getElementById(`segment-${activeSegment.id}`);
-        if (activeElement) {
-          activeElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }
-      }
     } else {
       setActiveSegmentId(null);
     }
-  }, [segments, currentTime, lastClickedId]);
+  }, [segments, currentTime]);
 
   // Handle UI control events
   const handleToggleTimestamps = () => {
@@ -210,11 +199,11 @@ const TranscriptPlayer: React.FC<TranscriptPlayerProps> = ({
             segment={segment}
             isActive={activeSegmentId === segment.id}
             highlighted={highlightedSegments.includes(segment.id) || lastClickedId === segment.id}
-            onClick={handleSegmentClick}
             onTimestampClick={handleTimestampClick}
             onAddTag={handleAddTag}
             onAddComment={handleAddComment}
             onHighlight={handleHighlight}
+            onPlaySegment={onSegmentClick}
             onAddToNotes={onAddToNotes && ((segmentId: string) => {
               const segment = segments.find(s => s.id === segmentId);
               if (segment) {
