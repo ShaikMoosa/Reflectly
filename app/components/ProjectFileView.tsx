@@ -79,6 +79,7 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   const [chatMessages, setChatMessages] = useState<{
     role: 'user' | 'assistant';
     content: string;
+    timestamp: string;
   }[]>([]);
 
   // Initialize video and transcript data if available
@@ -514,19 +515,161 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   };
   
   const handleSendMessage = async (message: string) => {
-    // Add user message
-    setChatMessages([...chatMessages, { role: 'user', content: message }]);
+    // Format current timestamp for display in the chat
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    // Simulate AI response
-    setTimeout(() => {
+    // Add user message with timestamp
+    setChatMessages([
+      ...chatMessages, 
+      { 
+        role: 'user', 
+        content: message,
+        timestamp
+      }
+    ]);
+    
+    // Process user query to identify actions for notes, tags, or highlights
+    const messageLC = message.toLowerCase();
+    let aiResponse = '';
+    
+    // Simulate different AI response behaviors based on message content
+    try {
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Identify request type and generate appropriate response
+      if (messageLC.includes('summarize') || messageLC.includes('summary')) {
+        aiResponse = generateSummaryResponse(currentTime);
+      } else if (messageLC.includes('highlight') || messageLC.includes('tag')) {
+        aiResponse = generateHighlightResponse(currentTime);
+        
+        // Auto-create AI-generated annotation when tagging is requested
+        if (transcriptData.segments.length > 0) {
+          // Find the current segment
+          const currentSegment = transcriptData.segments.find(segment => 
+            currentTime >= segment.start_time && currentTime < segment.end_time
+          );
+          
+          if (currentSegment) {
+            const tagType = messageLC.includes('highlight') ? 'highlight' : 'tag';
+            const tagValue = messageLC.includes('highlight') ? 'AI Highlight' : 'AI Tag';
+            
+            // Create a new annotation
+            const newAnnotation: Annotation = {
+              id: `ai-${tagType}-${currentSegment.id}-${Date.now()}`,
+              type: tagType as 'highlight' | 'tag',
+              timestamp: currentSegment.start_time,
+              text: tagValue,
+              segmentText: currentSegment.text,
+              tag: tagType === 'tag' ? tagValue : undefined
+            };
+            
+            // Add to annotations
+            setAnnotations(prev => [...prev, newAnnotation]);
+            
+            // Add to highlighted segments if it's a highlight
+            if (tagType === 'highlight') {
+              setHighlightedSegments(prev => [...prev, currentSegment.id]);
+            }
+          }
+        }
+      } else if (messageLC.includes('at') && /\d+:\d+/.test(messageLC)) {
+        // Extract timestamp pattern like "1:30" and respond about that point
+        const timeMatch = messageLC.match(/(\d+):(\d+)/);
+        if (timeMatch) {
+          const mins = parseInt(timeMatch[1]);
+          const secs = parseInt(timeMatch[2]);
+          const targetTime = mins * 60 + secs;
+          
+          // Optional: Jump to that timestamp
+          handleSegmentClick(targetTime);
+          
+          aiResponse = `At ${mins}:${secs.toString().padStart(2, '0')}, the content discusses ${getRandomTopic()}. Would you like me to tag this moment or add it to your notes?`;
+        } else {
+          aiResponse = generateGenericResponse();
+        }
+      } else {
+        aiResponse = generateGenericResponse();
+      }
+      
+      // Add AI response with timestamp
       setChatMessages(prev => [
         ...prev, 
         { 
           role: 'assistant', 
-          content: `This is a simulated response to: "${message}"` 
+          content: aiResponse,
+          timestamp
         }
       ]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      setChatMessages(prev => [
+        ...prev, 
+        { 
+          role: 'assistant', 
+          content: 'I encountered an error processing your request. Please try again.',
+          timestamp
+        }
+      ]);
+    }
+  };
+  
+  // Helper functions for AI response generation
+  const generateSummaryResponse = (timestamp: number) => {
+    const segmentText = getSegmentTextAtTime(timestamp);
+    return `Based on the transcript, here's a summary of the key points:
+    
+1. ${getRandomTopic()} is discussed in detail
+2. The speaker explains ${getRandomTopic()} as a core concept
+3. Several examples of ${getRandomTopic()} are provided
+4. The relationship between ${getRandomTopic()} and ${getRandomTopic()} is analyzed
+
+Would you like me to extract specific points or create notes from this section?`;
+  };
+  
+  const generateHighlightResponse = (timestamp: number) => {
+    return `I've identified the following key elements to highlight:
+    
+• "${getSegmentTextAtTime(timestamp)}"
+
+I've saved this highlight to your notes. Would you like me to tag it with a specific category?`;
+  };
+  
+  const generateGenericResponse = () => {
+    const responses = [
+      "I can help answer questions about the video content. What specific part are you interested in understanding better?",
+      "I've analyzed the transcript. Would you like me to summarize a specific section or generate insights about the overall content?",
+      "Based on the content, I can extract key points, generate tags, or summarize sections. What would be most helpful?",
+      "I can help identify important moments in this video. Would you like me to highlight significant sections or create notes?"
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  };
+  
+  const getRandomTopic = () => {
+    const topics = [
+      "user experience design",
+      "system architecture",
+      "data analysis methodology",
+      "performance optimization",
+      "feature implementation",
+      "collaborative workflows",
+      "interface patterns",
+      "design principles",
+      "content strategy"
+    ];
+    return topics[Math.floor(Math.random() * topics.length)];
+  };
+  
+  const getSegmentTextAtTime = (timestamp: number) => {
+    if (transcriptData.segments.length === 0) {
+      return "this section of the video";
+    }
+    
+    const segment = transcriptData.segments.find(s => 
+      timestamp >= s.start_time && timestamp < s.end_time
+    );
+    
+    return segment ? segment.text : "this section of the video";
   };
 
   const renderVideoSection = () => (
@@ -754,17 +897,18 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   );
 
   const renderAIChatTab = () => (
-    <div className="ai-chat-tab">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/2">
+    <div className="ai-chat-tab h-full">
+      <div className="flex flex-col md:flex-row h-full gap-4">
+        <div className="md:w-[65%] h-full">
           {renderVideoSection()}
         </div>
         
-        <div className="md:w-1/2 flex flex-col">
+        <div className="md:w-[35%] h-full">
           <ChatPanel
             messages={chatMessages}
             onSendMessage={handleSendMessage}
             transcriptAvailable={transcriptData.hasTranscript}
+            currentTimestamp={currentTime}
           />
         </div>
       </div>
