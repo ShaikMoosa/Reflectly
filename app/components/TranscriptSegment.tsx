@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Tag, MessageSquare, Star, Plus, Check, X } from 'lucide-react';
+import { Tag, MessageSquare, Star, Plus, Play } from 'lucide-react';
 
 // Debug utility for consistent logging
 const logDebug = (component: string, action: string, data?: any) => {
@@ -25,6 +25,7 @@ export interface TranscriptSegmentProps {
   onAddComment?: (id: string) => void;
   onHighlight?: (id: string) => void;
   onAddToNotes?: (id: string) => void;
+  onPlaySegment?: (timestamp: number) => void;
 }
 
 export default function TranscriptSegment({
@@ -36,9 +37,10 @@ export default function TranscriptSegment({
   onAddTag,
   onAddComment,
   onHighlight,
-  onAddToNotes
+  onAddToNotes,
+  onPlaySegment
 }: TranscriptSegmentProps) {
-  const [showActions, setShowActions] = useState(false);
+  const [hover, setHover] = useState(false);
   
   const formatTimestamp = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -55,7 +57,6 @@ export default function TranscriptSegment({
     'p-3',
     'mb-2',
     'rounded-md',
-    'cursor-pointer',
     'relative',
     'transition-all',
     'hover:bg-gray-50',
@@ -80,16 +81,17 @@ export default function TranscriptSegment({
     'cursor-pointer'
   ].join(' ');
 
-  const handleClick = () => {
-    if (onClick) {
-      onClick(segment.id);
-    }
-  };
-
   const handleTimestampClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onTimestampClick) {
       onTimestampClick(segment.start_time);
+    }
+  };
+  
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onPlaySegment) {
+      onPlaySegment(segment.start_time);
     }
   };
   
@@ -124,64 +126,65 @@ export default function TranscriptSegment({
   return (
     <div 
       className={segmentClasses}
-      onClick={handleClick}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       id={`segment-${segment.id}`}
     >
-      <div className="flex items-start">
-        <span 
-          className={timestampClasses}
-          onClick={handleTimestampClick}
-        >
-          {formatTimestamp(segment.start_time)}
-        </span>
+      <div className="flex items-start justify-between">
         <div className="flex-1">
-          {segment.text}
+          <span 
+            className={timestampClasses}
+            onClick={handleTimestampClick}
+          >
+            {formatTimestamp(segment.start_time)}
+          </span>
+          <span className="segment-text">
+            {segment.text}
+          </span>
         </div>
-      </div>
-      
-      {showActions && (
-        <div className="segment-actions absolute -right-2 top-2 flex flex-col bg-white shadow-md rounded-md border border-gray-200 overflow-hidden">
+        
+        <div className="segment-actions flex space-x-1 ml-2">
           <button 
-            className="p-2 hover:bg-gray-100 transition-colors flex items-center text-xs font-medium text-gray-700"
+            className="action-btn p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+            onClick={handlePlayClick}
+            title="Play from here"
+          >
+            <Play size={16} />
+          </button>
+          
+          <button 
+            className="action-btn p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
             onClick={handleAddTag}
             title="Add Tag"
           >
-            <Tag size={14} className="mr-1" />
-            <span className="hidden sm:inline">Tag</span>
+            <Tag size={16} />
           </button>
           
           <button 
-            className="p-2 hover:bg-gray-100 transition-colors flex items-center text-xs font-medium text-gray-700"
+            className="action-btn p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
             onClick={handleAddComment}
             title="Add Comment"
           >
-            <MessageSquare size={14} className="mr-1" />
-            <span className="hidden sm:inline">Comment</span>
+            <MessageSquare size={16} />
           </button>
           
           <button 
-            className={`p-2 hover:bg-gray-100 transition-colors flex items-center text-xs font-medium ${highlighted ? 'text-yellow-600' : 'text-gray-700'}`}
+            className={`action-btn p-1 rounded-full ${highlighted ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500 hover:bg-yellow-50'}`}
             onClick={handleHighlight}
             title={highlighted ? "Remove Highlight" : "Highlight"}
           >
-            <Star size={14} className="mr-1" fill={highlighted ? "currentColor" : "none"} />
-            <span className="hidden sm:inline">
-              {highlighted ? "Unhighlight" : "Highlight"}
-            </span>
+            <Star size={16} fill={highlighted ? "currentColor" : "none"} />
           </button>
           
           <button 
-            className="p-2 hover:bg-gray-100 transition-colors flex items-center text-xs font-medium text-gray-700"
+            className="action-btn p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"
             onClick={handleAddToNotes}
             title="Add to Notes"
           >
-            <Plus size={14} className="mr-1" />
-            <span className="hidden sm:inline">Save</span>
+            <Plus size={16} />
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 } 

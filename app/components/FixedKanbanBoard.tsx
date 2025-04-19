@@ -185,7 +185,7 @@ const typeIcons = {
 // Define system options
 const systemOptions = ['User Needs', 'System Requirements', 'Subsystem Requirements', 'Design Input', 'Design Output'];
 
-const KanbanBoard: React.FC = () => {
+const FixedKanbanBoard: React.FC = () => {
   const [boardData, setBoardData] = useState<BoardData>(initialData);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -929,61 +929,61 @@ const KanbanBoard: React.FC = () => {
                   <option value="revised">Revised</option>
                 </select>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Requirement Type
-                </label>
-                <select
-                  value={taskForm.type}
-                  onChange={(e) => setTaskForm({...taskForm, type: e.target.value as 'labeling' | 'battery' | 'electrode' | 'system' | 'other'})}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
-                >
-                  <option value="system">System</option>
-                  <option value="battery">Battery</option>
-                  <option value="electrode">Electrode</option>
-                  <option value="labeling">Labeling</option>
-                  <option value="other">Other</option>
-                </select>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Requirement Type
+                  </label>
+                  <select
+                    value={taskForm.type}
+                    onChange={(e) => setTaskForm({...taskForm, type: e.target.value as 'labeling' | 'battery' | 'electrode' | 'system' | 'other'})}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                  >
+                    <option value="system">System</option>
+                    <option value="battery">Battery</option>
+                    <option value="electrode">Electrode</option>
+                    <option value="labeling">Labeling</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                
+                {/* System */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    System/Category
+                  </label>
+                  <select
+                    value={taskForm.system}
+                    onChange={(e) => setTaskForm({...taskForm, system: e.target.value})}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                  >
+                    <option value="">Select system</option>
+                    {systemOptions.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               
-              {/* System */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  System/Category
-                </label>
-                <select
-                  value={taskForm.system}
-                  onChange={(e) => setTaskForm({...taskForm, system: e.target.value})}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button 
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onClick={() => setShowModal(false)}
                 >
-                  <option value="">Select system</option>
-                  {systemOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {currentTask ? 'Save Changes' : 'Create Task'}
+                </button>
               </div>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button 
-                type="button"
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                onClick={() => setShowModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {currentTask ? 'Save Changes' : 'Create Task'}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
@@ -991,4 +991,4 @@ const KanbanBoard: React.FC = () => {
   );
 };
 
-export default KanbanBoard; 
+export default FixedKanbanBoard; 
