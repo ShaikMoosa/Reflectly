@@ -1,0 +1,206 @@
+/* Flow Editor CSS */
+
+/* Grid pattern for canvas background */
+.grid-pattern {
+  background-size: 20px 20px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+.dark .grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Flow node styling */
+.flow-node {
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.flow-node:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .flow-node:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.flow-node.selected {
+  transform: scale(1.02);
+}
+
+/* Connection ports */
+.input-port, .output-port {
+  transition: transform 0.2s ease;
+}
+
+.input-port:hover, .output-port:hover {
+  transform: scale(1.5) translate(-50%, -50%);
+  z-index: 10;
+}
+
+/* Connection line animation */
+.connection-line.animated {
+  stroke-dasharray: 5;
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Tools hover effects */
+.flow-toolbar button {
+  transition: all 0.2s ease;
+}
+
+.flow-toolbar button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.flow-toolbar button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Node drag feedback */
+.dragging {
+  cursor: grabbing !important;
+  opacity: 0.8;
+}
+
+/* Selection rectangle */
+.selection-rect {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    background-color: rgba(99, 102, 241, 0.2);
+  }
+  100% {
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+}
+
+/* Node types */
+.node-type-default {
+  border-top: 3px solid #818cf8;
+}
+
+.node-type-source {
+  border-top: 3px solid #34d399;
+}
+
+.node-type-action {
+  border-top: 3px solid #f59e0b;
+}
+
+.node-type-decision {
+  border-top: 3px solid #f87171;
+}
+
+/* Connection types */
+.connection-type-default {
+  stroke: #94a3b8;
+}
+
+.connection-type-success {
+  stroke: #22c55e;
+}
+
+.connection-type-error {
+  stroke: #ef4444;
+}
+
+.connection-type-warning {
+  stroke: #f59e0b;
+}
+
+/* Dark mode adjustments */
+.dark .connection-type-default {
+  stroke: #64748b;
+}
+
+/* Animation for nodes when in simulation mode */
+.node-active {
+  animation: node-pulse 2s infinite;
+}
+
+@keyframes node-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+/* Zoom controls hover effects */
+.zoom-controls button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .zoom-controls button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Connection label hover effect */
+.connection-label:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.dark .connection-label:hover {
+  background-color: rgba(30, 41, 59, 0.9);
+}
+
+/* Warning indicators */
+.warning-indicator {
+  animation: warning-fade 2s infinite;
+}
+
+@keyframes warning-fade {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .flow-toolbar {
+    width: 48px;
+  }
+  
+  .flow-toolbar button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .flow-property-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 100%;
+    max-width: 320px;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .flow-property-panel.open {
+    transform: translateX(0);
+  }
+} 
