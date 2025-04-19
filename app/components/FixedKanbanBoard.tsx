@@ -193,7 +193,8 @@ const FixedKanbanBoard: React.FC = () => {
   const [filter, setFilter] = useState({
     priority: [] as ('low' | 'medium' | 'high')[],
     assignee: [] as string[],
-    tags: [] as string[]
+    tags: [] as string[],
+    status: [] as ('new' | 'in_review' | 'approved' | 'pending' | 'revised')[]
   });
 
   // Form state for new/edit task
@@ -364,19 +365,48 @@ const FixedKanbanBoard: React.FC = () => {
   // Filter tasks based on search term and filters
   const getFilteredTasks = () => {
     const filtered = { ...boardData };
+    const activeFilters = {
+      status: filter.priority.length > 0 || filter.tags.length > 0 || filter.assignee.length > 0,
+      priority: filter.priority.length > 0,
+      tags: filter.tags.length > 0,
+      assignee: filter.assignee.length > 0
+    };
 
     // Apply search filter
-    if (searchTerm) {
-      for (const columnId in filtered.columns) {
-        filtered.columns[columnId] = {
-          ...filtered.columns[columnId],
-          taskIds: filtered.columns[columnId].taskIds.filter(taskId => {
-            const task = filtered.tasks[taskId];
-            return task.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
-          })
-        };
-      }
+    for (const columnId in filtered.columns) {
+      filtered.columns[columnId] = {
+        ...filtered.columns[columnId],
+        taskIds: filtered.columns[columnId].taskIds.filter(taskId => {
+          const task = filtered.tasks[taskId];
+          
+          // Apply search term filter
+          const matchesSearch = !searchTerm || 
+            task.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
+          
+          if (!matchesSearch) return false;
+          
+          // Apply priority filter
+          const matchesPriority = !activeFilters.priority || 
+            filter.priority.includes(task.priority);
+          
+          if (activeFilters.priority && !matchesPriority) return false;
+          
+          // Apply tags filter (match if any tag matches)
+          const matchesTags = !filter.tags.length || 
+            task.tags.some(tag => filter.tags.includes(tag));
+          
+          if (filter.tags.length > 0 && !matchesTags) return false;
+          
+          // Apply assignee filter
+          const matchesAssignee = !filter.assignee.length || 
+            (task.assignee && filter.assignee.includes(task.assignee));
+          
+          if (filter.assignee.length > 0 && !matchesAssignee) return false;
+          
+          return true;
+        })
+      };
     }
 
     return filtered;
@@ -451,6 +481,52 @@ const FixedKanbanBoard: React.FC = () => {
     handleSaveTask(taskForm);
   };
 
+  // Handle status filter toggle
+  const handleStatusToggle = (status: 'new' | 'in_review' | 'approved' | 'pending' | 'revised') => {
+    setFilter(prev => {
+      const statusFilters = prev.status;
+      const newStatusFilters = statusFilters.includes(status)
+        ? statusFilters.filter(s => s !== status)
+        : [...statusFilters, status];
+      
+      return { ...prev, status: newStatusFilters };
+    });
+  };
+
+  // Handle priority filter toggle
+  const handlePriorityToggle = (priority: 'low' | 'medium' | 'high') => {
+    setFilter(prev => {
+      const newPriorities = prev.priority.includes(priority)
+        ? prev.priority.filter(p => p !== priority)
+        : [...prev.priority, priority];
+      return { ...prev, priority: newPriorities };
+    });
+  };
+
+  // Handle assignee filter toggle
+  const handleAssigneeToggle = (assignee: string) => {
+    setFilter(prev => {
+      const newAssignees = prev.assignee.includes(assignee)
+        ? prev.assignee.filter(a => a !== assignee)
+        : [...prev.assignee, assignee];
+      return { ...prev, assignee: newAssignees };
+    });
+  };
+
+  // Handle tag filter toggle
+  const handleTagFilterToggle = (tag: string) => {
+    setFilter(prev => {
+      const newTags = prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag];
+      return { ...prev, tags: newTags };
+    });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
   const filteredData = getFilteredTasks();
 
   // Add this function to render the traceability view
@@ -519,18 +595,17 @@ const FixedKanbanBoard: React.FC = () => {
 
   return (
     <div className="h-full w-full flex flex-col p-4">
-      {/* Search and filters */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-sm breadcrumbs">
-          <ul className="flex items-center space-x-2">
-            <li><a href="#" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Projects</a></li>
-            <li className="before:content-['/'] before:mx-2 before:text-gray-500">
-              <a href="#" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Device Requirements</a>
-            </li>
-            <li className="before:content-['/'] before:mx-2 before:text-gray-500">
-              <span className="text-gray-900 dark:text-white">Design Control</span>
-            </li>
-          </ul>
+      {/* Header with search and filters */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="w-full md:w-64 relative">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         </div>
         
         <div className="flex items-center space-x-2">
@@ -576,7 +651,7 @@ const FixedKanbanBoard: React.FC = () => {
             onClick={() => openTaskModal()}
           >
             <Plus size={16} className="mr-1.5" />
-            Create Design Review
+            Create
           </button>
         </div>
       </div>
@@ -588,47 +663,100 @@ const FixedKanbanBoard: React.FC = () => {
               <h3 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">Status</h3>
               <div className="space-y-1">
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.status?.includes('new')}
+                    onChange={() => handleStatusToggle('new')}
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">New</span>
                 </label>
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.status?.includes('in_review')}
+                    onChange={() => handleStatusToggle('in_review')}
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">In Review</span>
                 </label>
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.status?.includes('approved')}
+                    onChange={() => handleStatusToggle('approved')}
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Approved</span>
                 </label>
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.status?.includes('pending')}
+                    onChange={() => handleStatusToggle('pending')}
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Pending</span>
                 </label>
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.status?.includes('revised')}
+                    onChange={() => handleStatusToggle('revised')}
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Revised</span>
                 </label>
               </div>
             </div>
             
             <div>
-              <h3 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">Type</h3>
+              <h3 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">Priority</h3>
               <div className="space-y-1">
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">System</span>
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.priority.includes('low')}
+                    onChange={() => handlePriorityToggle('low')}
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Low</span>
                 </label>
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Battery</span>
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.priority.includes('medium')}
+                    onChange={() => handlePriorityToggle('medium')}
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Medium</span>
                 </label>
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Electrode</span>
+                  <input 
+                    type="checkbox" 
+                    className="mr-2 rounded text-indigo-600"
+                    checked={filter.priority.includes('high')}
+                    onChange={() => handlePriorityToggle('high')}
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">High</span>
                 </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2 rounded text-indigo-600" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Labeling</span>
-                </label>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">Assignee</h3>
+              <div className="space-y-1">
+                {assignees.map(assignee => (
+                  <label key={assignee} className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      className="mr-2 rounded text-indigo-600"
+                      checked={filter.assignee.includes(assignee)}
+                      onChange={() => handleAssigneeToggle(assignee)}
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{assignee}</span>
+                  </label>
+                ))}
               </div>
             </div>
             
@@ -637,24 +765,30 @@ const FixedKanbanBoard: React.FC = () => {
               <div className="space-y-1">
                 {availableTags.slice(0, 5).map(tag => (
                   <label key={tag} className="flex items-center">
-                    <input type="checkbox" className="mr-2 rounded text-indigo-600" />
+                    <input 
+                      type="checkbox" 
+                      className="mr-2 rounded text-indigo-600"
+                      checked={filter.tags.includes(tag)}
+                      onChange={() => handleTagFilterToggle(tag)}
+                    />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{tag}</span>
                   </label>
                 ))}
               </div>
             </div>
-            
-            <div>
-              <h3 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">System</h3>
-              <div className="space-y-1">
-                {systemOptions.map(option => (
-                  <label key={option} className="flex items-center">
-                    <input type="checkbox" className="mr-2 rounded text-indigo-600" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => setFilter({ 
+                priority: [] as ('low' | 'medium' | 'high')[], 
+                assignee: [] as string[], 
+                tags: [] as string[], 
+                status: [] as ('new' | 'in_review' | 'approved' | 'pending' | 'revised')[] 
+              })}
+              className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              Clear Filters
+            </button>
           </div>
         </div>
       )}
