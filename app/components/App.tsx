@@ -5,21 +5,24 @@ import ProjectPage, { Project } from './ProjectPage';
 import ProjectFileView from './ProjectFileView';
 import SideNavigation, { PageType } from './SideNavigation';
 import { useMediaQuery } from 'react-responsive';
-import dynamic from 'next/dynamic';
 import FixedKanbanBoard from './FixedKanbanBoard';
+import dynamic from 'next/dynamic';
 
-// Dynamically import Whiteboard to prevent SSR issues with canvas
-const Whiteboard = dynamic(() => import('./Whiteboard'), { 
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full w-full">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="mt-4">Loading Whiteboard...</p>
+// Dynamically import the Excalidraw whiteboard component to avoid SSR issues
+const ExcalidrawWhiteboard = dynamic(
+  () => import('./ExcalidrawWhiteboard'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full w-full">
+        <div className="text-center">
+          <div className="animate-spin h-10 w-10 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
+          <p className="mt-4">Loading Whiteboard...</p>
+        </div>
       </div>
-    </div>
-  )
-});
+    )
+  }
+);
 
 const App: React.FC = () => {
   // Project state
@@ -108,7 +111,7 @@ const App: React.FC = () => {
     // We'll need to pass this through as a prop
   };
 
-  const handleNavigate = (page: PageType) => {
+  const handlePageChange = (page: PageType) => {
     setActivePage(page);
     setSelectedProjectId(null);
   };
@@ -138,7 +141,7 @@ const App: React.FC = () => {
       {/* Sidebar for navigation */}
       <SideNavigation 
         activePage={activePage}
-        onNavigate={handleNavigate}
+        onNavigate={handlePageChange}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleDarkMode}
         projects={projectsForNav}
@@ -166,9 +169,15 @@ const App: React.FC = () => {
                 />
               )}
               {activePage === 'whiteboard' && (
-                <div className="h-[calc(100vh-48px)] w-full">
-                  <div className="h-full w-full bg-base-200 dark:bg-gray-800 rounded-lg shadow-xl">
-                    <Whiteboard />
+                <div className="w-full">
+                  <div className="overflow-hidden">
+                    <h1 className="text-3xl font-bold mb-2">Whiteboard</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Sketch out your ideas visually with our drawing canvas
+                    </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm h-[calc(100vh-180px)]">
+                      <ExcalidrawWhiteboard />
+                    </div>
                   </div>
                 </div>
               )}
@@ -204,7 +213,7 @@ const App: React.FC = () => {
                     
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-all">
                       <h2 className="text-xl font-semibold mb-2">Whiteboard</h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">Collaborate with your team on a digital whiteboard</p>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">Sketch your ideas on a digital whiteboard</p>
                       <button 
                         className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all"
                         onClick={() => setActivePage('whiteboard')}

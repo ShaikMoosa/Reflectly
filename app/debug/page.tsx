@@ -149,9 +149,9 @@ export default function DebugPage() {
   );
 }
 
-// Lazy load the whiteboard component to test it in isolation
-const LazyWhiteboard = dynamic(
-  () => import('../components/Whiteboard'),
+// Lazy load the Excalidraw component to test it in isolation
+const LazyExcalidrawWhiteboard = dynamic(
+  () => import('../components/ExcalidrawWhiteboard'),
   { 
     ssr: false,
     loading: () => (
@@ -167,15 +167,15 @@ const LazyWhiteboard = dynamic(
 
 // Whiteboard test component
 function WhiteboardTest() {
-  console.log('[DEBUG] WhiteboardTest component mounted');
+  console.log('[DEBUG] Excalidraw Whiteboard component mounted');
   
   return (
     <div className="card bg-base-200 shadow-xl h-[500px]">
       <div className="card-body p-4">
-        <h2 className="card-title">TLDraw Whiteboard Test</h2>
+        <h2 className="card-title">Excalidraw Whiteboard Test</h2>
         <p className="text-sm mb-4">Testing isolated whiteboard component</p>
         <div className="h-full">
-          <LazyWhiteboard />
+          <LazyExcalidrawWhiteboard />
         </div>
       </div>
     </div>
