@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings, X } from 'lucide-react';
 
@@ -43,110 +43,25 @@ interface BoardData {
 }
 
 const initialData: BoardData = {
-  tasks: {
-    'task-1': {
-      id: 'task-1',
-      content: 'System shall conform to all standards required for sale in USA',
-      description: 'Ensure compliance with all regulatory standards for medical devices in the US market',
-      priority: 'high',
-      assignee: 'John',
-      dueDate: '2023-11-30',
-      tags: ['compliance', 'regulatory'],
-      code: 'UN-1',
-      status: 'new',
-      type: 'system',
-      links: ['task-3', 'task-5'],
-      system: 'System Requirements',
-      createdAt: '2023-10-15T10:30:00Z',
-      updatedAt: '2023-10-15T10:30:00Z',
-      commentCount: 2
-    },
-    'task-2': {
-      id: 'task-2',
-      content: 'System shall conform to IEC 60601-1',
-      description: 'Implementation must comply with IEC standards for medical electrical equipment',
-      priority: 'medium',
-      assignee: 'Sarah',
-      dueDate: '2023-12-05',
-      tags: ['design', 'compliance'],
-      code: 'SR-1',
-      status: 'in_review',
-      type: 'battery',
-      links: ['task-1'],
-      system: 'Subsystem Requirements',
-      createdAt: '2023-10-17T09:15:00Z',
-      updatedAt: '2023-10-17T09:15:00Z',
-      commentCount: 5
-    },
-    'task-3': {
-      id: 'task-3',
-      content: 'System shall have a Type BF part per IEC 60601',
-      description: 'Implement electrical isolation in accordance with Type BF specifications',
-      priority: 'low',
-      assignee: 'Mike',
-      dueDate: '2023-12-10',
-      tags: ['safety'],
-      code: 'DO-1',
-      status: 'approved',
-      type: 'labeling',
-      system: 'Design Output',
-      createdAt: '2023-10-08T14:30:00Z',
-      updatedAt: '2023-10-19T15:40:00Z',
-      commentCount: 2
-    },
-    'task-4': {
-      id: 'task-4',
-      content: 'System shall use an IEC 62133 Certified Battery',
-      description: 'Battery selection must comply with IEC 62133 safety standards',
-      priority: 'high',
-      assignee: 'John',
-      dueDate: '2023-11-25',
-      tags: ['safety', 'compliance'],
-      code: 'DN-1',
-      status: 'in_review',
-      type: 'battery',
-      links: ['task-3'],
-      system: 'Design Output',
-      createdAt: '2023-10-11T10:45:00Z',
-      updatedAt: '2023-10-17T13:25:00Z',
-      commentCount: 2
-    },
-    'task-5': {
-      id: 'task-5',
-      content: 'System shall have at least 1 hour of functional use',
-      description: 'Battery must support minimum 1 hour operation under normal usage conditions',
-      priority: 'medium',
-      assignee: 'Lisa',
-      dueDate: '2023-12-15',
-      tags: ['performance'],
-      code: 'UN-2',
-      status: 'pending',
-      type: 'battery',
-      links: ['task-4'],
-      system: 'User Needs',
-      createdAt: '2023-10-13T15:50:00Z',
-      updatedAt: '2023-10-13T15:50:00Z',
-      commentCount: 3
-    }
-  },
+  tasks: {},
   columns: {
-    'column-1': {
-      id: 'column-1',
-      title: 'User Needs',
-      taskIds: ['task-1', 'task-5']
+    'todo-column': {
+      id: 'todo-column',
+      title: 'To Do',
+      taskIds: []
     },
-    'column-2': {
-      id: 'column-2',
-      title: 'Design Inputs',
-      taskIds: ['task-2', 'task-4']
+    'in-progress-column': {
+      id: 'in-progress-column',
+      title: 'In Progress',
+      taskIds: []
     },
-    'column-3': {
-      id: 'column-3',
-      title: 'Design Output',
-      taskIds: ['task-3']
+    'done-column': {
+      id: 'done-column',
+      title: 'Done',
+      taskIds: []
     }
   },
-  columnOrder: ['column-1', 'column-2', 'column-3']
+  columnOrder: ['todo-column', 'in-progress-column', 'done-column']
 };
 
 // Priority colors
@@ -186,7 +101,30 @@ const typeIcons = {
 const systemOptions = ['User Needs', 'System Requirements', 'Subsystem Requirements', 'Design Input', 'Design Output'];
 
 const FixedKanbanBoard: React.FC = () => {
-  const [boardData, setBoardData] = useState<BoardData>(initialData);
+  // Load board data from localStorage or use empty initial data
+  const loadBoardData = () => {
+    try {
+      const savedData = localStorage.getItem('plannerBoardData');
+      if (savedData) {
+        return JSON.parse(savedData) as BoardData;
+      }
+    } catch (error) {
+      console.error('Error loading board data from localStorage:', error);
+    }
+    return initialData;
+  };
+
+  const [boardData, setBoardData] = useState<BoardData>(loadBoardData());
+  
+  // Save board data to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('plannerBoardData', JSON.stringify(boardData));
+    } catch (error) {
+      console.error('Error saving board data to localStorage:', error);
+    }
+  }, [boardData]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
@@ -217,9 +155,9 @@ const FixedKanbanBoard: React.FC = () => {
   });
 
   // Available assignees for dropdown
-  const assignees = ['John', 'Sarah', 'Mike', 'Lisa'];
+  const assignees = ['You', 'Team Member']; // Simplified assignee list
   // Available tags for selection
-  const availableTags = ['frontend', 'backend', 'design', 'bug', 'feature', 'documentation', 'ui', 'security', 'marketing'];
+  const availableTags = ['frontend', 'backend', 'design', 'bug', 'feature', 'documentation', 'ui', 'testing'];
 
   // Add state for view type
   const [viewType, setViewType] = useState<'grid' | 'traceability'>('grid');
