@@ -128,6 +128,22 @@ const KanbanBoard: React.FC = () => {
     tags: [] as string[]
   });
 
+  // Form state for new/edit task
+  const [taskForm, setTaskForm] = useState({
+    id: '',
+    content: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    assignee: '',
+    dueDate: '',
+    tags: [] as string[]
+  });
+
+  // Available assignees for dropdown
+  const assignees = ['John', 'Sarah', 'Mike', 'Lisa'];
+  // Available tags for selection
+  const availableTags = ['frontend', 'backend', 'design', 'bug', 'feature', 'documentation', 'ui', 'security', 'marketing'];
+
   // Handle drag end event
   const onDragEnd = (result: any) => {
     const { destination, source, draggableId } = result;
@@ -293,8 +309,50 @@ const KanbanBoard: React.FC = () => {
   };
 
   const openTaskModal = (task: Task | null = null) => {
+    if (task) {
+      // Edit existing task
+      setTaskForm({
+        id: task.id,
+        content: task.content,
+        description: task.description || '',
+        priority: task.priority,
+        assignee: task.assignee || '',
+        dueDate: task.dueDate || '',
+        tags: [...task.tags]
+      });
+    } else {
+      // Create new task
+      setTaskForm({
+        id: `task-${Date.now()}`,
+        content: '',
+        description: '',
+        priority: 'medium',
+        assignee: '',
+        dueDate: '',
+        tags: []
+      });
+    }
     setCurrentTask(task);
     setShowModal(true);
+  };
+
+  const handleTagToggle = (tag: string) => {
+    if (taskForm.tags.includes(tag)) {
+      setTaskForm({
+        ...taskForm,
+        tags: taskForm.tags.filter(t => t !== tag)
+      });
+    } else {
+      setTaskForm({
+        ...taskForm,
+        tags: [...taskForm.tags, tag]
+      });
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSaveTask(taskForm);
   };
 
   const filteredData = getFilteredTasks();
@@ -436,40 +494,132 @@ const KanbanBoard: React.FC = () => {
         </div>
       </DragDropContext>
 
-      {/* Task modal */}
+      {/* Enhanced Notion-style Task modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-4 border-gray-200 dark:border-gray-700">
               {currentTask ? 'Edit Task' : 'Create New Task'}
             </h2>
-            <div className="flex justify-end space-x-2 mt-6">
-              <button 
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                onClick={() => setShowModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                onClick={() => {
-                  if (currentTask) {
-                    handleSaveTask(currentTask);
-                  } else {
-                    const newTask: Task = {
-                      id: `task-${Date.now()}`,
-                      content: 'New Task',
-                      description: '',
-                      priority: 'medium',
-                      tags: []
-                    };
-                    handleSaveTask(newTask);
-                  }
-                }}
-              >
-                Save
-              </button>
-            </div>
+            
+            <form onSubmit={handleFormSubmit} className="space-y-6">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={taskForm.content}
+                  onChange={(e) => setTaskForm({...taskForm, content: e.target.value})}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                  placeholder="Task title"
+                  required
+                />
+              </div>
+              
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                  placeholder="Task description"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Priority */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={taskForm.priority}
+                    onChange={(e) => setTaskForm({...taskForm, priority: e.target.value as 'low' | 'medium' | 'high'})}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                
+                {/* Assignee */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Assignee
+                  </label>
+                  <select
+                    value={taskForm.assignee}
+                    onChange={(e) => setTaskForm({...taskForm, assignee: e.target.value})}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                  >
+                    <option value="">Unassigned</option>
+                    {assignees.map(assignee => (
+                      <option key={assignee} value={assignee}>{assignee}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm({...taskForm, dueDate: e.target.value})}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white"
+                />
+              </div>
+              
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleTagToggle(tag)}
+                      className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                        taskForm.tags.includes(tag)
+                          ? `${getTagColor(tag)} border border-transparent`
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button 
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {currentTask ? 'Save Changes' : 'Create Task'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
