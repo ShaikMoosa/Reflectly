@@ -5,6 +5,21 @@ import ProjectPage, { Project } from './ProjectPage';
 import ProjectFileView from './ProjectFileView';
 import SideNavigation, { PageType } from './SideNavigation';
 import { useMediaQuery } from 'react-responsive';
+import dynamic from 'next/dynamic';
+import FixedKanbanBoard from './FixedKanbanBoard';
+
+// Dynamically import Whiteboard to prevent SSR issues with canvas
+const Whiteboard = dynamic(() => import('./Whiteboard'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full w-full">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="mt-4">Loading Whiteboard...</p>
+      </div>
+    </div>
+  )
+});
 
 const App: React.FC = () => {
   // Project state
@@ -151,15 +166,23 @@ const App: React.FC = () => {
                 />
               )}
               {activePage === 'whiteboard' && (
-                <div className="text-center py-20">
-                  <h1 className="text-2xl font-bold mb-4">Whiteboard</h1>
-                  <p className="text-gray-600 dark:text-gray-400">Whiteboard functionality coming soon</p>
+                <div className="h-[calc(100vh-48px)] w-full">
+                  <div className="h-full w-full bg-base-200 dark:bg-gray-800 rounded-lg shadow-xl">
+                    <Whiteboard />
+                  </div>
                 </div>
               )}
               {activePage === 'planner' && (
-                <div className="text-center py-20">
-                  <h1 className="text-2xl font-bold mb-4">Planner</h1>
-                  <p className="text-gray-600 dark:text-gray-400">Planner functionality coming soon</p>
+                <div className="w-full">
+                  <div className="overflow-hidden p-6">
+                    <h1 className="text-3xl font-bold mb-2">Project Planner</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Organize your ideas and tasks with this Kanban board. Drag and drop cards to update status.
+                    </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 h-[calc(100vh-220px)]">
+                      <FixedKanbanBoard />
+                    </div>
+                  </div>
                 </div>
               )}
               {activePage === 'home' && (
