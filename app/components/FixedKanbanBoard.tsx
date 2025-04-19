@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings } from 'lucide-react';
+import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings, X } from 'lucide-react';
 
 // Define the task type
 interface Task {
@@ -225,6 +225,34 @@ const FixedKanbanBoard: React.FC = () => {
   const [viewType, setViewType] = useState<'grid' | 'traceability'>('grid');
   const [showFilters, setShowFilters] = useState(false);
 
+  // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Track active filters count
+  const activeFiltersCount = 
+    (filter.priority?.length || 0) + 
+    (filter.assignee?.length || 0) + 
+    (filter.tags?.length || 0) + 
+    (filter.status?.length || 0);
+
+  // Add highlight matching text function
+  const highlightMatch = (text: string, searchTerm: string) => {
+    if (!searchTerm) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    const parts = text.split(regex);
+    
+    return (
+      <>
+        {parts.map((part, i) => 
+          regex.test(part) ? 
+            <span key={i} className="bg-yellow-200 dark:bg-yellow-700">{part}</span> : 
+            <span key={i}>{part}</span>
+        )}
+      </>
+    );
+  };
+
   // Handle drag end event
   const onDragEnd = (result: any) => {
     const { destination, source, draggableId } = result;
@@ -362,11 +390,14 @@ const FixedKanbanBoard: React.FC = () => {
     setBoardData(newBoardData);
   };
 
-  // Filter tasks based on search term and filters
+  // Improved filtering function with better performance
   const getFilteredTasks = () => {
+    // Avoid unnecessary work if no filters applied
+    if (!searchTerm && !activeFiltersCount) return boardData;
+    
     const filtered = { ...boardData };
     const activeFilters = {
-      status: filter.priority.length > 0 || filter.tags.length > 0 || filter.assignee.length > 0,
+      status: filter.status?.length > 0,
       priority: filter.priority.length > 0,
       tags: filter.tags.length > 0,
       assignee: filter.assignee.length > 0
@@ -385,6 +416,12 @@ const FixedKanbanBoard: React.FC = () => {
             (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
           
           if (!matchesSearch) return false;
+          
+          // Apply status filter
+          const matchesStatus = !activeFilters.status || 
+            filter.status?.includes(task.status);
+          
+          if (activeFilters.status && !matchesStatus) return false;
           
           // Apply priority filter
           const matchesPriority = !activeFilters.priority || 
@@ -593,6 +630,165 @@ const FixedKanbanBoard: React.FC = () => {
     );
   };
 
+  // Add keyboard handler for modal
+  const handleModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowModal(false);
+    } else if (e.key === 'Enter' && e.ctrlKey) {
+      handleFormSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
+  // Update rendered task cards 
+  const renderTaskCard = (task: Task, provided: any, snapshot: any) => (
+    <div
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      {...provided.dragHandleProps}
+      className={`group bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow-sm hover:shadow-md transition-all ${
+        snapshot.isDragging ? 'shadow-lg ring-2 ring-indigo-300 dark:ring-indigo-600' : ''
+      }`}
+    >
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-center gap-2 max-w-[calc(100%-24px)]">
+          {task.type && <span className="flex-shrink-0 text-base">{typeIcons[task.type]}</span>}
+          {task.code && (
+            <span className="text-xs font-mono text-gray-500 dark:text-gray-400 flex-shrink-0 bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">
+              {task.code}
+            </span>
+          )}
+          <h4 className="font-medium text-gray-900 dark:text-white text-sm leading-5 break-words">
+            {searchTerm ? highlightMatch(task.content, searchTerm) : task.content}
+          </h4>
+        </div>
+        <div className="relative flex-shrink-0">
+          <button 
+            aria-label="Task options"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      
+      {task.description && (
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 hover:line-clamp-none transition-all">
+          {searchTerm ? highlightMatch(task.description, searchTerm) : task.description}
+        </div>
+      )}
+      
+      {task.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {task.tags.map(tag => (
+            <span 
+              key={tag} 
+              className={`text-xs px-2 py-0.5 rounded-full ${getTagColor(tag)}`}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+      
+      <div className="flex justify-between items-center mt-2 text-xs border-t pt-2 border-gray-100 dark:border-gray-600">
+        <span className={`px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
+          {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+        </span>
+        <span className={`px-2 py-0.5 rounded-full ${statusColors[task.status]}`}>
+          {task.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        </span>
+        {task.assignee && (
+          <span className="bg-gray-100 dark:bg-gray-600 px-2 py-0.5 rounded-full text-gray-700 dark:text-gray-300">
+            {task.assignee}
+          </span>
+        )}
+      </div>
+      
+      <div className="flex justify-between items-center mt-2">
+        <div className="flex space-x-2">
+          <button 
+            className="text-xs text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 flex items-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              openTaskModal(task);
+            }}
+            aria-label="Edit task"
+          >
+            <Edit2 className="h-3 w-3 mr-1" />
+            Edit
+          </button>
+          <button 
+            className="text-xs text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 flex items-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteTask(task.id);
+            }}
+            aria-label="Delete task"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Delete
+          </button>
+        </div>
+        <div className="flex items-center text-xs text-gray-500">
+          {task.links && task.links.length > 0 && (
+            <span className="flex items-center mr-2">
+              <Link className="h-3 w-3 mr-1" />
+              {task.links.length}
+            </span>
+          )}
+          {task.commentCount && task.commentCount > 0 && (
+            <span className="flex items-center">
+              <MessageSquare className="h-3 w-3 mr-1" />
+              {task.commentCount}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Empty/No Results state component
+  const EmptyState = ({ type }: { type: 'empty' | 'no-results' | 'loading' }) => (
+    <div className="flex flex-col items-center justify-center p-6 h-64 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+      {type === 'loading' ? (
+        <>
+          <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400">Loading tasks...</p>
+        </>
+      ) : type === 'no-results' ? (
+        <>
+          <Search className="w-10 h-10 text-gray-400 mb-4" />
+          <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-1">No matching tasks found</h3>
+          <p className="text-gray-500 dark:text-gray-400 text-center">
+            Try adjusting your search or filters
+          </p>
+          <button 
+            onClick={() => {
+              setSearchTerm('');
+              setFilter({ 
+                priority: [] as ('low' | 'medium' | 'high')[], 
+                assignee: [] as string[], 
+                tags: [] as string[], 
+                status: [] as ('new' | 'in_review' | 'approved' | 'pending' | 'revised')[] 
+              });
+            }}
+            className="mt-4 px-3 py-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-md text-sm font-medium"
+          >
+            Clear all filters
+          </button>
+        </>
+      ) : (
+        <>
+          <Plus className="w-10 h-10 text-gray-400 mb-4" />
+          <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-1">No tasks in this column</h3>
+          <p className="text-gray-500 dark:text-gray-400 text-center">
+            Click the Create button to add your first task
+          </p>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="h-full w-full flex flex-col p-4">
       {/* Header with search and filters */}
@@ -601,11 +797,20 @@ const FixedKanbanBoard: React.FC = () => {
           <input
             type="text"
             placeholder="Search tasks..."
-            className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-4 py-2 pl-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             value={searchTerm}
             onChange={handleSearchChange}
           />
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')} 
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
+              aria-label="Clear search"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
         
         <div className="flex items-center space-x-2">
@@ -617,6 +822,7 @@ const FixedKanbanBoard: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
               }`}
               onClick={() => setViewType('grid')}
+              aria-label="Grid view"
             >
               <Grid size={16} className="mr-1.5" />
               Grid
@@ -628,6 +834,7 @@ const FixedKanbanBoard: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
               }`}
               onClick={() => setViewType('traceability')}
+              aria-label="Traceability view"
             >
               <List size={16} className="mr-1.5" />
               Traceability
@@ -635,20 +842,27 @@ const FixedKanbanBoard: React.FC = () => {
           </div>
           
           <button
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center ${
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center relative ${
               showFilters
                 ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                 : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300'
             }`}
             onClick={() => setShowFilters(!showFilters)}
+            aria-label={showFilters ? "Hide filters" : "Show filters"}
           >
             <Filter size={16} className="mr-1.5" />
             Filters
+            {activeFiltersCount > 0 && (
+              <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-xs text-white">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
           
           <button
             className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center"
             onClick={() => openTaskModal()}
+            aria-label="Create new task"
           >
             <Plus size={16} className="mr-1.5" />
             Create
@@ -658,8 +872,19 @@ const FixedKanbanBoard: React.FC = () => {
 
       {showFilters && (
         <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+          <div className="mb-4 flex justify-between items-center">
+            <h3 className="font-medium text-gray-800 dark:text-gray-200">Filter Tasks</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              aria-label="Close filters"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-750 rounded-md">
               <h3 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">Status</h3>
               <div className="space-y-1">
                 <label className="flex items-center">
@@ -777,7 +1002,7 @@ const FixedKanbanBoard: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end space-x-2">
             <button
               onClick={() => setFilter({ 
                 priority: [] as ('low' | 'medium' | 'high')[], 
@@ -785,26 +1010,36 @@ const FixedKanbanBoard: React.FC = () => {
                 tags: [] as string[], 
                 status: [] as ('new' | 'in_review' | 'approved' | 'pending' | 'revised')[] 
               })}
-              className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              disabled={activeFiltersCount === 0}
             >
               Clear Filters
+            </button>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+            >
+              Apply
             </button>
           </div>
         </div>
       )}
 
-      {/* Modify the rendering to conditionally show the Kanban board or traceability view */}
-      {viewType === 'grid' ? (
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState type="loading" />
+        </div>
+      ) : viewType === 'grid' ? (
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex gap-6 h-full overflow-x-auto pb-4">
             {filteredData.columnOrder.map(columnId => {
               const column = filteredData.columns[columnId];
               return (
                 <div key={column.id} className="flex-none w-80">
-                  <div className="bg-white dark:bg-gray-700 rounded-t-lg p-3 shadow-md">
+                  <div className="bg-white dark:bg-gray-700 rounded-t-lg p-3 shadow-md sticky top-0 z-10">
                     <div className="flex justify-between items-center">
                       <h3 className="font-semibold">{column.title}</h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full px-2 py-0.5">
+                      <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full px-2 py-0.5 min-w-[1.5rem] text-center">
                         {column.taskIds.length}
                       </span>
                     </div>
@@ -814,102 +1049,22 @@ const FixedKanbanBoard: React.FC = () => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`bg-gray-100 dark:bg-gray-800 p-3 rounded-b-lg shadow-md min-h-[50vh] ${
-                          snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-indigo-900/30' : ''
+                        className={`bg-gray-100 dark:bg-gray-800 p-3 rounded-b-lg shadow-md min-h-[50vh] transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-indigo-900/30 ring-2 ring-indigo-200 dark:ring-indigo-800' : ''
                         }`}
                       >
-                        {column.taskIds.map((taskId, index) => {
-                          const task = filteredData.tasks[taskId];
-                          return (
-                            <Draggable key={task.id} draggableId={task.id} index={index}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`bg-white dark:bg-gray-700 p-3 mb-3 rounded-lg shadow-sm hover:shadow-md transition-shadow ${
-                                    snapshot.isDragging ? 'shadow-lg' : ''
-                                  }`}
-                                >
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2">
-                                      {task.type && <span className="text-sm">{typeIcons[task.type]}</span>}
-                                      {task.code && (
-                                        <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                                          {task.code}
-                                        </span>
-                                      )}
-                                      <h4 className="font-medium text-gray-900 dark:text-white">{task.content}</h4>
-                                    </div>
-                                    <div className="relative">
-                                      <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  {task.description && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{task.description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-1 mb-2">
-                                    {task.tags.map(tag => (
-                                      <span 
-                                        key={tag} 
-                                        className={`text-xs px-2 py-0.5 rounded-full ${getTagColor(tag)}`}
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <div className="flex justify-between items-center mt-3 text-xs">
-                                    <span className={`px-2 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
-                                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                    </span>
-                                    <span className={`px-2 py-0.5 rounded-full ${statusColors[task.status]}`}>
-                                      {task.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    </span>
-                                    {task.assignee && (
-                                      <span className="text-gray-600 dark:text-gray-400">
-                                        {task.assignee}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex justify-between mt-2">
-                                    <div className="flex space-x-2">
-                                      <button 
-                                        className="text-xs text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 flex items-center"
-                                        onClick={() => openTaskModal(task)}
-                                      >
-                                        <Edit2 className="h-3 w-3 mr-1" />
-                                        Edit
-                                      </button>
-                                      <button 
-                                        className="text-xs text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 flex items-center"
-                                        onClick={() => handleDeleteTask(task.id)}
-                                      >
-                                        <Trash2 className="h-3 w-3 mr-1" />
-                                        Delete
-                                      </button>
-                                    </div>
-                                    <div className="flex items-center text-xs text-gray-500">
-                                      {task.links && task.links.length > 0 && (
-                                        <span className="flex items-center mr-2">
-                                          <Link className="h-3 w-3 mr-1" />
-                                          {task.links.length} Links
-                                        </span>
-                                      )}
-                                      {task.commentCount && task.commentCount > 0 && (
-                                        <span className="flex items-center">
-                                          <MessageSquare className="h-3 w-3 mr-1" />
-                                          {task.commentCount}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          );
-                        })}
+                        {column.taskIds.length === 0 ? (
+                          <EmptyState type={searchTerm || activeFiltersCount > 0 ? 'no-results' : 'empty'} />
+                        ) : (
+                          column.taskIds.map((taskId, index) => {
+                            const task = filteredData.tasks[taskId];
+                            return (
+                              <Draggable key={task.id} draggableId={task.id} index={index}>
+                                {(provided, snapshot) => renderTaskCard(task, provided, snapshot)}
+                              </Draggable>
+                            );
+                          })
+                        )}
                         {provided.placeholder}
                       </div>
                     )}
@@ -923,13 +1078,30 @@ const FixedKanbanBoard: React.FC = () => {
         renderTraceabilityView()
       )}
 
-      {/* Enhanced Notion-style Task modal */}
+      {/* Enhanced Task modal with keyboard support */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white border-b pb-4 border-gray-200 dark:border-gray-700">
-              {currentTask ? 'Edit Task' : 'Create New Task'}
-            </h2>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={handleModalKeyDown}
+            tabIndex={-1}
+          >
+            <div className="flex justify-between items-center mb-6 border-b pb-4 border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {currentTask ? 'Edit Task' : 'Create New Task'}
+              </h2>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
             
             <form onSubmit={handleFormSubmit} className="space-y-6">
               {/* Title */}
@@ -1103,6 +1275,9 @@ const FixedKanbanBoard: React.FC = () => {
               
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <span className="text-xs text-gray-500 dark:text-gray-400 self-center mr-auto">
+                  Press Esc to cancel, Ctrl+Enter to save
+                </span>
                 <button 
                   type="button"
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
