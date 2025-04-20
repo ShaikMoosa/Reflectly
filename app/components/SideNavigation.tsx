@@ -2,27 +2,30 @@
 
 import React from 'react';
 import { Home, FolderOpen, Kanban, Pencil, Plus, ChevronDown, ChevronRight, Settings, Search, Moon, Sun } from 'lucide-react';
+import { UserButton } from '@clerk/nextjs';
 
 export type PageType = 'home' | 'projects' | 'whiteboard' | 'planner';
 
-interface SideNavigationProps {
+export interface SideNavigationProps {
   activePage: PageType;
   onNavigate: (page: PageType) => void;
-  isDarkMode?: boolean;
-  onToggleTheme?: () => void;
-  projects: { id: string; name: string }[];
-  onSelectProject?: (projectId: string) => void;
-  onCreateNewProject?: () => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
+  projects: Array<{ id: string; name: string }>;
+  onSelectProject: (projectId: string) => void;
+  onCreateNewProject: () => void;
+  userName?: string;
 }
 
-const SideNavigation: React.FC<SideNavigationProps> = ({ 
-  activePage, 
+const SideNavigation: React.FC<SideNavigationProps> = ({
+  activePage,
   onNavigate,
-  isDarkMode = false,
+  isDarkMode,
   onToggleTheme,
-  projects = [],
+  projects,
   onSelectProject,
-  onCreateNewProject
+  onCreateNewProject,
+  userName = 'User'
 }) => {
   const [projectsExpanded, setProjectsExpanded] = React.useState(true);
 
@@ -54,6 +57,20 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
           >
             {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+        </div>
+      </div>
+
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium">
+              {userName.charAt(0)}
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{userName}</p>
+            </div>
+          </div>
+          <UserButton afterSignOutUrl="/sign-in" />
         </div>
       </div>
 

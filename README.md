@@ -9,21 +9,67 @@ Reflectly is a modern web application that allows users to upload video files an
 - **Speaker Identification**: Automatically label different speakers in the transcript
 - **Interactive Navigation**: Click on any transcript segment to jump to that point in the video
 - **Responsive Design**: Clean, modern UI that works on all device sizes
+- **Project Management**: Manage projects with video uploads and transcripts
+- **Digital Whiteboard**: Sketch ideas on a digital whiteboard
+- **Kanban-style Project Planner**: Plan projects using a kanban board
+- **Authentication**: Email and Google login via Clerk
+- **Persistent Storage**: Store data in Supabase
 
 ## Technology Stack
 
 - **Frontend**: Next.js with React and TypeScript
 - **UI Components**: shadcn UI library
 - **Styling**: Tailwind CSS
-- **Authentication**: None (local application)
+- **Authentication**: Clerk for authentication
 - **API Integration**: OpenAI Whisper for transcription
+- **Database**: Supabase for persistent storage
 
-## Getting Started
+## Setup Instructions
 
 ### Prerequisites
 
-- Node.js 18.0.0 or higher
-- An OpenAI API key
+- Node.js 16+
+- npm or yarn
+- An OpenAI account (for transcript generation)
+- A Clerk account (for authentication)
+- A Supabase account (for database)
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+# OpenAI
+NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key
+
+# Clerk Auth
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
+CLERK_WEBHOOK_SECRET=your_webhook_secret
+
+# Clerk Routes
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Supabase Setup
+
+1. Create a new Supabase project
+2. Use the `supabase/schema.sql` file to set up your database schema
+3. Configure Row Level Security (RLS) policies as defined in the schema
+
+### Clerk Setup
+
+1. Create a new Clerk application
+2. Enable email and Google authentication methods
+3. Configure the redirect URLs for your application
+4. Create a webhook endpoint that points to `/api/clerk-webhook` with all user events
 
 ### Installation
 
@@ -38,17 +84,29 @@ Reflectly is a modern web application that allows users to upload video files an
    npm install
    ```
 
-3. Create a `.env.local` file in the project root with your OpenAI API key:
-   ```
-   OPENAI_API_KEY=your_api_key_here
-   ```
-
-4. Start the development server:
+3. Run the development server:
    ```
    npm run dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Deployment to Vercel
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add all environment variables in the Vercel project settings
+4. Deploy your application
+
+## Development
+
+To run the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Usage
 
@@ -67,4 +125,13 @@ This project is open source and available under the [MIT License](LICENSE).
 - [OpenAI](https://openai.com/) for the Whisper API
 - [shadcn/ui](https://ui.shadcn.com/) for the UI components
 - [Next.js](https://nextjs.org/) for the framework
-- [Tailwind CSS](https://tailwindcss.com/) for styling 
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Clerk](https://clerk.dev/) for authentication
+- [Supabase](https://supabase.io/) for persistent storage 
+
+## Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Clerk Documentation](https://clerk.dev/docs)
+- [Supabase Documentation](https://supabase.io/docs)
+- [Excalidraw Documentation](https://github.com/excalidraw/excalidraw) 

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings, X } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../../utils/supabase';
 
 // Define the task type
 interface Task {
@@ -40,6 +42,11 @@ interface BoardData {
     [key: string]: Column;
   };
   columnOrder: string[];
+}
+
+// Component props
+interface FixedKanbanBoardProps {
+  userId?: string;
 }
 
 const initialData: BoardData = {
@@ -100,7 +107,7 @@ const typeIcons = {
 // Define system options
 const systemOptions = ['User Needs', 'System Requirements', 'Subsystem Requirements', 'Design Input', 'Design Output'];
 
-const FixedKanbanBoard: React.FC = () => {
+const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
   // Load board data from localStorage or use empty initial data
   const loadBoardData = () => {
     try {

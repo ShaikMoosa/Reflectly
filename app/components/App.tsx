@@ -7,6 +7,9 @@ import SideNavigation, { PageType } from './SideNavigation';
 import { useMediaQuery } from 'react-responsive';
 import FixedKanbanBoard from './FixedKanbanBoard';
 import dynamic from 'next/dynamic';
+import { useUser } from '@clerk/nextjs';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../../utils/supabase';
 
 // Dynamically import the Excalidraw whiteboard component to avoid SSR issues
 const ExcalidrawWhiteboard = dynamic(
@@ -35,6 +38,9 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // User authentication
+  const { user, isSignedIn } = useUser();
+  
   // Check system preference for dark mode
   const prefersDarkMode = useMediaQuery({ query: '(prefers-color-scheme: dark)' });
 
@@ -52,40 +58,140 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  // Load projects from localStorage on component mount
+  // Load projects from Supabase on component mount
   useEffect(() => {
-    const loadProjects = () => {
+    const loadProjects = async () => {
       try {
-        const savedProjects = localStorage.getItem('projects');
-        if (savedProjects) {
-          setProjects(JSON.parse(savedProjects));
+        if (!isSignedIn || !user?.id) {
+          setProjects([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Try to load from Supabase first
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error('Error loading projects from Supabase:', error);
+          
+          // Fallback to localStorage if Supabase fails
+          const savedProjects = localStorage.getItem('projects');
+          if (savedProjects) {
+            const parsedProjects = JSON.parse(savedProjects);
+            setProjects(parsedProjects);
+          }
+        } else {
+          // Convert Supabase data format to our Project format
+          const formattedProjects = data.map(project => ({
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            createdAt: project.created_at
+          }));
+          
+          setProjects(formattedProjects);
         }
       } catch (error) {
-        console.error('Error loading projects from localStorage:', error);
+        console.error('Error loading projects:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadProjects();
-  }, []);
+  }, [user, isSignedIn]);
 
-  // Save projects to localStorage when they change
+  // Save projects to Supabase when they change
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('projects', JSON.stringify(projects));
-    }
-  }, [projects, isLoading]);
+    const saveProjects = async () => {
+      if (!isLoading && isSignedIn && user?.id) {
+        try {
+          // Still keep localStorage as a backup
+          localStorage.setItem('projects', JSON.stringify(projects));
+          
+          // For each project that might have changed, upsert to Supabase
+          for (const project of projects) {
+            const { error } = await supabase
+              .from('projects')
+              .upsert({
+                id: project.id,
+                name: project.name,
+                description: project.description,
+                created_at: project.createdAt,
+                user_id: user.id
+              });
+              
+            if (error) {
+              console.error('Error saving project to Supabase:', error);
+            }
+          }
+        } catch (error) {
+          console.error('Error saving projects:', error);
+        }
+      }
+    };
+    
+    saveProjects();
+  }, [projects, isLoading, user, isSignedIn]);
 
   // Project handlers
-  const handleCreateProject = (project: Project) => {
-    setProjects([...projects, project]);
+  const handleCreateProject = async (project: Project) => {
+    if (!isSignedIn || !user?.id) return;
+    
+    const newProject = {
+      ...project,
+      id: uuidv4() // Generate a UUID for new projects
+    };
+    
+    // Update local state
+    setProjects([...projects, newProject]);
+    
+    // Save to Supabase
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .insert({
+          id: newProject.id,
+          name: newProject.name,
+          description: newProject.description,
+          created_at: newProject.createdAt,
+          user_id: user.id
+        });
+        
+      if (error) {
+        console.error('Error creating project in Supabase:', error);
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+    }
   };
 
-  const handleDeleteProject = (projectId: string) => {
+  const handleDeleteProject = async (projectId: string) => {
+    // Update local state
     setProjects(projects.filter(p => p.id !== projectId));
     if (selectedProjectId === projectId) {
       setSelectedProjectId(null);
+    }
+    
+    // Delete from Supabase
+    if (isSignedIn && user?.id) {
+      try {
+        const { error } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', projectId)
+          .eq('user_id', user.id);
+          
+        if (error) {
+          console.error('Error deleting project from Supabase:', error);
+        }
+      } catch (error) {
+        console.error('Error deleting project:', error);
+      }
     }
   };
 
@@ -98,17 +204,36 @@ const App: React.FC = () => {
     setSelectedProjectId(null);
   };
 
-  const handleSaveProject = (updatedProject: Project) => {
+  const handleSaveProject = async (updatedProject: Project) => {
+    // Update local state
     setProjects(projects.map(p => 
       p.id === updatedProject.id ? updatedProject : p
     ));
+    
+    // Update in Supabase
+    if (isSignedIn && user?.id) {
+      try {
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            name: updatedProject.name,
+            description: updatedProject.description
+          })
+          .eq('id', updatedProject.id)
+          .eq('user_id', user.id);
+          
+        if (error) {
+          console.error('Error updating project in Supabase:', error);
+        }
+      } catch (error) {
+        console.error('Error updating project:', error);
+      }
+    }
   };
 
   const handleCreateNewProject = () => {
     setSelectedProjectId(null);
     setActivePage('projects');
-    // Trigger the create project modal in ProjectPage
-    // We'll need to pass this through as a prop
   };
 
   const handlePageChange = (page: PageType) => {
@@ -147,6 +272,7 @@ const App: React.FC = () => {
         projects={projectsForNav}
         onSelectProject={handleSelectProject}
         onCreateNewProject={handleCreateNewProject}
+        userName={user?.firstName || 'User'}
       />
 
       {/* Main content area */}
@@ -157,6 +283,7 @@ const App: React.FC = () => {
               project={selectedProject}
               onBackToProjects={handleBackToProjects}
               onSaveProject={handleSaveProject}
+              userId={user?.id}
             />
           ) : (
             <>
@@ -171,7 +298,7 @@ const App: React.FC = () => {
               {activePage === 'whiteboard' && (
                 <div className="w-full h-[calc(100vh-64px)]">
                   <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <ExcalidrawWhiteboard />
+                    <ExcalidrawWhiteboard userId={user?.id} />
                   </div>
                 </div>
               )}
@@ -183,14 +310,14 @@ const App: React.FC = () => {
                       Organize your ideas and tasks with this Kanban board. Drag and drop cards to update status.
                     </p>
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 h-[calc(100vh-220px)]">
-                      <FixedKanbanBoard />
+                      <FixedKanbanBoard userId={user?.id} />
                     </div>
                   </div>
                 </div>
               )}
               {activePage === 'home' && (
                 <div className="text-center py-20">
-                  <h1 className="text-2xl font-bold mb-4">Welcome to Reflectly</h1>
+                  <h1 className="text-2xl font-bold mb-4">Welcome to Reflectly{user?.firstName ? `, ${user.firstName}` : ''}</h1>
                   <p className="text-gray-600 dark:text-gray-400 mb-8">Your all-in-one workspace for managing projects, notes, and transcripts</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">

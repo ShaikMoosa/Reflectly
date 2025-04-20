@@ -17,6 +17,7 @@ export interface ProjectFileViewProps {
   project: Project;
   onBackToProjects: () => void;
   onSaveProject: (updatedProject: Project) => void;
+  userId?: string;
 }
 
 interface TranscriptData {
