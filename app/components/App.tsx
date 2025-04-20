@@ -9,8 +9,7 @@ import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
-import TldrawWhiteboard from './TldrawWhiteboard';
-import FallbackWhiteboard from './FallbackWhiteboard';
+import CustomWhiteboard from './CustomWhiteboard';
 
 const App: React.FC = () => {
   // Project state
@@ -22,7 +21,6 @@ const App: React.FC = () => {
   const [activePage, setActivePage] = useState<PageType>('projects');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [useExcalidraw, setUseExcalidraw] = useState(true);
   const [whiteboardError, setWhiteboardError] = useState<string | null>(null);
   
   // User authentication
@@ -142,13 +140,6 @@ const App: React.FC = () => {
   const handleWhiteboardError = (error: Error) => {
     console.error('Whiteboard error:', error);
     setWhiteboardError(error.message);
-    setUseExcalidraw(false);
-  };
-
-  // Function to toggle between Excalidraw and Fallback whiteboard
-  const toggleWhiteboardType = () => {
-    setUseExcalidraw(!useExcalidraw);
-    setWhiteboardError(null);
   };
 
   const handleCreateProject = async (project: Project) => {
@@ -301,7 +292,7 @@ const App: React.FC = () => {
               )}
               {activePage === 'whiteboard' && (
                 <div className="w-full h-[calc(100vh-64px)]">
-                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     {whiteboardError && (
                       <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-t-xl">
                         <div className="flex items-center justify-between">
@@ -317,22 +308,8 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    
-                    <div className="flex justify-end items-center p-2 bg-gray-50 dark:bg-gray-700">
-                      <button
-                        onClick={toggleWhiteboardType}
-                        className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                      >
-                        {useExcalidraw ? 'Use Simple Whiteboard' : 'Try Tldraw'}
-                      </button>
-                    </div>
-                    
-                    <div className="h-[calc(100%-48px)]">
-                      {useExcalidraw ? (
-                        <TldrawWhiteboard projectId={user?.id} />
-                      ) : (
-                        <FallbackWhiteboard userId={user?.id} />
-                      )}
+                    <div className="h-full">
+                      <CustomWhiteboard userId={user?.id} />
                     </div>
                   </div>
                 </div>
