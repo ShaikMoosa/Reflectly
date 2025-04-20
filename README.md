@@ -10,7 +10,7 @@ Reflectly is a modern web application that allows users to upload video files an
 - **Interactive Navigation**: Click on any transcript segment to jump to that point in the video
 - **Responsive Design**: Clean, modern UI that works on all device sizes
 - **Project Management**: Manage projects with video uploads and transcripts
-- **Digital Whiteboard**: Sketch ideas on a digital whiteboard
+- **Digital Whiteboard**: Sketch ideas on a digital whiteboard with Excalidraw
 - **Kanban-style Project Planner**: Plan projects using a kanban board
 - **Authentication**: Email and Google login via Clerk
 - **Persistent Storage**: Store data in Supabase
@@ -23,6 +23,7 @@ Reflectly is a modern web application that allows users to upload video files an
 - **Authentication**: Clerk for authentication
 - **API Integration**: OpenAI Whisper for transcription
 - **Database**: Supabase for persistent storage
+- **Whiteboard**: Excalidraw integration for collaborative drawing
 
 ## Setup Instructions
 
@@ -36,11 +37,11 @@ Reflectly is a modern web application that allows users to upload video files an
 
 ### Environment Variables
 
-Create a `.env.local` file in the root directory with the following variables:
+Create a `.env.local` file in the root directory using the `.env.example` template:
 
 ```
 # OpenAI
-NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key
 
 # Clerk Auth
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
@@ -60,9 +61,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### Supabase Setup
 
+For detailed Supabase setup instructions, please refer to [SUPABASE_SETUP.md](SUPABASE_SETUP.md)
+
+Quick setup:
 1. Create a new Supabase project
-2. Use the `supabase/schema.sql` file to set up your database schema
-3. Configure Row Level Security (RLS) policies as defined in the schema
+2. Use the SQL migrations in `supabase/migrations/` to set up your database schema:
+   - Run `supabase/migrations/20240601000000_whiteboard_setup.sql` first
+   - Then run `supabase/schema.sql` if needed
+3. Configure your environment variables with Supabase URL and anon key
+4. Enable authentication methods in Supabase dashboard
 
 ### Clerk Setup
 
@@ -114,7 +121,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 2. Wait for the video to process
 3. Click "Generate Transcript" to create a transcript using OpenAI's Whisper API
 4. Browse through the transcript and click on any segment to navigate the video
-5. If OpenAI API is not configured or encounters an error, the app will fall back to generating mock transcript data
+5. Use the whiteboard feature to sketch ideas related to your projects
+6. Organize tasks using the kanban board planner
 
 ## License
 
@@ -127,7 +135,8 @@ This project is open source and available under the [MIT License](LICENSE).
 - [Next.js](https://nextjs.org/) for the framework
 - [Tailwind CSS](https://tailwindcss.com/) for styling
 - [Clerk](https://clerk.dev/) for authentication
-- [Supabase](https://supabase.io/) for persistent storage 
+- [Supabase](https://supabase.io/) for persistent storage
+- [Excalidraw](https://excalidraw.com/) for the whiteboard functionality
 
 ## Learn More
 
