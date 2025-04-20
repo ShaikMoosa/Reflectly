@@ -3,10 +3,9 @@
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useTheme } from 'next-themes';
 import dynamic from 'next/dynamic';
-import { Excalidraw, exportToSvg } from '@excalidraw/excalidraw';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
+import type { AppState } from '@excalidraw/excalidraw/types/types';
 import { supabase } from '../../utils/supabase';
-import { v4 as uuidv4 } from 'uuid';
 
 // Dynamically import Excalidraw to prevent SSR issues
 const Excalidraw = dynamic(
@@ -34,14 +33,9 @@ interface ExcalidrawWhiteboardProps {
 const ExcalidrawWhiteboard: React.FC<ExcalidrawWhiteboardProps> = ({ userId }) => {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [elements, setElements] = useState<ExcalidrawElement[]>([]);
-  const [appState, setAppState] = useState<any>(null);
+  const [appState, setAppState] = useState<AppState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
   
   // Load whiteboard data from Supabase or localStorage
   useEffect(() => {
@@ -93,7 +87,7 @@ const ExcalidrawWhiteboard: React.FC<ExcalidrawWhiteboardProps> = ({ userId }) =
   }, [userId]);
 
   // Save whiteboard data to Supabase and localStorage
-  const saveWhiteboardData = useCallback(async (elements: ExcalidrawElement[], appState: any) => {
+  const saveWhiteboardData = useCallback(async (elements: readonly ExcalidrawElement[], appState: AppState) => {
     try {
       if (isLoading) return;
 
@@ -122,79 +116,45 @@ const ExcalidrawWhiteboard: React.FC<ExcalidrawWhiteboardProps> = ({ userId }) =
     }
   }, [isLoading, userId]);
 
-  // Handle changes in elements and save data
-  const handleChange = useCallback((elements: ExcalidrawElement[], appState: any) => {
-    setElements(elements);
-    setAppState(appState);
+  // Handle changes in elements
+  const handleChange = useCallback((elements: readonly ExcalidrawElement[], state: AppState) => {
+    setElements([...elements]);
+    setAppState(state);
     
     // Debounce saving to avoid excessive API calls
     const timeoutId = setTimeout(() => {
-      saveWhiteboardData(elements, appState);
+      saveWhiteboardData(elements, state);
     }, 1000);
     
     return () => clearTimeout(timeoutId);
   }, [saveWhiteboardData]);
-
-  // Initialize resize observer to handle container size changes
-  useEffect(() => {
-    if (containerRef.current) {
-      const updateDimensions = () => {
-        if (containerRef.current) {
-          const { offsetWidth, offsetHeight } = containerRef.current;
-          setDimensions({
-            width: offsetWidth,
-            height: offsetHeight
-          });
-        }
-      };
-
-      // Initial dimension calculation
-      updateDimensions();
-
-      // Set up ResizeObserver to detect changes in container size
-      resizeObserverRef.current = new ResizeObserver(updateDimensions);
-      resizeObserverRef.current.observe(containerRef.current);
-
-      return () => {
-        if (resizeObserverRef.current && containerRef.current) {
-          resizeObserverRef.current.unobserve(containerRef.current);
-          resizeObserverRef.current.disconnect();
-        }
-      };
-    }
-  }, []);
 
   // Theme support
   const isDarkMode = document.documentElement.classList.contains('dark');
 
   return (
     <div ref={containerRef} className="h-full w-full relative">
-      <div ref={wrapperRef} className="h-full w-full absolute">
-        {!isLoading && (
-          <Excalidraw
-            ref={(api) => setExcalidrawAPI(api)}
-            initialData={{
-              elements,
-              appState: appState || {
-                viewBackgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
-                theme: isDarkMode ? "dark" : "light"
-              },
-            }}
-            onChange={handleChange}
-            width={dimensions.width}
-            height={dimensions.height}
-            UIOptions={{
-              canvasActions: {
-                saveToActiveFile: true,
-                toggleTheme: true,
-                saveAsImage: true,
-                clearCanvas: true,
-                changeViewBackgroundColor: true,
-              }
-            }}
-          />
-        )}
-      </div>
+      {!isLoading && (
+        <Excalidraw
+          initialData={{
+            elements,
+            appState: appState || {
+              viewBackgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+              theme: isDarkMode ? "dark" : "light"
+            },
+          }}
+          onChange={handleChange}
+          UIOptions={{
+            canvasActions: {
+              saveToActiveFile: true,
+              toggleTheme: true,
+              saveAsImage: true,
+              clearCanvas: true,
+              changeViewBackgroundColor: true,
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
