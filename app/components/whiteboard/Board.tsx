@@ -1,13 +1,21 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBoardStore } from '../../stores/useBoardStore';
 import dynamic from 'next/dynamic';
 
-// Dynamically import KonvaComponents with no SSR
+// Use a special dynamic import that completely skips SSR
+// We need to use a combination of dynamic import and a wrapper to avoid bundling issues
 const KonvaComponents = dynamic(
-  () => import('./KonvaComponents'),
-  { ssr: false }
+  () => import('./konva-no-ssr').then(mod => mod.default()),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full w-full">
+        <div className="animate-spin h-10 w-10 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+      </div>
+    )
+  }
 );
 
 export default function Board() {

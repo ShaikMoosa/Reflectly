@@ -1,59 +1,70 @@
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
-  // Basic configuration
-  reactStrictMode: false,
+  reactStrictMode: true,
+  output: 'standalone',
   images: {
-    domains: ['localhost'],
+    domains: ['storage.googleapis.com', 'lh3.googleusercontent.com'],
   },
-  
-  // Disable experimental features that could cause issues
   experimental: {
-    esmExternals: false,
-    serverComponentsExternalPackages: [],
+    optimizeCss: true,
+    esmExternals: 'loose',
   },
-  
-  // Share environment variables with the client
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   },
-  
-  // Simplify webpack config to avoid module issues
   webpack: (config, { isServer }) => {
+    // Only include the 'canvas' module on the server-side
+    if (isServer) {
+      // Add a null-loader for the 'canvas' module in Konva during server-side rendering
+      config.module.rules.push({
+        test: /node_modules\/konva\/lib\/index-node\.js$/,
+        use: 'null-loader',
+      });
+    }
+
+    // Enable source maps in development
     if (!isServer) {
-      // Fallbacks for browser-only code
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        os: false,
-        crypto: false,
-        stream: false,
-        http: false,
-        https: false,
-        zlib: false,
-      };
+      config.devtool = 'source-map';
     }
     
-    // Disable chunk splitting to simplify bundling
-    config.optimization.splitChunks = false;
-    config.optimization.runtimeChunk = false;
-    
+    // Fix ESM modules
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    };
+
+    // Optimize chunks
+    config.optimization.splitChunks = {
+      chunks: 'all',
+      cacheGroups: {
+        default: false,
+        vendors: false,
+        commons: {
+          name: 'commons',
+          chunks: 'all',
+          minChunks: 2,
+        },
+        react: {
+          name: 'commons',
+          chunks: 'all',
+          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+        },
+      },
+    };
+
     return config;
   },
-  
-  // Redirect problematic paths to static alternatives
-  async redirects() {
-    return [
-      {
-        source: '/whiteboard',
-        destination: '/test',
-        permanent: false,
-      },
-    ];
+  serverRuntimeConfig: {
+    port: process.env.PORT || 3001,
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error'],
+    } : false,
   },
 };
 
-// Disable telemetry
-process.env.NEXT_TELEMETRY_DISABLED = '1';
+// Log environment configuration
+console.log(`Environment Configuration: ${process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY is set' : 'OPENAI_API_KEY is NOT set'}`);
 
 module.exports = nextConfig; 

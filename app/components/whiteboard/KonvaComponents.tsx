@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+// Import konva components only on the client
 import { Stage, Layer, Rect, Circle, Transformer } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { Shape } from '../../stores/useBoardStore';
@@ -24,7 +25,9 @@ interface KonvaComponentsProps {
   updateViewport: (transform: { x?: number; y?: number; scale?: number }) => void;
 }
 
-const KonvaComponents: React.FC<KonvaComponentsProps> = ({
+// This component is deliberately not the default export to prevent static analysis
+// This adds a layer of protection against SSR importing
+export const KonvaComponentsInternal: React.FC<KonvaComponentsProps> = ({
   shapes,
   selectedId,
   tool,
@@ -219,4 +222,6 @@ const KonvaComponents: React.FC<KonvaComponentsProps> = ({
   );
 };
 
+// This is a compatibility layer for dynamic imports
+const KonvaComponents = (props: KonvaComponentsProps) => <KonvaComponentsInternal {...props} />;
 export default KonvaComponents; 
