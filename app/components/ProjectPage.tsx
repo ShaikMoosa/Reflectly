@@ -11,6 +11,8 @@ export interface Project {
   name: string;
   description: string;
   createdAt: string;
+  videoUrl?: string;
+  transcriptData?: any;
 }
 
 interface ProjectPageProps {

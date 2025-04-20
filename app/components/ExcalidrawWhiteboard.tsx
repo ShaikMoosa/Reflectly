@@ -16,22 +16,7 @@ const ExcalidrawPlaceholder = () => (
 
 // Import Excalidraw with noSSR to prevent module issues at build time
 const Excalidraw = dynamic(
-  async () => {
-    // Wait 100ms to ensure window is fully initialized
-    await new Promise(resolve => setTimeout(resolve, 100));
-    // Only import in client environment
-    if (typeof window !== 'undefined') {
-      try {
-        // Try to import excalidraw
-        const { Excalidraw } = await import('@excalidraw/excalidraw');
-        return Excalidraw;
-      } catch (err) {
-        console.error('Failed to load Excalidraw:', err);
-        return ExcalidrawPlaceholder;
-      }
-    }
-    return ExcalidrawPlaceholder;
-  },
+  () => import('@excalidraw/excalidraw').then((mod) => mod.Excalidraw),
   {
     ssr: false,
     loading: () => <ExcalidrawPlaceholder />
@@ -43,7 +28,36 @@ const ExcalidrawWhiteboard = ({ userId }: { userId?: string }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [elements, setElements] = useState<any[]>([]);
   const [appState, setAppState] = useState<any | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  
+  // Initialize ResizeObserver to handle container size changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && containerRef.current) {
+      const updateDimensions = () => {
+        if (containerRef.current) {
+          const { width, height } = containerRef.current.getBoundingClientRect();
+          setDimensions({ width, height });
+        }
+      };
+
+      // Initial dimensions
+      updateDimensions();
+
+      // Set up ResizeObserver
+      resizeObserverRef.current = new ResizeObserver(updateDimensions);
+      resizeObserverRef.current.observe(containerRef.current);
+
+      // Clean up
+      return () => {
+        if (resizeObserverRef.current) {
+          resizeObserverRef.current.disconnect();
+        }
+      };
+    }
+  }, [isClient]);
   
   // Only run after client-side hydration
   useEffect(() => {
@@ -139,6 +153,9 @@ const ExcalidrawWhiteboard = ({ userId }: { userId?: string }) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
     };
   }, []);
 
@@ -150,35 +167,82 @@ const ExcalidrawWhiteboard = ({ userId }: { userId?: string }) => {
   // Get current theme from document
   const isDarkTheme = document.documentElement.classList.contains('dark');
 
-  // Excalidraw props
-  const excalidrawProps: any = {
-    initialData: {
-      elements: elements,
-      appState: appState || {
-        viewBackgroundColor: isDarkTheme ? "#1e1e1e" : "#ffffff",
-        theme: isDarkTheme ? "dark" : "light"
-      }
-    },
-    onChange: (els: any[], state: any) => {
-      setElements([...els]);
-      setAppState(state);
-      saveData(els, state);
-    },
-    UIOptions: {
-      canvasActions: {
-        toggleTheme: true,
-        saveAsImage: true,
-        clearCanvas: true,
-        changeViewBackgroundColor: true,
-      }
-    }
+  // Function to handle updates from Excalidraw
+  const handleChange = (els: readonly any[], state: any, files?: any) => {
+    setElements([...els]);
+    setAppState(state);
+    saveData([...els], state);
   };
 
   return (
-    <div className="h-full w-full relative">
-      {!isLoading && isClient && React.createElement(Excalidraw, excalidrawProps)}
+    <div ref={containerRef} className="h-full w-full relative">
+      {!isLoading && isClient && dimensions.width > 0 && dimensions.height > 0 && (
+        <div style={{ width: '100%', height: '100%' }}>
+          <CustomErrorBoundary>
+            <Excalidraw
+              initialData={{
+                elements: elements,
+                appState: appState || {
+                  viewBackgroundColor: isDarkTheme ? "#1e1e1e" : "#ffffff",
+                  theme: isDarkTheme ? "dark" : "light"
+                }
+              }}
+              onChange={handleChange}
+              UIOptions={{
+                canvasActions: {
+                  toggleTheme: true,
+                  saveAsImage: true,
+                  clearCanvas: true,
+                  changeViewBackgroundColor: true,
+                }
+              }}
+            />
+          </CustomErrorBoundary>
+        </div>
+      )}
     </div>
   );
 };
+
+// Simple error boundary component
+class CustomErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean, error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Excalidraw whiteboard error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-full w-full p-4">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4">
+            <h3 className="text-red-800 dark:text-red-400 font-medium">Error loading whiteboard</h3>
+            <p className="text-red-600 dark:text-red-300 text-sm">
+              {this.state.error?.message || "An unexpected error occurred"}
+            </p>
+          </div>
+          <textarea 
+            className="w-full h-[calc(100%-5rem)] p-4 border rounded-lg dark:bg-gray-800 dark:text-white resize-none"
+            placeholder="Use this temporary whiteboard until the issue is fixed. Your content will be saved locally."
+            onChange={(e) => localStorage.setItem('fallback-notes', e.target.value)}
+            defaultValue={localStorage.getItem('fallback-notes') || ''}
+          />
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default memo(ExcalidrawWhiteboard); 

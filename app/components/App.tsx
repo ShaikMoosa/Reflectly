@@ -9,181 +9,8 @@ import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
-
-// Simplified whiteboard implementation directly in App.tsx to avoid any import issues
-const SimpleWhiteboard: React.FC<{ userId?: string }> = ({ userId }) => {
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = React.useState(false);
-  const [color, setColor] = React.useState('#000000');
-  const [size, setSize] = React.useState(5);
-  const [isClient, setIsClient] = React.useState(false);
-
-  // Initialize on client-side only
-  React.useEffect(() => {
-    setIsClient(true);
-
-    // Only run canvas setup on client side
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      const container = canvas.parentElement;
-      
-      // Set canvas size
-      if (context && container) {
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-        
-        // Fill with white background
-        context.fillStyle = '#ffffff';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Try to load saved canvas
-        try {
-          const savedCanvas = localStorage.getItem('simple-whiteboard');
-          if (savedCanvas) {
-            const img = new Image();
-            img.onload = () => {
-              context.drawImage(img, 0, 0);
-            };
-            img.src = savedCanvas;
-          }
-        } catch (e) {
-          console.error('Error loading saved whiteboard:', e);
-        }
-      }
-    }
-  }, []);
-
-  // Drawing handlers
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    
-    if (!context) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Start new path
-    context.beginPath();
-    context.moveTo(x, y);
-    context.lineWidth = size;
-    context.lineCap = 'round';
-    context.strokeStyle = color;
-    
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    
-    if (!context) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Continue path and stroke
-    context.lineTo(x, y);
-    context.stroke();
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const handleClear = () => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    
-    if (!context) return;
-    
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const handleSave = () => {
-    if (!canvasRef.current) return;
-    
-    try {
-      const canvas = canvasRef.current;
-      const dataUrl = canvas.toDataURL();
-      localStorage.setItem('simple-whiteboard', dataUrl);
-      alert('Whiteboard saved!');
-    } catch (e) {
-      console.error('Error saving whiteboard:', e);
-      alert('Failed to save whiteboard');
-    }
-  };
-
-  if (!isClient) {
-    return (
-      <div className="flex items-center justify-center h-full w-full">
-        <div className="animate-spin h-10 w-10 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full w-full">
-      <div className="p-2 bg-gray-100 dark:bg-gray-800 flex justify-between items-center">
-        <h2 className="text-lg font-medium">Whiteboard</h2>
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1">
-            <label className="text-sm">Color:</label>
-            <input 
-              type="color" 
-              value={color} 
-              onChange={(e) => setColor(e.target.value)}
-              className="w-6 h-6 border border-gray-300"
-            />
-          </div>
-          <div className="flex items-center space-x-1">
-            <label className="text-sm">Size:</label>
-            <input 
-              type="range" 
-              min="1" 
-              max="20" 
-              value={size} 
-              onChange={(e) => setSize(parseInt(e.target.value))}
-              className="w-20"
-            />
-          </div>
-          <button 
-            onClick={handleClear}
-            className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-          >
-            Clear
-          </button>
-          <button 
-            onClick={handleSave}
-            className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-      <div className="flex-grow relative overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          className="absolute top-0 left-0 w-full h-full cursor-crosshair bg-white"
-        />
-      </div>
-    </div>
-  );
-};
+import ExcalidrawWhiteboard from './ExcalidrawWhiteboard';
+import FallbackWhiteboard from './FallbackWhiteboard';
 
 const App: React.FC = () => {
   // Project state
@@ -195,6 +22,8 @@ const App: React.FC = () => {
   const [activePage, setActivePage] = useState<PageType>('projects');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [useExcalidraw, setUseExcalidraw] = useState(true);
+  const [whiteboardError, setWhiteboardError] = useState<string | null>(null);
   
   // User authentication
   const { user, isSignedIn } = useUser();
@@ -248,6 +77,8 @@ const App: React.FC = () => {
             id: project.id,
             name: project.name,
             description: project.description,
+            videoUrl: project.video_url,
+            transcriptData: project.transcript_data,
             createdAt: project.created_at
           }));
           
@@ -255,107 +86,125 @@ const App: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading projects:', error);
+        
+        // Fallback to localStorage
+        const savedProjects = localStorage.getItem('projects');
+        if (savedProjects) {
+          const parsedProjects = JSON.parse(savedProjects);
+          setProjects(parsedProjects);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     loadProjects();
-  }, [user, isSignedIn]);
+  }, [isSignedIn, user?.id]);
 
-  // Save projects to Supabase when they change
+  // Save projects to Supabase whenever they change
   useEffect(() => {
     const saveProjects = async () => {
-      if (!isLoading && isSignedIn && user?.id) {
-        try {
-          // Still keep localStorage as a backup
-          localStorage.setItem('projects', JSON.stringify(projects));
-          
-          // For each project that might have changed, upsert to Supabase
-          for (const project of projects) {
-            const { error } = await supabase
-              .from('projects')
-              .upsert({
-                id: project.id,
-                name: project.name,
-                description: project.description,
-                created_at: project.createdAt,
-                user_id: user.id
-              });
-              
-            if (error) {
-              console.error('Error saving project to Supabase:', error);
-            }
-          }
-        } catch (error) {
-          console.error('Error saving projects:', error);
+      if (!isSignedIn || !user?.id || projects.length === 0) return;
+      
+      // Also save to localStorage as backup
+      localStorage.setItem('projects', JSON.stringify(projects));
+      
+      // Skip saving to Supabase if we're still loading (initial state)
+      if (isLoading) return;
+      
+      try {
+        // Convert projects to Supabase format and save
+        const supabaseProjects = projects.map(project => ({
+          id: project.id,
+          user_id: user.id,
+          name: project.name,
+          description: project.description,
+          video_url: project.videoUrl,
+          transcript_data: project.transcriptData,
+          created_at: project.createdAt,
+          updated_at: new Date().toISOString()
+        }));
+        
+        for (const project of supabaseProjects) {
+          await supabase
+            .from('projects')
+            .upsert(project, { onConflict: 'id' });
         }
+      } catch (error) {
+        console.error('Error saving projects to Supabase:', error);
       }
     };
     
     saveProjects();
-  }, [projects, isLoading, user, isSignedIn]);
+  }, [projects, isSignedIn, user?.id, isLoading]);
 
-  // Project handlers
+  // Function to handle whiteboard errors
+  const handleWhiteboardError = (error: Error) => {
+    console.error('Whiteboard error:', error);
+    setWhiteboardError(error.message);
+    setUseExcalidraw(false);
+  };
+
+  // Function to toggle between Excalidraw and Fallback whiteboard
+  const toggleWhiteboardType = () => {
+    setUseExcalidraw(!useExcalidraw);
+    setWhiteboardError(null);
+  };
+
   const handleCreateProject = async (project: Project) => {
-    if (!isSignedIn || !user?.id) return;
-    
     const newProject = {
       ...project,
-      id: uuidv4() // Generate a UUID for new projects
+      id: uuidv4(),
+      createdAt: new Date().toISOString()
     };
     
-    // Update local state
-    setProjects([...projects, newProject]);
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
     
-    // Save to Supabase
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .insert({
+    // Save the new project to Supabase
+    if (isSignedIn && user?.id) {
+      try {
+        await supabase.from('projects').insert({
           id: newProject.id,
+          user_id: user.id,
           name: newProject.name,
           description: newProject.description,
+          video_url: newProject.videoUrl,
+          transcript_data: newProject.transcriptData,
           created_at: newProject.createdAt,
-          user_id: user.id
+          updated_at: newProject.createdAt
         });
-        
-      if (error) {
-        console.error('Error creating project in Supabase:', error);
+      } catch (error) {
+        console.error('Error saving new project to Supabase:', error);
       }
-    } catch (error) {
-      console.error('Error creating project:', error);
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    // Update local state
-    setProjects(projects.filter(p => p.id !== projectId));
-    if (selectedProjectId === projectId) {
-      setSelectedProjectId(null);
-    }
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
     
-    // Delete from Supabase
+    // Remove from Supabase
     if (isSignedIn && user?.id) {
       try {
-        const { error } = await supabase
+        await supabase
           .from('projects')
           .delete()
           .eq('id', projectId)
           .eq('user_id', user.id);
-          
-        if (error) {
-          console.error('Error deleting project from Supabase:', error);
-        }
       } catch (error) {
-        console.error('Error deleting project:', error);
+        console.error('Error deleting project from Supabase:', error);
       }
+    }
+    
+    // If we're deleting the currently selected project, clear the selection
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId(null);
     }
   };
 
   const handleSelectProject = (projectId: string) => {
     setSelectedProjectId(projectId);
-    setActivePage('projects');
   };
 
   const handleBackToProjects = () => {
@@ -363,40 +212,37 @@ const App: React.FC = () => {
   };
 
   const handleSaveProject = async (updatedProject: Project) => {
-    // Update local state
-    setProjects(projects.map(p => 
+    const updatedProjects = projects.map(p => 
       p.id === updatedProject.id ? updatedProject : p
-    ));
+    );
+    setProjects(updatedProjects);
     
     // Update in Supabase
     if (isSignedIn && user?.id) {
       try {
-        const { error } = await supabase
+        await supabase
           .from('projects')
           .update({
             name: updatedProject.name,
-            description: updatedProject.description
+            description: updatedProject.description,
+            video_url: updatedProject.videoUrl,
+            transcript_data: updatedProject.transcriptData,
+            updated_at: new Date().toISOString()
           })
           .eq('id', updatedProject.id)
           .eq('user_id', user.id);
-          
-        if (error) {
-          console.error('Error updating project in Supabase:', error);
-        }
       } catch (error) {
-        console.error('Error updating project:', error);
+        console.error('Error updating project in Supabase:', error);
       }
     }
   };
 
   const handleCreateNewProject = () => {
-    setSelectedProjectId(null);
     setActivePage('projects');
   };
 
   const handlePageChange = (page: PageType) => {
     setActivePage(page);
-    setSelectedProjectId(null);
   };
 
   const toggleDarkMode = () => {
@@ -455,24 +301,38 @@ const App: React.FC = () => {
               )}
               {activePage === 'whiteboard' && (
                 <div className="w-full h-[calc(100vh-64px)]">
-                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <h2 className="text-2xl font-bold mb-4">Whiteboard</h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-8 text-center max-w-2xl">
-                        Due to technical issues with the Excalidraw integration, we've created a standalone whiteboard solution.
-                        Please use the link below to access the whiteboard.
-                      </p>
-                      <a 
-                        href="/whiteboard.html" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all"
+                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                    {whiteboardError && (
+                      <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-t-xl">
+                        <div className="flex items-center justify-between">
+                          <p className="text-red-600 dark:text-red-300 text-sm">
+                            Error: {whiteboardError}
+                          </p>
+                          <button 
+                            onClick={() => setWhiteboardError(null)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-end items-center p-2 bg-gray-50 dark:bg-gray-700">
+                      <button
+                        onClick={toggleWhiteboardType}
+                        className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
                       >
-                        Open Standalone Whiteboard
-                      </a>
-                      <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                        Your drawings will be saved locally in your browser.
-                      </p>
+                        {useExcalidraw ? 'Use Simple Whiteboard' : 'Try Excalidraw'}
+                      </button>
+                    </div>
+                    
+                    <div className="h-[calc(100%-48px)]">
+                      {useExcalidraw ? (
+                        <ExcalidrawWhiteboard userId={user?.id} />
+                      ) : (
+                        <FallbackWhiteboard userId={user?.id} />
+                      )}
                     </div>
                   </div>
                 </div>
