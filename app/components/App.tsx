@@ -9,7 +9,7 @@ import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
-import ExcalidrawWhiteboard from './ExcalidrawWhiteboard';
+import TldrawWhiteboard from './TldrawWhiteboard';
 import FallbackWhiteboard from './FallbackWhiteboard';
 
 const App: React.FC = () => {
@@ -323,13 +323,13 @@ const App: React.FC = () => {
                         onClick={toggleWhiteboardType}
                         className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
                       >
-                        {useExcalidraw ? 'Use Simple Whiteboard' : 'Try Excalidraw'}
+                        {useExcalidraw ? 'Use Simple Whiteboard' : 'Try Tldraw'}
                       </button>
                     </div>
                     
                     <div className="h-[calc(100%-48px)]">
                       {useExcalidraw ? (
-                        <ExcalidrawWhiteboard userId={user?.id} />
+                        <TldrawWhiteboard projectId={user?.id} />
                       ) : (
                         <FallbackWhiteboard userId={user?.id} />
                       )}
