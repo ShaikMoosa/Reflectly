@@ -17,12 +17,15 @@ interface UserListProps {
 }
 
 const UserList: React.FC<UserListProps> = ({ 
-  collaborators = [], // Default to empty array
+  collaborators,
   onSelect,
   selectedIds = []
 }) => {
-  // Ensure collaborators is always an array
-  const userList = Array.isArray(collaborators) ? collaborators : [];
+  // Make sure collaborators is an array before using array methods
+  const userList = React.useMemo(() => {
+    if (!collaborators) return [];
+    return Array.isArray(collaborators) ? collaborators : [collaborators];
+  }, [collaborators]);
   
   return (
     <div className="user-list">

@@ -8,8 +8,8 @@ import { useMediaQuery } from 'react-responsive';
 import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '../../utils/supabase';
-import FlowWhiteboard from './FlowWhiteboard';
+import { supabase, initializeSupabaseTables } from '../../utils/supabase';
+import { useRouter } from 'next/navigation';
 
 const App: React.FC = () => {
   // Project state
@@ -29,6 +29,9 @@ const App: React.FC = () => {
   // Check system preference for dark mode
   const prefersDarkMode = useMediaQuery({ query: '(prefers-color-scheme: dark)' });
 
+  // Track if Supabase tables exist
+  const [tablesExist, setTablesExist] = useState<boolean | null>(null);
+
   // Initialize dark mode based on system preference
   useEffect(() => {
     setIsDarkMode(prefersDarkMode);
@@ -46,95 +49,77 @@ const App: React.FC = () => {
   // Load projects from Supabase on component mount
   useEffect(() => {
     const loadProjects = async () => {
-      try {
-        if (!isSignedIn || !user?.id) {
-          setProjects([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Try to load from Supabase first
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('Error loading projects from Supabase:', error);
-          
-          // Fallback to localStorage if Supabase fails
-          const savedProjects = localStorage.getItem('projects');
-          if (savedProjects) {
-            const parsedProjects = JSON.parse(savedProjects);
-            setProjects(parsedProjects);
-          }
-        } else {
-          // Convert Supabase data format to our Project format
-          const formattedProjects = data.map(project => ({
-            id: project.id,
-            name: project.name,
-            description: project.description,
-            videoUrl: project.video_url,
-            transcriptData: project.transcript_data,
-            createdAt: project.created_at
-          }));
-          
-          setProjects(formattedProjects);
-        }
-      } catch (error) {
-        console.error('Error loading projects:', error);
-        
-        // Fallback to localStorage
-        const savedProjects = localStorage.getItem('projects');
-        if (savedProjects) {
-          const parsedProjects = JSON.parse(savedProjects);
-          setProjects(parsedProjects);
-        }
-      } finally {
+      if (!isSignedIn || !user?.id) {
+        setProjects([]);
         setIsLoading(false);
+        return;
       }
-    };
 
+      // Check if projects table exists
+      const exist = await initializeSupabaseTables();
+      setTablesExist(exist);
+      if (!exist) {
+        // Fallback to localStorage if table missing
+        const saved = localStorage.getItem('projects');
+        setProjects(saved ? JSON.parse(saved) : []);
+        setIsLoading(false);
+        return;
+      }
+
+      // Supabase is ready: fetch projects
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error loading projects from Supabase:', error);
+        const saved = localStorage.getItem('projects');
+        setProjects(saved ? JSON.parse(saved) : []);
+      } else {
+        setProjects(
+          data.map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            videoUrl: p.video_url,
+            transcriptData: p.transcript_data,
+            createdAt: p.created_at
+          }))
+        );
+      }
+      setIsLoading(false);
+    };
     loadProjects();
   }, [isSignedIn, user?.id]);
 
   // Save projects to Supabase whenever they change
   useEffect(() => {
     const saveProjects = async () => {
-      if (!isSignedIn || !user?.id || projects.length === 0) return;
-      
-      // Also save to localStorage as backup
+      if (!tablesExist || !isSignedIn || !user?.id || projects.length === 0) return;
+      // Backup to localStorage
       localStorage.setItem('projects', JSON.stringify(projects));
-      
-      // Skip saving to Supabase if we're still loading (initial state)
       if (isLoading) return;
-      
       try {
-        // Convert projects to Supabase format and save
-        const supabaseProjects = projects.map(project => ({
-          id: project.id,
+        const supabaseProjects = projects.map(p => ({
+          id: p.id,
           user_id: user.id,
-          name: project.name,
-          description: project.description,
-          video_url: project.videoUrl,
-          transcript_data: project.transcriptData,
-          created_at: project.createdAt,
+          name: p.name,
+          description: p.description,
+          video_url: p.videoUrl,
+          transcript_data: p.transcriptData,
+          created_at: p.createdAt,
           updated_at: new Date().toISOString()
         }));
-        
-        for (const project of supabaseProjects) {
-          await supabase
-            .from('projects')
-            .upsert(project, { onConflict: 'id' });
+        for (const proj of supabaseProjects) {
+          await supabase.from('projects').upsert(proj, { onConflict: 'id' });
         }
       } catch (error) {
         console.error('Error saving projects to Supabase:', error);
       }
     };
-    
     saveProjects();
-  }, [projects, isSignedIn, user?.id, isLoading]);
+  }, [projects, isSignedIn, user?.id, isLoading, tablesExist]);
 
   // Function to handle whiteboard errors
   const handleWhiteboardError = (error: Error) => {
@@ -280,95 +265,30 @@ const App: React.FC = () => {
               onSaveProject={handleSaveProject}
               userId={user?.id}
             />
+          ) : activePage === 'whiteboard' ? (
+            <div className="h-screen -mt-6 -mx-6">
+              <iframe 
+                src="/whiteboard" 
+                className="w-full h-full border-none" 
+                title="Whiteboard"
+              />
+            </div>
+          ) : activePage === 'planner' ? (
+            <FixedKanbanBoard userId={user?.id} />
+          ) : activePage === 'home' ? (
+            <div className="p-6">
+              <h1 className="text-2xl font-bold mb-6">Welcome to Reflectly</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Home page content */}
+              </div>
+            </div>
           ) : (
-            <>
-              {activePage === 'projects' && (
-                <ProjectPage 
-                  projects={projects}
-                  onCreateProject={handleCreateProject}
-                  onDeleteProject={handleDeleteProject}
-                  onSelectProject={handleSelectProject}
-                />
-              )}
-              {activePage === 'whiteboard' && (
-                <div className="w-full h-[calc(100vh-64px)]">
-                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                    {whiteboardError && (
-                      <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-t-xl">
-                        <div className="flex items-center justify-between">
-                          <p className="text-red-600 dark:text-red-300 text-sm">
-                            Error: {whiteboardError}
-                          </p>
-                          <button 
-                            onClick={() => setWhiteboardError(null)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="h-full">
-                      <FlowWhiteboard userId={user?.id} />
-                    </div>
-                  </div>
-                </div>
-              )}
-              {activePage === 'planner' && (
-                <div className="w-full">
-                  <div className="overflow-hidden p-6">
-                    <h1 className="text-3xl font-bold mb-2">Project Planner</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      Organize your ideas and tasks with this Kanban board. Drag and drop cards to update status.
-                    </p>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 h-[calc(100vh-220px)]">
-                      <FixedKanbanBoard userId={user?.id} />
-                    </div>
-                  </div>
-                </div>
-              )}
-              {activePage === 'home' && (
-                <div className="text-center py-20">
-                  <h1 className="text-2xl font-bold mb-4">Welcome to Reflectly{user?.firstName ? `, ${user.firstName}` : ''}</h1>
-                  <p className="text-gray-600 dark:text-gray-400 mb-8">Your all-in-one workspace for managing projects, notes, and transcripts</p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-all">
-                      <h2 className="text-xl font-semibold mb-2">Projects</h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">Manage your video projects and transcripts</p>
-                      <button 
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all"
-                        onClick={() => setActivePage('projects')}
-                      >
-                        View Projects
-                      </button>
-                    </div>
-                    
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-all">
-                      <h2 className="text-xl font-semibold mb-2">Whiteboard</h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">Sketch your ideas on a digital whiteboard</p>
-                      <button 
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all"
-                        onClick={() => setActivePage('whiteboard')}
-                      >
-                        Open Whiteboard
-                      </button>
-                    </div>
-                    
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-all">
-                      <h2 className="text-xl font-semibold mb-2">Planner</h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">Organize your tasks and schedule your work</p>
-                      <button 
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all"
-                        onClick={() => setActivePage('planner')}
-                      >
-                        Go to Planner
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
+            <ProjectPage 
+              projects={projects}
+              onCreateProject={handleCreateProject}
+              onDeleteProject={handleDeleteProject}
+              onSelectProject={handleSelectProject}
+            />
           )}
         </div>
       </main>

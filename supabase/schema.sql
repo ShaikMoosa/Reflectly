@@ -37,6 +37,11 @@ ALTER TABLE public.whiteboard_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.kanban_board ENABLE ROW LEVEL SECURITY;
 
 -- Projects policies
+DROP POLICY IF EXISTS "Users can view their own projects" ON public.projects;
+DROP POLICY IF EXISTS "Users can insert their own projects" ON public.projects;
+DROP POLICY IF EXISTS "Users can update their own projects" ON public.projects;
+DROP POLICY IF EXISTS "Users can delete their own projects" ON public.projects;
+
 CREATE POLICY "Users can view their own projects" 
 ON public.projects FOR SELECT 
 USING (user_id = auth.uid());
@@ -55,6 +60,11 @@ ON public.projects FOR DELETE
 USING (user_id = auth.uid());
 
 -- Transcripts policies
+DROP POLICY IF EXISTS "Users can view transcripts of their own projects" ON public.transcripts;
+DROP POLICY IF EXISTS "Users can insert transcripts for their own projects" ON public.transcripts;
+DROP POLICY IF EXISTS "Users can update transcripts of their own projects" ON public.transcripts;
+DROP POLICY IF EXISTS "Users can delete transcripts of their own projects" ON public.transcripts;
+
 CREATE POLICY "Users can view transcripts of their own projects" 
 ON public.transcripts FOR SELECT 
 USING (project_id IN (SELECT id FROM public.projects WHERE user_id = auth.uid()));
@@ -73,6 +83,11 @@ ON public.transcripts FOR DELETE
 USING (project_id IN (SELECT id FROM public.projects WHERE user_id = auth.uid()));
 
 -- Whiteboard data policies
+DROP POLICY IF EXISTS "Users can view their own whiteboard data" ON public.whiteboard_data;
+DROP POLICY IF EXISTS "Users can insert their own whiteboard data" ON public.whiteboard_data;
+DROP POLICY IF EXISTS "Users can update their own whiteboard data" ON public.whiteboard_data;
+DROP POLICY IF EXISTS "Users can delete their own whiteboard data" ON public.whiteboard_data;
+
 CREATE POLICY "Users can view their own whiteboard data" 
 ON public.whiteboard_data FOR SELECT 
 USING (user_id = auth.uid());
@@ -91,6 +106,11 @@ ON public.whiteboard_data FOR DELETE
 USING (user_id = auth.uid());
 
 -- Kanban board policies
+DROP POLICY IF EXISTS "Users can view their own kanban board" ON public.kanban_board;
+DROP POLICY IF EXISTS "Users can insert their own kanban board" ON public.kanban_board;
+DROP POLICY IF EXISTS "Users can update their own kanban board" ON public.kanban_board;
+DROP POLICY IF EXISTS "Users can delete their own kanban board" ON public.kanban_board;
+
 CREATE POLICY "Users can view their own kanban board" 
 ON public.kanban_board FOR SELECT 
 USING (user_id = auth.uid());

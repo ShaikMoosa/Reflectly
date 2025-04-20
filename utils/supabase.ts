@@ -5,6 +5,30 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Function to initialize database tables if they don't exist
+export const initializeSupabaseTables = async () => {
+  try {
+    // Check if projects table exists by attempting to select a single row
+    const { error } = await supabase
+      .from('projects')
+      .select('id')
+      .limit(1);
+    
+    // If we get a 404 error, the table doesn't exist
+    if (error && (error.code === '404' || error.message?.includes('404'))) {
+      console.log('Projects table not found. Please create the required tables in Supabase dashboard.');
+      console.log('Using in-memory storage until database tables are created.');
+      return false;
+    }
+    
+    // Tables exist
+    return true;
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    return false;
+  }
+};
+
 export type Json =
   | string
   | number
