@@ -169,15 +169,9 @@ const App: React.FC = () => {
                 />
               )}
               {activePage === 'whiteboard' && (
-                <div className="w-full">
-                  <div className="overflow-hidden">
-                    <h1 className="text-3xl font-bold mb-2">Whiteboard</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      Sketch out your ideas visually with our drawing canvas
-                    </p>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm h-[calc(100vh-180px)]">
-                      <ExcalidrawWhiteboard />
-                    </div>
+                <div className="w-full h-[calc(100vh-64px)]">
+                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                    <ExcalidrawWhiteboard />
                   </div>
                 </div>
               )}
