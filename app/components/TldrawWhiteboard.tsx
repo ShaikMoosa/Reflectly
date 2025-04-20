@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { Tldraw } from '@tldraw/tldraw';
-import '@tldraw/tldraw/tldraw.css';
+import '@tldraw/tldraw/dist/index.css';
 import { useTheme } from 'next-themes';
 
 interface TldrawWhiteboardProps {
