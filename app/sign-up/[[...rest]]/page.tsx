@@ -1,6 +1,7 @@
 'use client';
 
 import { SignUp } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 import { useTheme } from 'next-themes';
 
 export default function SignUpPage() {
@@ -13,11 +14,11 @@ export default function SignUpPage() {
         <h1 className="mb-6 text-2xl font-bold text-center text-gray-900 dark:text-white">
           Create your Reflectly account
         </h1>
-        <SignUp 
+        <SignUp
           appearance={{
+            baseTheme: isDarkMode ? dark : undefined,
             elements: {
-              formButtonPrimary: 
-                'bg-blue-500 hover:bg-blue-600 text-sm normal-case',
+              formButtonPrimary: 'bg-blue-500 hover:bg-blue-600 text-sm normal-case',
             },
           }}
           path="/sign-up"

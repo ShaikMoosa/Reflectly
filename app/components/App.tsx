@@ -6,26 +6,184 @@ import ProjectFileView from './ProjectFileView';
 import SideNavigation, { PageType } from './SideNavigation';
 import { useMediaQuery } from 'react-responsive';
 import FixedKanbanBoard from './FixedKanbanBoard';
-import dynamic from 'next/dynamic';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
 
-// Dynamically import the Excalidraw whiteboard component to avoid SSR issues
-const ExcalidrawWhiteboard = dynamic(
-  () => import('./ExcalidrawWhiteboard'),
-  {
-    ssr: false,
-    loading: () => (
+// Simplified whiteboard implementation directly in App.tsx to avoid any import issues
+const SimpleWhiteboard: React.FC<{ userId?: string }> = ({ userId }) => {
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = React.useState(false);
+  const [color, setColor] = React.useState('#000000');
+  const [size, setSize] = React.useState(5);
+  const [isClient, setIsClient] = React.useState(false);
+
+  // Initialize on client-side only
+  React.useEffect(() => {
+    setIsClient(true);
+
+    // Only run canvas setup on client side
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      const container = canvas.parentElement;
+      
+      // Set canvas size
+      if (context && container) {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        
+        // Fill with white background
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Try to load saved canvas
+        try {
+          const savedCanvas = localStorage.getItem('simple-whiteboard');
+          if (savedCanvas) {
+            const img = new Image();
+            img.onload = () => {
+              context.drawImage(img, 0, 0);
+            };
+            img.src = savedCanvas;
+          }
+        } catch (e) {
+          console.error('Error loading saved whiteboard:', e);
+        }
+      }
+    }
+  }, []);
+
+  // Drawing handlers
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Start new path
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineWidth = size;
+    context.lineCap = 'round';
+    context.strokeStyle = color;
+    
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Continue path and stroke
+    context.lineTo(x, y);
+    context.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const handleClear = () => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) return;
+    
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const handleSave = () => {
+    if (!canvasRef.current) return;
+    
+    try {
+      const canvas = canvasRef.current;
+      const dataUrl = canvas.toDataURL();
+      localStorage.setItem('simple-whiteboard', dataUrl);
+      alert('Whiteboard saved!');
+    } catch (e) {
+      console.error('Error saving whiteboard:', e);
+      alert('Failed to save whiteboard');
+    }
+  };
+
+  if (!isClient) {
+    return (
       <div className="flex items-center justify-center h-full w-full">
-        <div className="text-center">
-          <div className="animate-spin h-10 w-10 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
-          <p className="mt-4">Loading Whiteboard...</p>
+        <div className="animate-spin h-10 w-10 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full w-full">
+      <div className="p-2 bg-gray-100 dark:bg-gray-800 flex justify-between items-center">
+        <h2 className="text-lg font-medium">Whiteboard</h2>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            <label className="text-sm">Color:</label>
+            <input 
+              type="color" 
+              value={color} 
+              onChange={(e) => setColor(e.target.value)}
+              className="w-6 h-6 border border-gray-300"
+            />
+          </div>
+          <div className="flex items-center space-x-1">
+            <label className="text-sm">Size:</label>
+            <input 
+              type="range" 
+              min="1" 
+              max="20" 
+              value={size} 
+              onChange={(e) => setSize(parseInt(e.target.value))}
+              className="w-20"
+            />
+          </div>
+          <button 
+            onClick={handleClear}
+            className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+          >
+            Clear
+          </button>
+          <button 
+            onClick={handleSave}
+            className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+          >
+            Save
+          </button>
         </div>
       </div>
-    )
-  }
-);
+      <div className="flex-grow relative overflow-hidden">
+        <canvas
+          ref={canvasRef}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          className="absolute top-0 left-0 w-full h-full cursor-crosshair bg-white"
+        />
+      </div>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   // Project state
@@ -297,8 +455,25 @@ const App: React.FC = () => {
               )}
               {activePage === 'whiteboard' && (
                 <div className="w-full h-[calc(100vh-64px)]">
-                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <ExcalidrawWhiteboard userId={user?.id} />
+                  <div className="h-full w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <h2 className="text-2xl font-bold mb-4">Whiteboard</h2>
+                      <p className="text-gray-600 dark:text-gray-400 mb-8 text-center max-w-2xl">
+                        Due to technical issues with the Excalidraw integration, we've created a standalone whiteboard solution.
+                        Please use the link below to access the whiteboard.
+                      </p>
+                      <a 
+                        href="/whiteboard.html" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all"
+                      >
+                        Open Standalone Whiteboard
+                      </a>
+                      <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                        Your drawings will be saved locally in your browser.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}

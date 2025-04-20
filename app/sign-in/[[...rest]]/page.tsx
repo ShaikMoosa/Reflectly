@@ -14,12 +14,11 @@ export default function SignInPage() {
         <h1 className="mb-6 text-2xl font-bold text-center text-gray-900 dark:text-white">
           Welcome to Reflectly
         </h1>
-        <SignIn 
+        <SignIn
           appearance={{
             baseTheme: isDarkMode ? dark : undefined,
             elements: {
-              formButtonPrimary: 
-                'bg-blue-500 hover:bg-blue-600 text-sm normal-case',
+              formButtonPrimary: 'bg-blue-500 hover:bg-blue-600 text-sm normal-case',
             },
           }}
           path="/sign-in"

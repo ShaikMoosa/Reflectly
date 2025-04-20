@@ -1,88 +1,59 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Basic configuration
   reactStrictMode: false,
-  output: 'standalone',
-  // swcMinify: false,
   images: {
     domains: ['localhost'],
   },
+  
+  // Disable experimental features that could cause issues
   experimental: {
-    optimizeCss: false,
-    esmExternals: 'loose',
+    esmExternals: false,
+    serverComponentsExternalPackages: [],
   },
-  // Make environment variables available to the client
+  
+  // Share environment variables with the client
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   },
-  // Configure server port
-  serverRuntimeConfig: {
-    port: 3001, // Use port 3001 as an alternative
-  },
-  // Explicitly enable the CSS optimizations
-  optimizeFonts: false,
-  compiler: {
-    // Remove console logs only in production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn', 'debug', 'info'],
-    } : false,
-  },
-  // Configure webpack for better optimization
-  webpack: (config, { isServer, dev }) => {
-    // Enable source maps in development
-    if (dev) {
-      config.devtool = 'eval-source-map';
-    }
-
-    // Handle ESM modules properly
+  
+  // Simplify webpack config to avoid module issues
+  webpack: (config, { isServer }) => {
     if (!isServer) {
+      // Fallbacks for browser-only code
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
+        os: false,
+        crypto: false,
+        stream: false,
+        http: false,
+        https: false,
+        zlib: false,
       };
     }
-
-    // Add module name debug information
-    config.optimization.moduleIds = 'named';
-
-    // Optimize chunks
-    config.optimization.runtimeChunk = 'single';
-    config.optimization.splitChunks = {
-      chunks: 'all',
-      maxInitialRequests: Infinity,
-      minSize: 0,
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name(module) {
-            // Get the name from the package name
-            const packageName = module.context?.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)?.[1] || 'unknown';
-            // Return a readable name
-            return `vendor.${packageName.replace('@', '')}`;
-          },
-          priority: 5,
-        },
-      },
-    };
-
-    // Log webpack configuration at startup
-    if (!isServer && dev) {
-      console.log('Webpack optimization settings:', JSON.stringify({
-        runtimeChunk: config.optimization.runtimeChunk,
-        splitChunks: config.optimization.splitChunks,
-      }, null, 2));
-    }
-
+    
+    // Disable chunk splitting to simplify bundling
+    config.optimization.splitChunks = false;
+    config.optimization.runtimeChunk = false;
+    
     return config;
+  },
+  
+  // Redirect problematic paths to static alternatives
+  async redirects() {
+    return [
+      {
+        source: '/whiteboard',
+        destination: '/test',
+        permanent: false,
+      },
+    ];
   },
 };
 
-// Force disable telemetry
+// Disable telemetry
 process.env.NEXT_TELEMETRY_DISABLED = '1';
-
-// Log environment variables without exposing sensitive values
-console.log('Environment configuration:',  {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***SET***' : '***NOT SET***',
-});
 
 module.exports = nextConfig; 

@@ -1,50 +1,79 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
-import { useTheme } from 'next-themes';
 import dynamic from 'next/dynamic';
-import type { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
-import type { AppState } from '@excalidraw/excalidraw/types/types';
 import { supabase } from '../../utils/supabase';
 
-// Dynamically import Excalidraw to prevent SSR issues
+// Create a placeholder component for when Excalidraw is loading or fails
+const ExcalidrawPlaceholder = () => (
+  <div className="flex items-center justify-center h-full w-full">
+    <div className="text-center">
+      <div className="animate-spin h-10 w-10 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div>
+      <p className="mt-4">Loading Whiteboard...</p>
+    </div>
+  </div>
+);
+
+// Import Excalidraw with noSSR to prevent module issues at build time
 const Excalidraw = dynamic(
   async () => {
-    const mod = await import('@excalidraw/excalidraw');
-    return mod.Excalidraw;
+    // Wait 100ms to ensure window is fully initialized
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // Only import in client environment
+    if (typeof window !== 'undefined') {
+      try {
+        // Try to import excalidraw
+        const { Excalidraw } = await import('@excalidraw/excalidraw');
+        return Excalidraw;
+      } catch (err) {
+        console.error('Failed to load Excalidraw:', err);
+        return ExcalidrawPlaceholder;
+      }
+    }
+    return ExcalidrawPlaceholder;
   },
   {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full w-full">
-        <div className="text-center">
-          <div className="animate-spin h-10 w-10 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
-          <p className="mt-4">Loading Whiteboard...</p>
-        </div>
-      </div>
-    )
+    loading: () => <ExcalidrawPlaceholder />
   }
 );
 
-interface ExcalidrawWhiteboardProps {
-  userId?: string;
-}
-
-const ExcalidrawWhiteboard: React.FC<ExcalidrawWhiteboardProps> = ({ userId }) => {
-  const { theme } = useTheme();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [elements, setElements] = useState<ExcalidrawElement[]>([]);
-  const [appState, setAppState] = useState<AppState | null>(null);
+const ExcalidrawWhiteboard = ({ userId }: { userId?: string }) => {
+  const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [elements, setElements] = useState<any[]>([]);
+  const [appState, setAppState] = useState<any | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Load whiteboard data from Supabase or localStorage
+  // Only run after client-side hydration
   useEffect(() => {
-    const loadWhiteboardData = async () => {
+    setIsClient(true);
+    
+    const loadData = async () => {
       try {
         setIsLoading(true);
         
-        // Try to load from Supabase first if userId is available
-        if (userId) {
+        // Try to load from localStorage first as it's more reliable
+        const savedState = localStorage.getItem('excalidraw-state');
+        let loadedData = false;
+        
+        if (savedState) {
+          try {
+            const parsedState = JSON.parse(savedState);
+            if (parsedState.elements) {
+              setElements(parsedState.elements);
+              loadedData = true;
+            }
+            if (parsedState.appState) {
+              setAppState(parsedState.appState);
+            }
+          } catch (e) {
+            console.error('Failed to parse saved state:', e);
+          }
+        }
+        
+        // Try Supabase only if localStorage failed and userId exists
+        if (!loadedData && userId) {
           const { data, error } = await supabase
             .from('whiteboard_data')
             .select('*')
@@ -54,26 +83,11 @@ const ExcalidrawWhiteboard: React.FC<ExcalidrawWhiteboardProps> = ({ userId }) =
           if (data && !error) {
             const savedData = data.data;
             if (savedData && savedData.elements) {
-              // Set elements from Supabase
               setElements(savedData.elements);
               if (savedData.appState) {
                 setAppState(savedData.appState);
               }
-              setIsLoading(false);
-              return;
             }
-          }
-        }
-        
-        // Fallback to localStorage
-        const savedState = localStorage.getItem('excalidraw-state');
-        if (savedState) {
-          const parsedState = JSON.parse(savedState);
-          if (parsedState.elements) {
-            setElements(parsedState.elements);
-          }
-          if (parsedState.appState) {
-            setAppState(parsedState.appState);
           }
         }
       } catch (error) {
@@ -83,81 +97,88 @@ const ExcalidrawWhiteboard: React.FC<ExcalidrawWhiteboardProps> = ({ userId }) =
       }
     };
 
-    loadWhiteboardData();
+    if (isClient) {
+      loadData();
+    }
+  }, [userId, isClient]);
+
+  // Save data function with debounce
+  const saveData = useCallback((elements: any[], state: any) => {
+    // Debounce saving
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(async () => {
+      try {
+        const dataToSave = { elements, appState: state };
+        
+        // Always save to localStorage
+        localStorage.setItem('excalidraw-state', JSON.stringify(dataToSave));
+        
+        // Save to Supabase if userId available
+        if (userId) {
+          await supabase
+            .from('whiteboard_data')
+            .upsert({
+              id: userId,
+              user_id: userId,
+              data: dataToSave,
+              updated_at: new Date().toISOString()
+            });
+        }
+      } catch (err) {
+        console.error('Failed to save whiteboard data:', err);
+      }
+    }, 1000);
   }, [userId]);
 
-  // Save whiteboard data to Supabase and localStorage
-  const saveWhiteboardData = useCallback(async (elements: readonly ExcalidrawElement[], appState: AppState) => {
-    try {
-      if (isLoading) return;
-
-      const dataToSave = { elements, appState };
-      
-      // Always save to localStorage as backup
-      localStorage.setItem('excalidraw-state', JSON.stringify(dataToSave));
-      
-      // Save to Supabase if userId is available
-      if (userId) {
-        const { error } = await supabase
-          .from('whiteboard_data')
-          .upsert({
-            id: userId, // Use userId as the primary key
-            user_id: userId,
-            data: dataToSave,
-            updated_at: new Date().toISOString()
-          });
-          
-        if (error) {
-          console.error('Error saving whiteboard data to Supabase:', error);
-        }
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
-    } catch (error) {
-      console.error('Error saving whiteboard data:', error);
+    };
+  }, []);
+
+  // Don't render anything on server
+  if (!isClient) {
+    return null;
+  }
+
+  // Get current theme from document
+  const isDarkTheme = document.documentElement.classList.contains('dark');
+
+  // Excalidraw props
+  const excalidrawProps: any = {
+    initialData: {
+      elements: elements,
+      appState: appState || {
+        viewBackgroundColor: isDarkTheme ? "#1e1e1e" : "#ffffff",
+        theme: isDarkTheme ? "dark" : "light"
+      }
+    },
+    onChange: (els: any[], state: any) => {
+      setElements([...els]);
+      setAppState(state);
+      saveData(els, state);
+    },
+    UIOptions: {
+      canvasActions: {
+        toggleTheme: true,
+        saveAsImage: true,
+        clearCanvas: true,
+        changeViewBackgroundColor: true,
+      }
     }
-  }, [isLoading, userId]);
-
-  // Handle changes in elements
-  const handleChange = useCallback((elements: readonly ExcalidrawElement[], state: AppState) => {
-    setElements([...elements]);
-    setAppState(state);
-    
-    // Debounce saving to avoid excessive API calls
-    const timeoutId = setTimeout(() => {
-      saveWhiteboardData(elements, state);
-    }, 1000);
-    
-    return () => clearTimeout(timeoutId);
-  }, [saveWhiteboardData]);
-
-  // Theme support
-  const isDarkMode = document.documentElement.classList.contains('dark');
+  };
 
   return (
-    <div ref={containerRef} className="h-full w-full relative">
-      {!isLoading && (
-        <Excalidraw
-          initialData={{
-            elements,
-            appState: appState || {
-              viewBackgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
-              theme: isDarkMode ? "dark" : "light"
-            },
-          }}
-          onChange={handleChange}
-          UIOptions={{
-            canvasActions: {
-              saveToActiveFile: true,
-              toggleTheme: true,
-              saveAsImage: true,
-              clearCanvas: true,
-              changeViewBackgroundColor: true,
-            }
-          }}
-        />
-      )}
+    <div className="h-full w-full relative">
+      {!isLoading && isClient && React.createElement(Excalidraw, excalidrawProps)}
     </div>
   );
 };
 
-// Export as memoized component to prevent unnecessary re-renders
 export default memo(ExcalidrawWhiteboard); 
