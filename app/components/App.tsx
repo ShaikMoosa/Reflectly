@@ -9,7 +9,7 @@ import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
-import CustomWhiteboard from './CustomWhiteboard';
+import FlowWhiteboard from './FlowWhiteboard';
 
 const App: React.FC = () => {
   // Project state
@@ -309,7 +309,7 @@ const App: React.FC = () => {
                       </div>
                     )}
                     <div className="h-full">
-                      <CustomWhiteboard userId={user?.id} />
+                      <FlowWhiteboard userId={user?.id} />
                     </div>
                   </div>
                 </div>

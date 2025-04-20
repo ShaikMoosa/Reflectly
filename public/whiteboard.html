@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reflectly - Simple Whiteboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    header {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 1rem 0;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .button {
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background-color 0.2s;
+    }
+    .button-primary {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .button-primary:hover {
+      background-color: #2563eb;
+    }
+    .button-secondary {
+      background-color: #6b7280;
+      color: white;
+      margin-left: 0.5rem;
+    }
+    .button-secondary:hover {
+      background-color: #4b5563;
+    }
+    .tools {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .color-picker {
+      width: 2rem;
+      height: 2rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.25rem;
+      overflow: hidden;
+    }
+    .canvas-container {
+      width: 100%;
+      height: 70vh;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.25rem;
+      overflow: hidden;
+      position: relative;
+      background-color: white;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+    .footer-text {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    .dark-mode {
+      background-color: #1f2937;
+      color: #f9fafb;
+    }
+    .dark-mode header {
+      background-color: #111827;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .dark-mode .card {
+      background-color: #111827;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .dark-mode .footer-text {
+      color: #9ca3af;
+    }
+    .dark-mode .canvas-container {
+      border-color: #374151;
+    }
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      padding: 0.5rem;
+      color: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-row">
+        <h1>Reflectly</h1>
+        <button id="themeToggle" class="theme-toggle">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div class="header-row">
+        <h2>Simple Whiteboard</h2>
+        <div>
+          <button id="saveBtn" class="button button-primary">Save</button>
+          <button id="clearBtn" class="button button-secondary">Clear</button>
+        </div>
+      </div>
+
+      <div class="tools">
+        <div class="tool-group">
+          <label for="colorPicker">Color:</label>
+          <input type="color" id="colorPicker" value="#000000" class="color-picker">
+        </div>
+        <div class="tool-group">
+          <label for="sizeSlider">Size:</label>
+          <input type="range" id="sizeSlider" min="1" max="50" value="5" class="size-slider">
+          <span id="sizeValue">5px</span>
+        </div>
+        <div class="tool-group">
+          <button id="undoBtn" class="button button-secondary" disabled>Undo</button>
+          <button id="redoBtn" class="button button-secondary" disabled>Redo</button>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="drawingCanvas"></canvas>
+      </div>
+
+      <p class="footer-text">Your drawings are saved locally in your browser. This is a temporary solution until we resolve the Excalidraw integration.</p>
+    </div>
+  </main>
+
+  <script>
+    // DOM Elements
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const sizeSlider = document.getElementById('sizeSlider');
+    const sizeValue = document.getElementById('sizeValue');
+    const saveBtn = document.getElementById('saveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // Drawing state
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let color = '#000000';
+    let size = 5;
+    let undoStack = [];
+    let redoStack = [];
+
+    // Initialize
+    function init() {
+      // Set canvas size
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // Set initial drawing state
+      color = colorPicker.value;
+      size = sizeSlider.value;
+      sizeValue.textContent = `${size}px`;
+
+      // Load from localStorage if available
+      loadFromLocalStorage();
+
+      // Set up event listeners
+      setupEventListeners();
+
+      // Check for dark mode preference
+      initTheme();
+    }
+
+    // Resize canvas to match container
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      
+      // Restore canvas state after resize
+      if (undoStack.length > 0) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = undoStack[undoStack.length - 1];
+      } else {
+        // Fill with white if no previous state
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // Load saved canvas from localStorage
+    function loadFromLocalStorage() {
+      const savedCanvas = localStorage.getItem('simple-whiteboard');
+      if (savedCanvas) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          saveToUndoStack(); // Save initial state to undo stack
+        };
+        img.src = savedCanvas;
+      } else {
+        // Initial white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        saveToUndoStack(); // Save initial state to undo stack
+      }
+    }
+
+    // Set up all event listeners
+    function setupEventListeners() {
+      // Drawing events
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+      
+      // Touch events for mobile
+      canvas.addEventListener('touchstart', handleTouchStart);
+      canvas.addEventListener('touchmove', handleTouchMove);
+      canvas.addEventListener('touchend', stopDrawing);
+
+      // Controls
+      colorPicker.addEventListener('change', (e) => {
+        color = e.target.value;
+      });
+      
+      sizeSlider.addEventListener('input', (e) => {
+        size = e.target.value;
+        sizeValue.textContent = `${size}px`;
+      });
+
+      saveBtn.addEventListener('click', saveDrawing);
+      clearBtn.addEventListener('click', clearCanvas);
+      undoBtn.addEventListener('click', undo);
+      redoBtn.addEventListener('click', redo);
+      themeToggle.addEventListener('click', toggleTheme);
+    }
+
+    // Drawing functions
+    function startDrawing(e) {
+      isDrawing = true;
+      [lastX, lastY] = getMousePosition(e);
+      
+      // Start new path
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineWidth = size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = color;
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      
+      const [currentX, currentY] = getMousePosition(e);
+      
+      ctx.lineTo(currentX, currentY);
+      ctx.stroke();
+      
+      [lastX, lastY] = [currentX, currentY];
+    }
+
+    function stopDrawing() {
+      if (isDrawing) {
+        ctx.stroke();
+        isDrawing = false;
+        saveToUndoStack();
+      }
+    }
+
+    // Handle touch events for mobile
+    function handleTouchStart(e) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      }
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      }
+    }
+
+    // Helper to get mouse position relative to canvas
+    function getMousePosition(e) {
+      const rect = canvas.getBoundingClientRect();
+      return [
+        e.clientX - rect.left,
+        e.clientY - rect.top
+      ];
+    }
+
+    // Save current state to undo stack
+    function saveToUndoStack() {
+      undoStack.push(canvas.toDataURL());
+      redoStack = []; // Clear redo stack after new drawing
+      updateUndoRedoButtons();
+    }
+
+    // Update undo/redo button states
+    function updateUndoRedoButtons() {
+      undoBtn.disabled = undoStack.length <= 1;
+      redoBtn.disabled = redoStack.length === 0;
+    }
+
+    // Action handlers
+    function saveDrawing() {
+      localStorage.setItem('simple-whiteboard', canvas.toDataURL());
+      alert('Drawing saved!');
+    }
+
+    function clearCanvas() {
+      if (confirm('Are you sure you want to clear the canvas?')) {
+        saveToUndoStack(); // Save current state before clearing
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function undo() {
+      if (undoStack.length <= 1) return;
+      
+      // Save current state to redo stack
+      redoStack.push(undoStack.pop());
+      
+      // Apply previous state
+      const previousState = undoStack[undoStack.length - 1];
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        updateUndoRedoButtons();
+      };
+      img.src = previousState;
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      
+      // Get last redo state
+      const nextState = redoStack.pop();
+      
+      // Add to undo stack
+      undoStack.push(nextState);
+      
+      // Apply state
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        updateUndoRedoButtons();
+      };
+      img.src = nextState;
+    }
+
+    // Theme handling
+    function initTheme() {
+      // Check for saved theme preference
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️';
+      } else {
+        themeToggle.textContent = '🌙';
+      }
+    }
+
+    function toggleTheme() {
+      if (document.body.classList.contains('dark-mode')) {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
+        themeToggle.textContent = '🌙';
+      } else {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+        themeToggle.textContent = '☀️';
+      }
+    }
+
+    // Initialize the app
+    init();
+  </script>
+</body>
+</html> 
