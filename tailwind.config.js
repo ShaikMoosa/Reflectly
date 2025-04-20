@@ -64,6 +64,11 @@ module.exports = {
   				'5': 'hsl(var(--chart-5))'
   			}
   		},
+      duration: {
+        '150': '150ms',
+        '250': '250ms',
+        '350': '350ms'
+      },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
