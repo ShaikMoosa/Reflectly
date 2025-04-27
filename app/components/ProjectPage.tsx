@@ -215,7 +215,7 @@ const ProjectPage: React.FC<ProjectPageProps> = ({
   );
 
   return (
-    <div className="h-full">
+    <div className="h-full px-10 py-8">
       {/* Header */}
       <div className="flex flex-col mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Projects</h1>

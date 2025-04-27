@@ -983,7 +983,7 @@ I've saved this highlight to your notes. Would you like me to tag it with a spec
   };
 
   return (
-    <div className={`project-file-view h-full flex flex-col ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`project-file-view h-full flex flex-col px-10 py-8 ${isDarkMode ? 'dark' : ''}`}>
       {/* Header */}
       <div className="mb-6 flex items-center">
         <button

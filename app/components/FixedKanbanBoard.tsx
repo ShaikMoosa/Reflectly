@@ -735,7 +735,7 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
   );
 
   return (
-    <div className="h-full w-full flex flex-col p-4">
+    <div className="h-full w-full flex flex-col px-10 py-8">
       {/* Header with search and filters */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="w-full md:w-64 relative">

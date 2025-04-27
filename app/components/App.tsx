@@ -247,11 +247,11 @@ const App: React.FC = () => {
       />
       
       {/* Main content area */}
-      <main className="pl-64 h-screen overflow-y-auto">
+      <main className="pl-64 pr-10 h-screen overflow-y-auto">
         <div className="h-full">
           {/* Render appropriate page based on active page */}
           {activePage === 'home' ? (
-            <div className="p-8">
+            <div className="px-10 py-8">
               <h1 className="text-2xl font-bold mb-4">Welcome to Reflectly</h1>
               <p className="mb-4">This is your dashboard for managing video transcription projects and notes.</p>
               
