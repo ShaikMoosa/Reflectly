@@ -32,6 +32,8 @@ interface WhiteboardState {
   isDrawing: boolean;
   canvasPosition: { x: number; y: number };
   scale: number;
+  history: Shape[][];
+  historyIndex: number;
   
   // Actions
   setCurrentTool: (tool: ShapeType | 'select') => void;
@@ -44,9 +46,11 @@ interface WhiteboardState {
   setIsDrawing: (isDrawing: boolean) => void;
   setCanvasPosition: (position: { x: number; y: number }) => void;
   setScale: (scale: number) => void;
+  duplicateSelectedShapes: () => void;
+  undoLastAction: () => void;
 }
 
-export const useWhiteboardStore = create<WhiteboardState>((set) => ({
+export const useWhiteboardStore = create<WhiteboardState>((set, get) => ({
   shapes: [],
   selectedIds: [],
   currentTool: 'select',
@@ -54,28 +58,66 @@ export const useWhiteboardStore = create<WhiteboardState>((set) => ({
   isDrawing: false,
   canvasPosition: { x: 0, y: 0 },
   scale: 1,
+  history: [[]],
+  historyIndex: 0,
   
   setCurrentTool: (tool) => set({ currentTool: tool }),
   setCurrentColor: (color) => set({ currentColor: color }),
   
   addShape: (shapeData) => {
     const id = nanoid();
-    set((state) => ({
-      shapes: [...state.shapes, { id, ...shapeData }]
-    }));
+    set((state) => {
+      const newShapes = [...state.shapes, { id, ...shapeData }];
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push(newShapes);
+      
+      return {
+        shapes: newShapes,
+        history: newHistory,
+        historyIndex: state.historyIndex + 1
+      };
+    });
     return id;
   },
   
-  updateShape: (id, shapeData) => set((state) => ({
-    shapes: state.shapes.map((shape) => 
+  updateShape: (id, shapeData) => set((state) => {
+    const newShapes = state.shapes.map((shape) => 
       shape.id === id ? { ...shape, ...shapeData } : shape
-    )
-  })),
+    );
+    
+    // Only add to history if it's a significant update (not just position changes during drawing)
+    const significantUpdate = !state.isDrawing || 
+      ('width' in shapeData && typeof shapeData.width === 'number' && shapeData.width > 5) ||
+      ('height' in shapeData && typeof shapeData.height === 'number' && shapeData.height > 5);
+    
+    if (significantUpdate) {
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push(newShapes);
+      
+      return {
+        shapes: newShapes,
+        history: newHistory,
+        historyIndex: state.historyIndex + 1
+      };
+    }
+    
+    return { shapes: newShapes };
+  }),
   
-  deleteShape: (id) => set((state) => ({
-    shapes: state.shapes.filter((shape) => shape.id !== id),
-    selectedIds: state.selectedIds.filter((selectedId) => selectedId !== id)
-  })),
+  deleteShape: (id) => set((state) => {
+    const newShapes = state.shapes.filter((shape) => shape.id !== id);
+    const newSelectedIds = state.selectedIds.filter((selectedId) => selectedId !== id);
+    
+    const newHistory = state.history.slice(0, state.historyIndex + 1);
+    newHistory.push(newShapes);
+    
+    return {
+      shapes: newShapes,
+      selectedIds: newSelectedIds,
+      history: newHistory,
+      historyIndex: state.historyIndex + 1
+    };
+  }),
   
   selectShape: (id, isMultiSelect = false) => set((state) => ({
     selectedIds: isMultiSelect 
@@ -92,4 +134,49 @@ export const useWhiteboardStore = create<WhiteboardState>((set) => ({
   setCanvasPosition: (position) => set({ canvasPosition: position }),
   
   setScale: (scale) => set({ scale }),
+  
+  duplicateSelectedShapes: () => set((state) => {
+    if (state.selectedIds.length === 0) return state;
+    
+    const selectedShapes = state.shapes.filter(shape => 
+      state.selectedIds.includes(shape.id)
+    );
+    
+    const duplicatedShapes = selectedShapes.map(shape => {
+      const id = nanoid();
+      return {
+        ...shape,
+        id,
+        x: shape.x + 20, // Offset slightly to make it visible
+        y: shape.y + 20
+      };
+    });
+    
+    const newShapes = [...state.shapes, ...duplicatedShapes];
+    const newSelectedIds = duplicatedShapes.map(shape => shape.id);
+    
+    const newHistory = state.history.slice(0, state.historyIndex + 1);
+    newHistory.push(newShapes);
+    
+    return {
+      shapes: newShapes,
+      selectedIds: newSelectedIds,
+      history: newHistory,
+      historyIndex: state.historyIndex + 1
+    };
+  }),
+  
+  undoLastAction: () => set((state) => {
+    if (state.historyIndex <= 0) return state;
+    
+    const newHistoryIndex = state.historyIndex - 1;
+    const previousShapes = state.history[newHistoryIndex];
+    
+    return {
+      shapes: previousShapes,
+      historyIndex: newHistoryIndex,
+      // Clear selection on undo to prevent trying to select deleted shapes
+      selectedIds: []
+    };
+  })
 })); 

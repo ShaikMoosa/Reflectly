@@ -2,7 +2,7 @@
 
 import { KonvaEventObject } from 'konva/lib/Node';
 import { Rect, Ellipse, Line, Text, Group, Transformer } from 'react-konva';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Shape, useWhiteboardStore } from '../store/useWhiteboardStore';
 import { getStroke } from 'perfect-freehand';
 
@@ -16,10 +16,13 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
     selectShape, 
     updateShape,
     setIsDrawing,
+    currentColor,
   } = useWhiteboardStore();
   
   const shapeRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(shape.text || '');
 
   // Handle selection and transformer
   useEffect(() => {
@@ -28,6 +31,13 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
       transformerRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
+
+  // Update editText when shape text changes
+  useEffect(() => {
+    if (shape.text !== undefined) {
+      setEditText(shape.text);
+    }
+  }, [shape.text]);
 
   const handleTransformEnd = (e: KonvaEventObject<Event>) => {
     // Update shape after transformation
@@ -44,8 +54,8 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
     updateShape(shape.id, {
       x: node.x(),
       y: node.y(),
-      width: node.width() * scaleX,
-      height: node.height() * scaleY,
+      width: Math.max(10, node.width() * scaleX),
+      height: Math.max(10, node.height() * scaleY),
     });
   };
 
@@ -57,6 +67,9 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
   };
 
   const handleSelect = (e: KonvaEventObject<MouseEvent>) => {
+    // Don't select if we're already editing text
+    if (isEditing) return;
+    
     // Multiselect with shift key
     const isMultiSelect = e.evt.shiftKey;
     selectShape(shape.id, isMultiSelect);
@@ -101,6 +114,82 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
     return flattenedPoints;
   };
 
+  // Handle double-click for text editing
+  const handleTextDblClick = (e: KonvaEventObject<MouseEvent>) => {
+    if (shape.type !== 'text' && shape.type !== 'note') return;
+    
+    const stage = e.target.getStage();
+    if (!stage) return; // Guard against null stage
+    
+    const textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+    
+    const stageRect = stage.container().getBoundingClientRect();
+    const areaPosition = {
+      x: stageRect.left + shape.x * stage.scaleX() + stage.x(),
+      y: stageRect.top + shape.y * stage.scaleY() + stage.y(),
+    };
+    
+    textarea.value = shape.text || '';
+    textarea.style.position = 'absolute';
+    textarea.style.top = `${areaPosition.y}px`;
+    textarea.style.left = `${areaPosition.x}px`;
+    textarea.style.width = `${(shape.width || 200) * stage.scaleX()}px`;
+    textarea.style.height = `${(shape.height || 100) * stage.scaleY()}px`;
+    textarea.style.fontSize = `${16 * stage.scaleY()}px`;
+    textarea.style.border = '2px solid #0096FF';
+    textarea.style.padding = '10px';
+    textarea.style.margin = '0px';
+    textarea.style.overflow = 'hidden';
+    textarea.style.background = 'white';
+    textarea.style.outline = 'none';
+    textarea.style.resize = 'none';
+    textarea.style.zIndex = '1000';
+    textarea.style.fontFamily = 'Arial';
+    
+    textarea.focus();
+    
+    setIsEditing(true);
+    
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (e.target !== textarea) {
+        updateShape(shape.id, {
+          text: textarea.value
+        });
+        document.body.removeChild(textarea);
+        document.removeEventListener('click', handleOutsideClick);
+        setIsEditing(false);
+      }
+    };
+    
+    // Give time for double click to register before adding event listener
+    setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 300);
+    
+    // Handle keyboard events
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        updateShape(shape.id, {
+          text: textarea.value
+        });
+        document.body.removeChild(textarea);
+        document.removeEventListener('click', handleOutsideClick);
+        setIsEditing(false);
+        e.preventDefault();
+      }
+    });
+  };
+
+  // Handle changing the fill color if selected
+  const handleColorChange = () => {
+    if (isSelected) {
+      updateShape(shape.id, {
+        fill: currentColor
+      });
+    }
+  };
+
   // Render appropriate shape based on type
   const renderShape = () => {
     const commonProps = {
@@ -124,7 +213,12 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
             fill={shape.fill}
             strokeWidth={2}
             stroke={isSelected ? '#0096FF' : 'transparent'}
-            cornerRadius={2}
+            cornerRadius={4}
+            shadowColor={isSelected ? 'black' : 'transparent'}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={0.2}
+            shadowOffset={{ x: 5, y: 5 }}
+            onDblClick={handleColorChange}
           />
         );
 
@@ -139,6 +233,11 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
             fill={shape.fill}
             strokeWidth={2}
             stroke={isSelected ? '#0096FF' : 'transparent'}
+            shadowColor={isSelected ? 'black' : 'transparent'}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={0.2}
+            shadowOffset={{ x: 5, y: 5 }}
+            onDblClick={handleColorChange}
           />
         );
 
@@ -157,6 +256,11 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
             lineJoin="round"
             stroke={isSelected ? '#0096FF' : 'transparent'}
             strokeWidth={isSelected ? 2 : 0}
+            shadowColor={isSelected ? 'black' : 'transparent'}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={0.1}
+            shadowOffset={{ x: 3, y: 3 }}
+            onDblClick={handleColorChange}
           />
         );
 
@@ -172,17 +276,18 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
             fill={shape.fill}
             width={shape.width || 200}
             height={shape.height || 100}
-            padding={4}
-            onDblClick={() => {
-              // Implement text editing on double click
-              // This would involve switching to an input or textarea
-            }}
+            padding={8}
+            onDblClick={handleTextDblClick}
+            shadowColor={isSelected ? 'black' : 'transparent'}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={0.1}
+            shadowOffset={{ x: 3, y: 3 }}
           />
         );
 
       case 'note':
         return (
-          <Group {...commonProps}>
+          <Group {...commonProps} onDblClick={handleTextDblClick}>
             <Rect
               x={shape.x}
               y={shape.y}
@@ -191,7 +296,7 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
               fill={shape.fill || '#FFFF88'}
               shadowColor="black"
               shadowBlur={10}
-              shadowOpacity={0.2}
+              shadowOpacity={isSelected ? 0.3 : 0.2}
               shadowOffset={{ x: 5, y: 5 }}
               cornerRadius={5}
               stroke={isSelected ? '#0096FF' : 'transparent'}
@@ -206,9 +311,6 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
               fill="#333333"
               width={(shape.width || 200) - 20}
               height={(shape.height || 200) - 20}
-              onDblClick={() => {
-                // Implement note editing on double click
-              }}
             />
           </Group>
         );
@@ -231,6 +333,13 @@ export default function ShapeElement({ shape, isSelected }: ShapeElementProps) {
             }
             return newBox;
           }}
+          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          rotateEnabled={false}
+          borderStroke="#0096FF"
+          borderStrokeWidth={2}
+          anchorFill="#ffffff"
+          anchorStroke="#0096FF"
+          anchorSize={8}
         />
       )}
     </>

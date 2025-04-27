@@ -12,6 +12,8 @@ import FileUploadStep, { UploadedFile } from './FileUploadStep';
 import { Project } from './ProjectPage';
 import { v4 as uuidv4 } from 'uuid';
 import MyNotesPanel, { Annotation } from './MyNotesPanel';
+import TimelineSegments from './TimelineSegments';
+import { supabaseClient } from '../utils/supabase/client';
 
 export interface ProjectFileViewProps {
   project: Project;
@@ -87,13 +89,207 @@ const ProjectFileView: React.FC<ProjectFileViewProps> = ({
   // Initialize video and transcript data if available
   useEffect(() => {
     // This would be replaced with real data loaded from the project
-    // For now, we're just setting up a demo UI
-    setTranscriptData({
-      segments: [],
-      loading: false,
-      hasTranscript: false
-    });
-  }, [project]);
+    // Load data from Supabase when component mounts
+    if (project.id) {
+      loadProjectData();
+    }
+  }, [project.id]);
+  
+  // Load project data from Supabase
+  const loadProjectData = async () => {
+    try {
+      console.log('Loading project data from Supabase...');
+      
+      // Load transcript data
+      const { data: transcriptData, error: transcriptError } = await supabaseClient
+        .from('transcripts')
+        .select('*')
+        .eq('project_id', project.id)
+        .single();
+        
+      if (transcriptError && transcriptError.code !== 'PGRST116') {
+        console.error('Error loading transcript:', transcriptError);
+      } else if (transcriptData) {
+        console.log('Loaded transcript data:', transcriptData);
+        
+        // Parse the segments from JSON if stored as a string, or use as is if already an object
+        const segments = typeof transcriptData.segments === 'string' 
+          ? JSON.parse(transcriptData.segments) 
+          : transcriptData.segments;
+          
+        setTranscriptData({
+          segments,
+          loading: false,
+          hasTranscript: true
+        });
+        
+        if (transcriptData.video_duration) {
+          setVideoDuration(transcriptData.video_duration);
+        }
+      }
+      
+      // Load annotations
+      const { data: annotationsData, error: annotationsError } = await supabaseClient
+        .from('annotations')
+        .select('*')
+        .eq('project_id', project.id);
+        
+      if (annotationsError) {
+        console.error('Error loading annotations:', annotationsError);
+      } else if (annotationsData?.length) {
+        console.log('Loaded annotations:', annotationsData);
+        setAnnotations(annotationsData);
+        
+        // Restore highlighted segments
+        const highlights = annotationsData
+          .filter((a: Annotation) => a.type === 'highlight')
+          .map((a: Annotation) => {
+            // Extract segment ID from annotation ID or use a default approach
+            const match = a.id.match(/^highlight-(.+?)-/);
+            return match ? match[1] : '';
+          })
+          .filter((id: string) => id); // Filter out empty IDs
+          
+        setHighlightedSegments(highlights);
+      }
+      
+      // Load notes
+      const { data: notesData, error: notesError } = await supabaseClient
+        .from('notes')
+        .select('*')
+        .eq('project_id', project.id);
+        
+      if (notesError) {
+        console.error('Error loading notes:', notesError);
+      } else if (notesData?.length) {
+        console.log('Loaded notes:', notesData);
+        setNotes(notesData);
+      }
+    } catch (error) {
+      console.error('Error loading project data:', error);
+    }
+  };
+  
+  // Save transcript data whenever it changes
+  useEffect(() => {
+    if (project.id && transcriptData.hasTranscript && transcriptData.segments.length > 0) {
+      saveTranscript();
+    }
+  }, [JSON.stringify(transcriptData.segments), project.id, transcriptData.hasTranscript]);
+  
+  // Save annotations whenever they change
+  useEffect(() => {
+    if (project.id && annotations.length > 0) {
+      saveAnnotations();
+    }
+  }, [JSON.stringify(annotations), project.id]);
+  
+  // Save notes whenever they change
+  useEffect(() => {
+    if (project.id && notes.length > 0) {
+      saveNotes();
+    }
+  }, [JSON.stringify(notes), project.id]);
+  
+  // Save transcript to Supabase
+  const saveTranscript = async () => {
+    try {
+      console.log('Saving transcript to Supabase...');
+      
+      const { error } = await supabaseClient
+        .from('transcripts')
+        .upsert({
+          project_id: project.id,
+          segments: transcriptData.segments,
+          video_duration: videoDuration,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'project_id'
+        });
+        
+      if (error) {
+        console.error('Error saving transcript:', error);
+      } else {
+        console.log('Transcript saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving transcript:', error);
+    }
+  };
+  
+  // Save annotations to Supabase
+  const saveAnnotations = async () => {
+    try {
+      console.log('Saving annotations to Supabase...');
+      
+      // Delete existing annotations for this project
+      const { error: deleteError } = await supabaseClient
+        .from('annotations')
+        .delete()
+        .eq('project_id', project.id);
+        
+      if (deleteError) {
+        console.error('Error deleting existing annotations:', deleteError);
+        return;
+      }
+      
+      // Add project_id to each annotation
+      const annotationsWithProjectId = annotations.map(annotation => ({
+        ...annotation,
+        project_id: project.id
+      }));
+      
+      // Insert new annotations
+      const { error } = await supabaseClient
+        .from('annotations')
+        .insert(annotationsWithProjectId);
+        
+      if (error) {
+        console.error('Error saving annotations:', error);
+      } else {
+        console.log('Annotations saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving annotations:', error);
+    }
+  };
+  
+  // Save notes to Supabase
+  const saveNotes = async () => {
+    try {
+      console.log('Saving notes to Supabase...');
+      
+      // Delete existing notes for this project
+      const { error: deleteError } = await supabaseClient
+        .from('notes')
+        .delete()
+        .eq('project_id', project.id);
+        
+      if (deleteError) {
+        console.error('Error deleting existing notes:', deleteError);
+        return;
+      }
+      
+      // Add project_id to each note
+      const notesWithProjectId = notes.map(note => ({
+        ...note,
+        project_id: project.id
+      }));
+      
+      // Insert new notes
+      const { error } = await supabaseClient
+        .from('notes')
+        .insert(notesWithProjectId);
+        
+      if (error) {
+        console.error('Error saving notes:', error);
+      } else {
+        console.log('Notes saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+    }
+  };
 
   const handleTabChange = (tab: 'transcript' | 'notes' | 'ai-chat') => {
     setActiveTab(tab);
@@ -842,12 +1038,12 @@ I've saved this highlight to your notes. Would you like me to tag it with a spec
   const renderNotesTab = () => (
     <div className="notes-tab h-full">
       <div className="flex flex-col md:flex-row h-full">
-        <div className="md:w-2/3 flex flex-col h-full overflow-hidden">
+        <div className="md:w-2/3 flex flex-col h-full">
           <div className="video-section mb-4">
             {renderVideoSection()}
           </div>
           
-          <div className="transcript-section flex-1 overflow-hidden border rounded-lg">
+          <div className="transcript-section flex-1 min-h-[300px] overflow-auto border rounded-lg md:block">
             <TranscriptPlayer
               segments={transcriptData.segments}
               currentTime={currentTime}
@@ -869,7 +1065,7 @@ I've saved this highlight to your notes. Would you like me to tag it with a spec
           </div>
         </div>
         
-        <div className="md:w-1/3 flex flex-col h-full">
+        <div className="md:w-1/3 flex flex-col h-full mt-4 md:mt-0 md:ml-4">
           <MyNotesPanel 
             annotations={annotations}
             onAnnotationClick={handleAnnotationClick}

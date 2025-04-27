@@ -1,6 +1,7 @@
 // Adding debugging logs
 console.log('Layout file is loading');
 import './globals.css';
+import './styles/tiptap.css';
 import type { Metadata } from 'next';
 import { Inter } from "next/font/google";
 import { Providers } from './providers';

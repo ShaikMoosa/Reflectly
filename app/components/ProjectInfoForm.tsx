@@ -9,7 +9,7 @@ export interface ProjectInfo {
 
 interface ProjectInfoFormProps {
   value: ProjectInfo;
-  onChange: (data: ProjectInfo) => void;
+  onChange: (value: ProjectInfo) => void;
   showValidation?: boolean;
 }
 
@@ -24,41 +24,34 @@ const ProjectInfoForm: React.FC<ProjectInfoFormProps> = ({ value, onChange, show
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold mb-6">Project Information</h2>
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Project Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={value.name}
-            onChange={handleChange}
-            onBlur={() => setTouched(t => ({ ...t, name: true }))}
-            autoFocus
-            className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${showNameError ? 'border-red-500' : 'border-gray-300'}`}
-            placeholder="Enter project name"
-          />
-          {showNameError && (
-            <p className="mt-1 text-sm text-red-500">Project name is required.</p>
-          )}
-        </div>
-        <div className="mt-4">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={value.description}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
-            placeholder="Enter project description"
-          ></textarea>
-        </div>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={value.name}
+          onChange={handleChange}
+          onBlur={() => setTouched(t => ({ ...t, name: true }))}
+          autoFocus
+          className={`w-full px-3 py-2 text-xl font-medium bg-transparent border-0 border-b-2 focus:outline-none focus:ring-0 ${showNameError ? 'border-red-500' : 'border-gray-200 dark:border-gray-700 focus:border-blue-500'}`}
+          placeholder="Untitled project"
+        />
+        {showNameError && (
+          <p className="mt-1 text-sm text-red-500">Project name is required.</p>
+        )}
+      </div>
+      
+      <div>
+        <textarea
+          id="description"
+          name="description"
+          value={value.description}
+          onChange={handleChange}
+          rows={3}
+          className="w-full px-3 py-2 mt-2 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-600 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none"
+          placeholder="Add a description..."
+        />
       </div>
     </div>
   );
