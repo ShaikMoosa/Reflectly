@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { supabase } from '@/utils/supabase';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
   try {
@@ -18,8 +20,10 @@ export async function POST(request: Request) {
       );
     }
     
-    // Get the video file from the form data
+    // Get the video file and project ID from the form data
     const file = formData.get('file');
+    const projectId = formData.get('projectId');
+    
     if (!file || !(file instanceof File)) {
       console.error('No file or invalid file in form data');
       return NextResponse.json(
@@ -71,8 +75,66 @@ export async function POST(request: Request) {
     
     console.log(`Transformed ${transformedTranscripts.length} transcript segments`);
     
+    // Store the transcript in Supabase if a project ID was provided
+    let storedTranscriptId;
+    if (projectId) {
+      try {
+        // Get user from auth header if available (optional)
+        const authHeader = request.headers.get('authorization');
+        let userId = null;
+        
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.replace('Bearer ', '');
+          const { data: { user } } = await supabase.auth.getUser(token);
+          if (user) {
+            userId = user.id;
+          }
+        }
+        
+        // Verify the project exists (if user is authenticated, verify ownership)
+        if (userId) {
+          const { data: projectData, error: projectError } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('id', projectId)
+            .eq('user_id', userId)
+            .single();
+            
+          if (projectError) {
+            console.error('Project not found or not owned by user:', projectError);
+            // Continue with transcription but don't store in DB
+          }
+        }
+        
+        // Store the transcript
+        const transcriptId = uuidv4();
+        const { data, error } = await supabase
+          .from('video_transcripts')
+          .insert({
+            id: transcriptId,
+            project_id: projectId,
+            filename: file.name,
+            content: transformedTranscripts,
+            duration: transcriptionResponse.duration
+          })
+          .select()
+          .single();
+          
+        if (error) {
+          console.error('Error storing transcript:', error);
+        } else {
+          console.log('Transcript stored in Supabase with ID:', data.id);
+          storedTranscriptId = data.id;
+        }
+      } catch (error) {
+        console.error('Error storing transcript in Supabase:', error);
+        // Continue with returning the transcript even if storage failed
+      }
+    }
+    
     return NextResponse.json({ 
       transcripts: transformedTranscripts,
+      id: storedTranscriptId,
       message: 'Transcript generated successfully'
     });
   } catch (error: any) {

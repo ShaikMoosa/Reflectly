@@ -43,44 +43,114 @@ export interface Database {
       projects: {
         Row: {
           id: string
-          name: string
-          description: string
-          created_at: string
           user_id: string
+          name: string
+          description?: string
+          status: string
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          id: string
-          name: string
-          description: string
-          created_at?: string
+          id?: string
           user_id: string
+          name: string
+          description?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
+          user_id?: string
           name?: string
           description?: string
+          status?: string
           created_at?: string
-          user_id?: string
+          updated_at?: string
         }
       }
-      transcripts: {
+      video_transcripts: {
         Row: {
           id: string
           project_id: string
-          segments: Json
+          filename: string
+          content: Json
+          duration?: number
           created_at: string
+          updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           project_id: string
-          segments: Json
+          filename: string
+          content: Json
+          duration?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           project_id?: string
-          segments?: Json
+          filename?: string
+          content?: Json
+          duration?: number
           created_at?: string
+          updated_at?: string
+        }
+      }
+      user_notes: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string
+          title?: string
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id: string
+          title?: string
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_id?: string
+          title?: string
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      ai_chat_history: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string
+          messages: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id: string
+          messages: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_id?: string
+          messages?: Json
+          created_at?: string
+          updated_at?: string
         }
       }
       whiteboard_data: {
