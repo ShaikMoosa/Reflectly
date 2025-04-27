@@ -32,7 +32,7 @@ export default function Home() {
             Welcome to Reflectly
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Your all-in-one platform for video transcription, project planning, and collaborative whiteboarding
+            Your all-in-one platform for video transcription and project planning
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
@@ -50,7 +50,7 @@ export default function Home() {
             </Link>
           </div>
           
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Video Transcription</h3>
               <p className="text-gray-600 dark:text-gray-300">Upload videos and get accurate transcripts with AI-powered analysis.</p>
@@ -58,10 +58,6 @@ export default function Home() {
             <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Project Planning</h3>
               <p className="text-gray-600 dark:text-gray-300">Organize tasks and manage projects with our intuitive kanban board.</p>
-            </div>
-            <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Collaborative Whiteboard</h3>
-              <p className="text-gray-600 dark:text-gray-300">Sketch out ideas and collaborate in real-time with our digital whiteboard.</p>
             </div>
           </div>
         </div>

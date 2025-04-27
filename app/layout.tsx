@@ -25,26 +25,22 @@ export const metadata: Metadata = {
 
 console.log('Metadata exported');
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   console.log('RootLayout function called');
   return (
-    <ClerkProvider appearance={{
-      baseTheme: dark,
-      variables: {
-        colorPrimary: 'rgb(59 130 246)'
-      }
-    }}>
-      <html lang="en">
-        <body className={`${inter.className} ${inter.variable} font-sans`}>
+    <html lang="en">
+      <body className={`${inter.className} ${inter.variable} font-sans`}>
+        <ClerkProvider
+          appearance={{
+            baseTheme: dark,
+            variables: { colorPrimary: 'rgb(59 130 246)' },
+          }}
+        >
           <Providers>
             {children}
           </Providers>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 } 

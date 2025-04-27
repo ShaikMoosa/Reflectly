@@ -9,7 +9,6 @@ import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase, initializeSupabaseTables } from '../../utils/supabase';
-import { useRouter } from 'next/navigation';
 
 const App: React.FC = () => {
   // Project state
@@ -20,8 +19,6 @@ const App: React.FC = () => {
   // UI state
   const [activePage, setActivePage] = useState<PageType>('projects');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [whiteboardError, setWhiteboardError] = useState<string | null>(null);
   
   // User authentication
   const { user, isSignedIn } = useUser();
@@ -120,12 +117,6 @@ const App: React.FC = () => {
     };
     saveProjects();
   }, [projects, isSignedIn, user?.id, isLoading, tablesExist]);
-
-  // Function to handle whiteboard errors
-  const handleWhiteboardError = (error: Error) => {
-    console.error('Whiteboard error:', error);
-    setWhiteboardError(error.message);
-  };
 
   const handleCreateProject = async (project: Project) => {
     const newProject = {
@@ -252,44 +243,58 @@ const App: React.FC = () => {
         projects={projectsForNav}
         onSelectProject={handleSelectProject}
         onCreateNewProject={handleCreateNewProject}
-        userName={user?.firstName || 'User'}
+        userName={user?.firstName || user?.username || 'User'}
       />
-
+      
       {/* Main content area */}
-      <main className="pl-64 min-h-screen transition-all">
-        <div className="p-6">
-          {selectedProject ? (
-            <ProjectFileView 
-              project={selectedProject}
-              onBackToProjects={handleBackToProjects}
-              onSaveProject={handleSaveProject}
-              userId={user?.id}
-            />
-          ) : activePage === 'whiteboard' ? (
-            <div className="h-screen -mt-6 -mx-6">
-              <iframe 
-                src="/whiteboard" 
-                className="w-full h-full border-none" 
-                title="Whiteboard"
-              />
-            </div>
-          ) : activePage === 'planner' ? (
-            <FixedKanbanBoard userId={user?.id} />
-          ) : activePage === 'home' ? (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold mb-6">Welcome to Reflectly</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Home page content */}
+      <main className="pl-64 h-screen overflow-y-auto">
+        <div className="h-full">
+          {/* Render appropriate page based on active page */}
+          {activePage === 'home' ? (
+            <div className="p-8">
+              <h1 className="text-2xl font-bold mb-4">Welcome to Reflectly</h1>
+              <p className="mb-4">This is your dashboard for managing video transcription projects and notes.</p>
+              
+              <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-2">Recent Projects</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {projects.slice(0, 3).map(project => (
+                    <div 
+                      key={project.id}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => {
+                        handleSelectProject(project.id);
+                        setActivePage('projects');
+                      }}
+                    >
+                      <h3 className="font-medium">{project.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{project.description || 'No description'}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          ) : (
-            <ProjectPage 
-              projects={projects}
-              onCreateProject={handleCreateProject}
-              onDeleteProject={handleDeleteProject}
-              onSelectProject={handleSelectProject}
-            />
-          )}
+          ) : activePage === 'projects' ? (
+            selectedProject ? (
+              <ProjectFileView
+                project={selectedProject}
+                onBackToProjects={handleBackToProjects}
+                onSaveProject={handleSaveProject}
+                userId={user?.id}
+              />
+            ) : (
+              <ProjectPage
+                projects={projects}
+                onCreateProject={handleCreateProject}
+                onSelectProject={handleSelectProject}
+                onDeleteProject={handleDeleteProject}
+              />
+            )
+          ) : activePage === 'planner' ? (
+            <div className="h-full">
+              <FixedKanbanBoard />
+            </div>
+          ) : null}
         </div>
       </main>
     </div>
