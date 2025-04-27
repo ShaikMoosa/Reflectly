@@ -9,6 +9,7 @@ import FixedKanbanBoard from './FixedKanbanBoard';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase, initializeSupabaseTables } from '../../utils/supabase';
+import { WhiteboardCanvas } from '@/app/whiteboard/components/WhiteboardCanvas';
 
 const App: React.FC = () => {
   // Project state
@@ -210,6 +211,11 @@ const App: React.FC = () => {
 
   const handlePageChange = (page: PageType) => {
     setActivePage(page);
+    
+    // Reset project selection when switching to other pages
+    if (page !== 'projects' && selectedProjectId) {
+      setSelectedProjectId(null);
+    }
   };
 
   const toggleDarkMode = () => {
@@ -293,6 +299,15 @@ const App: React.FC = () => {
           ) : activePage === 'planner' ? (
             <div className="h-full">
               <FixedKanbanBoard />
+            </div>
+          ) : activePage === 'whiteboard' ? (
+            <div className="h-full">
+              <div className="p-4">
+                <h1 className="text-2xl font-bold mb-4">Whiteboard</h1>
+              </div>
+              <div className="flex-1 relative overflow-hidden h-[calc(100vh-120px)]">
+                <WhiteboardCanvas />
+              </div>
             </div>
           ) : null}
         </div>

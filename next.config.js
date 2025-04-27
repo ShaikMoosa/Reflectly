@@ -9,6 +9,7 @@ const nextConfig = {
   experimental: {
     esmExternals: true,
   },
+  transpilePackages: ['konva', 'react-konva'],
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   },
@@ -24,6 +25,7 @@ const nextConfig = {
       fs: false,
       path: false,
       os: false,
+      canvas: false,
     };
 
     return config;
@@ -35,6 +37,15 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error'],
     } : false,
+  },
+  async redirects() {
+    return [
+      {
+        source: '/whiteboard',
+        destination: '/whiteboard',
+        permanent: true,
+      },
+    ];
   },
 };
 

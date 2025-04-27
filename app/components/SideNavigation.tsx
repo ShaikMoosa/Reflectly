@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Home, FolderOpen, Kanban, Plus, ChevronDown, ChevronRight, Settings, Search, Moon, Sun } from 'lucide-react';
+import { Home, FolderOpen, Kanban, Plus, ChevronDown, ChevronRight, Settings, Search, Moon, Sun, Edit3 } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
+import Link from 'next/link';
 
-export type PageType = 'home' | 'projects' | 'planner';
+export type PageType = 'home' | 'projects' | 'planner' | 'whiteboard';
 
 export interface SideNavigationProps {
   activePage: PageType;
@@ -85,7 +86,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
           </div>
         </div>
 
-        <nav className="mt-2">
+        <nav>
           <ul className="space-y-1 px-2">
             <li>
               <a 
@@ -144,6 +145,16 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
               >
                 <Kanban size={18} />
                 <span>Planner</span>
+              </a>
+            </li>
+
+            <li>
+              <a 
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${activePage === 'whiteboard' ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''}`}
+                onClick={() => onNavigate('whiteboard')}
+              >
+                <Edit3 size={18} />
+                <span>Whiteboard</span>
               </a>
             </li>
           </ul>
