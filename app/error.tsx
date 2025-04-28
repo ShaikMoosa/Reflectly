@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
 import { useEffect } from 'react';
+import { Button } from './components/ui/button';
 
-export default function ErrorPage({
+export default function Error({
   error,
   reset,
 }: {
@@ -15,35 +15,52 @@ export default function ErrorPage({
     console.error('Application error:', error);
   }, [error]);
 
+  const handleReset = () => {
+    // Clear client-side cache before resetting
+    if (typeof window !== 'undefined') {
+      // Clear any cached resources that might be causing issues
+      if ('caches' in window) {
+        try {
+          caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => {
+              if (cacheName.startsWith('next-')) {
+                caches.delete(cacheName);
+              }
+            });
+          });
+        } catch (e) {
+          console.error('Failed to clear cache:', e);
+        }
+      }
+    }
+    
+    // Try to reset the error boundary
+    reset();
+  };
+
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
-      <div className="card bg-base-200 w-full max-w-md shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title text-error">Something went wrong!</h2>
-          <p className="py-4">An unexpected error occurred in the application.</p>
-          
-          <div className="bg-error bg-opacity-10 p-4 rounded-lg mb-4">
-            <p className="font-bold text-sm">Error details:</p>
-            <p className="text-xs font-mono overflow-auto max-h-32 mt-2">{error.message}</p>
-            {error.digest && (
-              <p className="text-xs mt-2">Error ID: {error.digest}</p>
-            )}
-          </div>
-          
-          <div className="card-actions justify-end">
-            <button 
-              className="btn btn-primary" 
-              onClick={() => window.location.href = '/'}
-            >
-              Go to Home
-            </button>
-            <button 
-              className="btn btn-outline" 
-              onClick={() => reset()}
-            >
-              Try Again
-            </button>
-          </div>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+          Something went wrong
+        </h2>
+        <p className="text-gray-700 dark:text-gray-300 mb-6">
+          The application encountered an unexpected error. We've been notified and are working to fix the issue.
+        </p>
+        <div className="flex flex-col space-y-3">
+          <Button 
+            onClick={handleReset}
+            className="w-full"
+          >
+            Try again
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.href = '/'}
+            className="w-full"
+          >
+            Go to homepage
+          </Button>
         </div>
       </div>
     </div>

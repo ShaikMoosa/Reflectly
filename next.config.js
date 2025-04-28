@@ -17,6 +17,12 @@ const nextConfig = {
     // Enable source maps in development
     if (!isServer) {
       config.devtool = 'source-map';
+      
+      // Add chunk loading improvements
+      config.output.chunkLoadTimeout = 60000; // Increase timeout to 60 seconds
+      
+      // Don't modify publicPath directly as it breaks Next.js App Router
+      // Instead use assetPrefix in Next.js config if needed
     }
     
     // Add fallback for Node.js modules that might be used in browser context

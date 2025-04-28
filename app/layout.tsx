@@ -7,6 +7,8 @@ import { Inter } from "next/font/google";
 import { Providers } from './providers';
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
+import ChunkErrorBoundary from './components/ChunkErrorBoundary';
+import ChunkRetryScript from './components/ChunkRetryScript';
 
 console.log('Imports completed');
 
@@ -30,6 +32,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   console.log('RootLayout function called');
   return (
     <html lang="en">
+      <head>
+        <ChunkRetryScript />
+      </head>
       <body className={`${inter.className} ${inter.variable} font-sans`}>
         <ClerkProvider
           appearance={{
@@ -38,7 +43,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           }}
         >
           <Providers>
-            {children}
+            <ChunkErrorBoundary>
+              {children}
+            </ChunkErrorBoundary>
           </Providers>
         </ClerkProvider>
       </body>
