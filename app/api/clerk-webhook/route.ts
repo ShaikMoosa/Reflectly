@@ -1,8 +1,8 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
-import { supabase } from '../../../utils/supabase';
-import { NextResponse } from 'next/server';
+import { supabaseAdminClient } from '@/app/utils/supabase/admin';
+import { handleSupabaseError } from '@/app/utils/supabase/error-handler';
 
 export async function POST(req: Request) {
   // Get the headers
@@ -11,9 +11,9 @@ export async function POST(req: Request) {
   const svix_timestamp = headerPayload.get('svix-timestamp');
   const svix_signature = headerPayload.get('svix-signature');
 
-  // If there are no headers, error out
+  // If there are no Svix headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new NextResponse('Error: Missing svix headers', {
+    return new Response('Error: Missing Svix headers', {
       status: 400
     });
   }
@@ -23,109 +23,87 @@ export async function POST(req: Request) {
   const body = JSON.stringify(payload);
 
   // Create a new Svix instance with your webhook secret
-  const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || '');
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+  
+  if (!webhookSecret) {
+    console.error('Missing CLERK_WEBHOOK_SECRET environment variable');
+    return new Response('Error: Missing webhook secret', {
+      status: 500
+    });
+  }
+
+  // Create a new Svix instance
+  const wh = new Webhook(webhookSecret);
 
   let evt: WebhookEvent;
 
-  // Verify the payload with the headers
+  // Verify the webhook
   try {
     evt = wh.verify(body, {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
-      'svix-signature': svix_signature,
+      'svix-signature': svix_signature
     }) as WebhookEvent;
   } catch (err) {
     console.error('Error verifying webhook:', err);
-    return new NextResponse('Error verifying webhook', {
+    return new Response('Error: Invalid webhook signature', {
       status: 400
     });
   }
 
   // Handle the webhook
   const eventType = evt.type;
-  
-  if (eventType === 'user.created') {
-    const { id, email_addresses, first_name, last_name } = evt.data;
 
-    // Create initial data structures for the user
-    try {
-      // Create empty kanban board
-      await supabase.from('kanban_board').insert({
-        id,
-        user_id: id,
-        data: {
-          tasks: {},
-          columns: {
-            'column-1': {
-              id: 'column-1',
-              title: 'To Do',
-              taskIds: []
-            },
-            'column-2': {
-              id: 'column-2',
-              title: 'In Progress',
-              taskIds: []
-            },
-            'column-3': {
-              id: 'column-3',
-              title: 'Done',
-              taskIds: []
-            }
-          },
-          columnOrder: ['column-1', 'column-2', 'column-3']
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-      // Create empty whiteboard
-      await supabase.from('whiteboard_data').insert({
-        id,
-        user_id: id,
-        data: {
-          elements: [],
-          appState: {}
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-      console.log(`Created initial data for user ${id}`);
-    } catch (error) {
-      console.error('Error creating initial data:', error);
-    }
-  }
-
-  if (eventType === 'user.deleted') {
-    const { id } = evt.data;
-
-    // Delete all user data
-    try {
-      // Delete kanban board
-      await supabase.from('kanban_board').delete().eq('user_id', id);
+  try {
+    if (eventType === 'user.created' || eventType === 'user.updated') {
+      // Extract user data from the webhook
+      const { id, email_addresses, username, first_name, last_name, image_url } = evt.data;
       
-      // Delete whiteboard data
-      await supabase.from('whiteboard_data').delete().eq('user_id', id);
+      const primaryEmail = email_addresses?.[0]?.email_address;
       
-      // Delete projects
-      const { data: projects } = await supabase.from('projects').select('id').eq('user_id', id);
-      if (projects && projects.length > 0) {
-        const projectIds = projects.map(p => p.id);
-        
-        // Delete transcripts
-        await supabase.from('transcripts').delete().in('project_id', projectIds);
-        
-        // Delete projects
-        await supabase.from('projects').delete().eq('user_id', id);
+      // Sync user data to Supabase
+      const { error } = await supabaseAdminClient
+        .from('users')
+        .upsert({
+          id,
+          email: primaryEmail,
+          username: username || primaryEmail?.split('@')[0],
+          first_name: first_name || '',
+          last_name: last_name || '',
+          avatar_url: image_url,
+          updated_at: new Date().toISOString()
+        }, 
+        { 
+          onConflict: 'id' 
+        });
+      
+      if (error) {
+        throw handleSupabaseError(error, 'Failed to sync user to Supabase');
       }
-
-      console.log(`Deleted all data for user ${id}`);
-    } catch (error) {
-      console.error('Error deleting user data:', error);
     }
-  }
+    
+    if (eventType === 'user.deleted') {
+      // Delete user data from Supabase
+      const { id } = evt.data;
+      
+      const { error } = await supabaseAdminClient
+        .from('users')
+        .update({ 
+          is_deleted: true,
+          deleted_at: new Date().toISOString()
+        })
+        .match({ id });
+      
+      if (error) {
+        throw handleSupabaseError(error, 'Failed to mark user as deleted in Supabase');
+      }
+    }
 
-  return new NextResponse('Webhook processed successfully', {
-    status: 200
-  });
+    return new Response('Webhook processed successfully', { status: 200 });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return new Response('Error processing webhook', { 
+      status: 500 
+    });
+  }
 } 

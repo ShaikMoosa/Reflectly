@@ -1,19 +1,51 @@
 export type MessageRole = 'user' | 'assistant' | 'system';
 
+/**
+ * Interface for a chat message
+ */
 export interface ChatMessage {
   role: MessageRole;
   content: string;
   timestamp: string;
 }
 
-export interface AIChatHistory {
+/**
+ * Interface for a chat history
+ */
+export interface ChatHistory {
   id: string;
-  user_id: string;
-  project_id: string;
+  userId: string;
+  projectId?: string;
+  title?: string;
   messages: ChatMessage[];
-  created_at: string;
-  updated_at: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export type AIChatHistoryCreateInput = Omit<AIChatHistory, 'id' | 'created_at' | 'updated_at'>;
-export type AIChatHistoryUpdateInput = Partial<Omit<AIChatHistory, 'id' | 'user_id' | 'project_id' | 'created_at' | 'updated_at'>>; 
+/**
+ * Interface for creating a new chat history
+ */
+export interface CreateChatHistoryParams {
+  projectId?: string;
+  title?: string;
+  messages?: ChatMessage[];
+}
+
+/**
+ * Interface for updating a chat history
+ */
+export interface UpdateChatHistoryParams {
+  id: string;
+  title?: string;
+  messages?: ChatMessage[];
+}
+
+/**
+ * Interface for chat history search parameters
+ */
+export interface ChatHistorySearchParams {
+  projectId?: string;
+  query?: string;
+  limit?: number;
+  offset?: number;
+} 

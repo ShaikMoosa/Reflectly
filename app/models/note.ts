@@ -1,12 +1,45 @@
-export interface UserNote {
+/**
+ * Interface for a note
+ */
+export interface Note {
   id: string;
-  user_id: string;
-  project_id: string;
-  title?: string;
+  projectId: string;
+  userId: string;
+  title: string;
   content: string;
-  created_at: string;
-  updated_at: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export type UserNoteCreateInput = Omit<UserNote, 'id' | 'created_at' | 'updated_at'>;
-export type UserNoteUpdateInput = Partial<Omit<UserNote, 'id' | 'user_id' | 'project_id' | 'created_at' | 'updated_at'>>; 
+/**
+ * Interface for creating a new note
+ */
+export interface CreateNoteParams {
+  projectId: string;
+  title: string;
+  content: string;
+  tags?: string[];
+}
+
+/**
+ * Interface for updating a note
+ */
+export interface UpdateNoteParams {
+  id: string;
+  title?: string;
+  content?: string;
+  tags?: string[];
+}
+
+/**
+ * Interface for note search parameters
+ */
+export interface NoteSearchParams {
+  projectId?: string;
+  userId?: string;
+  query?: string;
+  tags?: string[];
+  limit?: number;
+  offset?: number;
+} 
