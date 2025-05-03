@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings, X } from 'lucide-react';
+import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings, X, GripHorizontal } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
 
@@ -108,6 +108,27 @@ const typeIcons = {
 const systemOptions = ['User Needs', 'System Requirements', 'Subsystem Requirements', 'Design Input', 'Design Output'];
 
 const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
+  // CSS variables for the dragging animation
+  useEffect(() => {
+    // Add CSS variables to document root
+    document.documentElement.style.setProperty('--card-rgb', '255, 255, 255');
+    document.documentElement.style.setProperty('--item-dragging-bg', 'rgba(255, 255, 255, 0.9)');
+    document.documentElement.style.setProperty('--item-dragging-shadow', '0 8px 24px rgba(0, 0, 0, 0.15)');
+    
+    // For dark mode
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.style.setProperty('--card-rgb', '55, 65, 81');
+      document.documentElement.style.setProperty('--item-dragging-bg', 'rgba(55, 65, 81, 0.9)');
+    }
+    
+    return () => {
+      // Clean up variables when component unmounts
+      document.documentElement.style.removeProperty('--card-rgb');
+      document.documentElement.style.removeProperty('--item-dragging-bg');
+      document.documentElement.style.removeProperty('--item-dragging-shadow');
+    };
+  }, []);
+
   // Load board data from localStorage or use empty initial data
   const loadBoardData = () => {
     try {
@@ -589,16 +610,36 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     }
   };
 
+  // Add animation styles for dragging
+  const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
+    // some basic styles to make the items look a bit nicer
+    userSelect: 'none',
+    // change background colour if dragging
+    background: isDragging ? 'var(--item-dragging-bg, rgba(var(--card-rgb), 0.8))' : 'var(--item-bg, #fff)',
+    boxShadow: isDragging ? 'var(--item-dragging-shadow, 0 8px 16px rgba(0, 0, 0, 0.1))' : 'var(--item-shadow, 0 1px 3px rgba(0, 0, 0, 0.05))',
+    borderRadius: '0.5rem',
+    // styles we need to apply on draggables
+    ...draggableStyle,
+  });
+
   // Update rendered task cards 
   const renderTaskCard = (task: Task, provided: any, snapshot: any) => (
     <div
       ref={provided.innerRef}
       {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      className={`group bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow-sm hover:shadow-md transition-all ${
-        snapshot.isDragging ? 'shadow-lg ring-2 ring-indigo-300 dark:ring-indigo-600' : ''
+      style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+      className={`group bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
+        snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-300 dark:ring-indigo-600 rotate-1 scale-105' : ''
       }`}
     >
+      {/* Drag handle at top of card */}
+      <div 
+        {...provided.dragHandleProps} 
+        className="flex justify-center items-center w-full h-1 mb-3 cursor-grab active:cursor-grabbing"
+      >
+        <div className="w-10 h-1 bg-gray-200 dark:bg-gray-600 rounded-full group-hover:bg-indigo-200 dark:group-hover:bg-indigo-700 transition-colors"></div>
+      </div>
+      
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2 max-w-[calc(100%-24px)]">
           {task.type && <span className="flex-shrink-0 text-base">{typeIcons[task.type]}</span>}
@@ -981,14 +1022,45 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
         </div>
       ) : viewType === 'grid' ? (
         <DragDropContext onDragEnd={onDragEnd}>
+          {/* Notion-style hint banner */}
+          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900 rounded-md p-3 text-sm text-yellow-800 dark:text-yellow-300 flex items-center">
+            <div className="mr-2 p-1 bg-yellow-100 dark:bg-yellow-800 rounded-full">
+              <GripHorizontal size={16} className="text-yellow-600 dark:text-yellow-300" />
+            </div>
+            <span>
+              <span className="font-medium">Tip:</span> Drag tasks between columns to update their status. Use the drag handle at the top of each card.
+            </span>
+            <button 
+              onClick={(e) => e.currentTarget.parentElement?.remove()} 
+              className="ml-auto text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          
           <div className="flex gap-6 h-full overflow-x-auto pb-4">
-            {filteredData.columnOrder.map(columnId => {
+            {filteredData.columnOrder.map((columnId, index) => {
               const column = filteredData.columns[columnId];
+              // Column color indicators based on position
+              const columnColors = [
+                "border-l-4 border-blue-500", // To Do
+                "border-l-4 border-yellow-500", // In Progress 
+                "border-l-4 border-green-500", // Done
+              ];
+              const colorClass = columnColors[index % columnColors.length];
+              
               return (
-                <div key={column.id} className="flex-none w-80">
-                  <div className="bg-white dark:bg-gray-700 rounded-t-lg p-3 shadow-md sticky top-0 z-10">
+                <div key={column.id} className={`flex-none w-80 ${colorClass} rounded-lg bg-gray-50 dark:bg-gray-800/50 shadow-md overflow-hidden`}>
+                  <div className="bg-white dark:bg-gray-700 p-3 sticky top-0 z-10 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-semibold">{column.title}</h3>
+                      <h3 className="font-semibold flex items-center">
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                          index === 0 ? 'bg-blue-500' : 
+                          index === 1 ? 'bg-yellow-500' : 
+                          'bg-green-500'
+                        }`}></span>
+                        {column.title}
+                      </h3>
                       <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full px-2 py-0.5 min-w-[1.5rem] text-center">
                         {column.taskIds.length}
                       </span>
@@ -999,8 +1071,10 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`bg-gray-100 dark:bg-gray-800 p-3 rounded-b-lg shadow-md min-h-[50vh] transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-indigo-900/30 ring-2 ring-indigo-200 dark:ring-indigo-800' : ''
+                        className={`p-3 min-h-[calc(100vh-13rem)] transition-all ${
+                          snapshot.isDraggingOver 
+                            ? 'bg-blue-50 dark:bg-indigo-900/30 ring-inset ring-2 ring-indigo-200 dark:ring-indigo-800' 
+                            : ''
                         }`}
                       >
                         {column.taskIds.length === 0 ? (
@@ -1016,6 +1090,11 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
                           })
                         )}
                         {provided.placeholder}
+                        {snapshot.isDraggingOver && (
+                          <div className="mt-2 p-2 text-center text-xs bg-indigo-50 dark:bg-indigo-900/20 rounded-md text-indigo-600 dark:text-indigo-300 border border-dashed border-indigo-200 dark:border-indigo-800">
+                            Drop here to add to {column.title}
+                          </div>
+                        )}
                       </div>
                     )}
                   </Droppable>
