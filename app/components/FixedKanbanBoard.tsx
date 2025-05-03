@@ -158,7 +158,8 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     system: '',
     createdAt: '',
     updatedAt: '',
-    commentCount: 0
+    commentCount: 0,
+    columnId: '' // New field to track which column to add task to
   });
 
   // Available assignees for dropdown
@@ -279,8 +280,10 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
         }
       });
     } else {
-      // Add new task to the first column
-      const firstColumn = boardData.columns[boardData.columnOrder[0]];
+      // Use the selected column for new tasks instead of always using the first column
+      const selectedColumnId = taskForm.columnId || boardData.columnOrder[0];
+      const selectedColumn = boardData.columns[selectedColumnId];
+      
       setBoardData({
         ...boardData,
         tasks: {
@@ -289,9 +292,9 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
         },
         columns: {
           ...boardData.columns,
-          [firstColumn.id]: {
-            ...firstColumn,
-            taskIds: [...firstColumn.taskIds, task.id]
+          [selectedColumnId]: {
+            ...selectedColumn,
+            taskIds: [...selectedColumn.taskIds, task.id]
           }
         }
       });
@@ -418,7 +421,8 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
         system: task.system || '',
         createdAt: task.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        commentCount: task.commentCount || 0
+        commentCount: task.commentCount || 0,
+        columnId: '' // No column selection for existing tasks
       });
     } else {
       // Create new task
@@ -437,7 +441,8 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
         system: '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        commentCount: 0
+        commentCount: 0,
+        columnId: boardData.columnOrder[0] // Default to first column
       });
     }
     setCurrentTask(task);
@@ -1070,6 +1075,28 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
                 
                 {/* Task properties */}
                 <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  {/* Column Selection - only show for new tasks */}
+                  {!currentTask && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Column
+                      </div>
+                      <div className="flex-1">
+                        <select
+                          value={taskForm.columnId}
+                          onChange={(e) => setTaskForm({...taskForm, columnId: e.target.value})}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
+                        >
+                          {boardData.columnOrder.map((columnId) => (
+                            <option key={columnId} value={columnId}>
+                              {boardData.columns[columnId].title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Status property */}
                   <div className="flex items-center gap-3">
                     <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
