@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3001",
+    "dev": "next dev",
     "dev3010": "next dev --port 3010",
     "dev-safe": "next dev --port 3006",
     "dev-clean": "powershell -ExecutionPolicy Bypass -File ./start-dev.ps1",

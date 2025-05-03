@@ -16,13 +16,59 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     // Enable source maps in development
     if (!isServer) {
-      config.devtool = 'source-map';
+      config.devtool = 'eval-source-map';
       
       // Add chunk loading improvements
-      config.output.chunkLoadTimeout = 60000; // Increase timeout to 60 seconds
+      config.output.chunkLoadTimeout = 120000; // Increase timeout to 120 seconds
       
-      // Don't modify publicPath directly as it breaks Next.js App Router
-      // Instead use assetPrefix in Next.js config if needed
+      // Optimize chunk sizes
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          // Extract framework code from app code
+          framework: {
+            name: 'framework',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+          // Bundle larger libraries separately
+          lib: {
+            test: /[\\/]node_modules[\\/]/,
+            name(module) {
+              // Safe check for module.context to avoid errors
+              if (!module.context) return 'lib';
+              
+              const contextMatch = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/);
+              if (!contextMatch) return 'lib';
+              
+              const packageName = contextMatch[1];
+              return `npm.${packageName.replace('@', '')}`;
+            },
+            priority: 30,
+            minChunks: 1,
+            reuseExistingChunk: true,
+          },
+          // Common app code
+          commons: {
+            name: 'commons',
+            minChunks: 2,
+            priority: 20,
+          },
+          // Styles
+          styles: {
+            name: 'styles',
+            test: /\.css$/,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+        maxInitialRequests: 25,
+        minSize: 20000,
+      };
     }
     
     // Add fallback for Node.js modules that might be used in browser context
@@ -37,7 +83,7 @@ const nextConfig = {
     return config;
   },
   serverRuntimeConfig: {
-    port: process.env.PORT || 3001,
+    port: process.env.PORT || 3000,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {

@@ -1,5 +1,3 @@
-// Adding debugging logs
-console.log('Layout file is loading');
 import './globals.css';
 import './styles/tiptap.css';
 import type { Metadata } from 'next';
@@ -9,8 +7,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import ChunkErrorBoundary from './components/ChunkErrorBoundary';
 import ChunkRetryScript from './components/ChunkRetryScript';
-
-console.log('Imports completed');
+import dynamic from 'next/dynamic';
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -19,17 +16,12 @@ const inter = Inter({
   weight: ['400', '500', '600', '700']
 });
 
-console.log('Inter font initialized');
-
 export const metadata: Metadata = {
   title: 'Reflectly - Video Transcription App',
   description: 'Upload videos and generate interactive transcripts',
 };
 
-console.log('Metadata exported');
-
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  console.log('RootLayout function called');
   return (
     <html lang="en">
       <head>
