@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Home, FolderOpen, Kanban, Plus, ChevronDown, ChevronRight, Settings, Search, Moon, Sun, Edit3 } from 'lucide-react';
+import { Home, FolderOpen, Kanban, Plus, ChevronDown, ChevronRight, Settings, Search, Moon, Sun, Edit3, User } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 
@@ -162,6 +162,13 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
       </div>
 
       <div className="mt-auto p-4 border-t border-gray-200 dark:border-[#383838]">
+        <Link 
+          href="/account" 
+          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer mb-2"
+        >
+          <User size={18} />
+          <span>Account</span>
+        </Link>
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer">
           <Settings size={18} />
           <span>Settings</span>

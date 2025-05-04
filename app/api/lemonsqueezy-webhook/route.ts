@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
+import { verifyWebhookSignature } from '@/app/utils/lemonsqueezy';
 
 /**
  * This endpoint receives webhook events from Lemon Squeezy
@@ -7,14 +8,17 @@ import { createClient } from '@/app/utils/supabase/server';
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // Get the raw body as text for signature verification
+    const rawBody = await req.text();
+    const body = JSON.parse(rawBody);
     const { event, data } = body;
     
-    // Verify the webhook signature (in production, add signature verification)
-    // const signature = req.headers.get('x-signature');
-    // if (!verifySignature(signature, body)) {
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    // }
+    // Verify the webhook signature
+    const signature = req.headers.get('x-signature') || '';
+    if (!verifyWebhookSignature(signature, rawBody)) {
+      console.error('Invalid webhook signature');
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
     
     // Process the webhook based on the event type
     if (event === 'order_created') {
