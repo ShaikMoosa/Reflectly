@@ -23,9 +23,9 @@ import {
   updateTaskContent,
   updateTaskOrder,
 } from '../actions';
-import { Button } from '../../../components/ui/button'; // Fixed relative path
-import { Input } from '../../../components/ui/input';   // Fixed relative path
-import { Textarea } from '../../../components/ui/textarea'; // Fixed relative path
+import { Button } from '../../components/ui/button'; // Fixed path
+import { Input } from '../../components/ui/input';   // Fixed path
+import { Textarea } from '../../components/ui/textarea'; // Fixed path
 import { PlusIcon, TrashIcon, EditIcon, CheckIcon, XIcon } from 'lucide-react'; // Example icons
 import { toast } from 'sonner'; // Assuming shadcn uses sonner for toasts
 
@@ -72,9 +72,9 @@ export default function PlannerBoard({ initialData }: PlannerBoardProps) {
     }
 
     // --- Optimistic Update & Server Action Call ---
-    let originalColumns = columns;
+    const originalColumns = columns;
     // Deep copy might be safer for nested tasks, but shallow copy often sufficient
-    let updatedColumns = columns.map(col => ({ ...col, tasks: [...col.tasks] }));
+    const updatedColumns = columns.map(col => ({ ...col, tasks: [...col.tasks] }));
 
     try {
       // --- Handling Column Dragging ---
