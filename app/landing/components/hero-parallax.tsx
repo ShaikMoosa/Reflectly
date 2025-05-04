@@ -16,7 +16,7 @@ export function HeroParallax() {
   const contentY = useTransform(scrollYProgress, [0, 0.5], [0, -50]);
 
   return (
-    <section className="relative w-full h-[90vh]" id="hero">
+    <section className="relative w-full h-[90vh]" id="hero" ref={ref}>
       <WavyBackground 
         containerClassName="absolute inset-0"
         className="flex items-center justify-center"
@@ -27,15 +27,14 @@ export function HeroParallax() {
         speed="fast"
         waveOpacity={0.5}
       >
-        <div ref={ref} className="relative flex items-center justify-center w-full h-full">
-          {/* Hero content */}
-          <motion.div 
-            className="relative z-50 text-center max-w-5xl px-4 py-10 bg-black/20 backdrop-blur-sm rounded-xl"
-            style={{ 
-              opacity: contentOpacity, 
-              y: contentY 
-            }}
-          >
+        <motion.div 
+          className="relative z-50 flex flex-col items-center justify-center w-full h-full text-center px-4 py-10"
+          style={{ 
+            opacity: contentOpacity, 
+            y: contentY 
+          }}
+        >
+          <div className="max-w-5xl w-full h-full flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm rounded-xl px-6 py-12">
             <motion.h1 
               className="text-5xl md:text-7xl font-bold mb-6 text-white"
               initial={{ opacity: 0, y: 20 }}
@@ -82,8 +81,8 @@ export function HeroParallax() {
             >
               <p>Free plan includes 5 transcriptions and 5 AI chat sessions</p>
             </motion.div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </WavyBackground>
     </section>
   );
