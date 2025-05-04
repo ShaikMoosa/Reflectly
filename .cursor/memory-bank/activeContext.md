@@ -24,6 +24,21 @@ The project is currently in the initial development phase with a focus on establ
    - Building notes CRUD operations
    - Implementing organization features
 
+5. **Landing Page and Marketing**
+   - Developing a modern landing page with Aceternity UI components
+   - Implementing pricing and feature comparison
+   - Setting up promotional and marketing materials
+
+6. **Subscription System**
+   - Integrating with Lemon Squeezy for payment processing
+   - Implementing subscription management and billing
+   - Tracking usage limits for free vs premium plans
+
+7. **User Experience Enhancements**
+   - Improving user onboarding flow
+   - Adding usage indicators and limits
+   - Creating account management features
+
 ## Recent Changes
 
 1. **Memory Bank Setup**
@@ -117,4 +132,34 @@ The project is currently in the initial development phase with a focus on establ
 3. **Maintainability**
    - Creating clear component boundaries
    - Establishing consistent coding patterns
-   - Documenting API interfaces and data models 
+   - Documenting API interfaces and data models
+
+## Current Implementation Details
+
+### Landing Page
+
+The landing page is implemented using Next.js with the following sections:
+- Hero section with parallax effect
+- Features with animated cards
+- Testimonial carousel
+- Pricing comparison cards
+- FAQ accordion
+
+### Subscription System
+
+The subscription system has the following components:
+- Database tables: `user_subscriptions` and `user_usage`
+- Lemon Squeezy webhook handler for processing subscription events
+- Helper functions for checking subscription status and limits
+- Feature limitations based on plan:
+  - Free: 5 video transcriptions, 5 AI chat queries
+  - Premium: 50 video transcriptions, 1000 AI chat sessions
+
+### User Flow
+
+1. User visits landing page
+2. User selects a plan (Free or Premium)
+3. Premium users go through Lemon Squeezy checkout
+4. After payment, user creates account
+5. User gets access to features based on their plan
+6. Usage is tracked and limited based on plan 

@@ -10,6 +10,8 @@ import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase, initializeSupabaseTables } from '../../utils/supabase';
 import { WhiteboardCanvas } from '@/app/whiteboard/components/WhiteboardCanvas';
+import { getUserSubscriptionStatus, SubscriptionStatus as SubscriptionStatusType } from '../utils/subscriptions';
+import SubscriptionStatus from './SubscriptionStatus';
 
 const App: React.FC = () => {
   // Project state
@@ -29,6 +31,10 @@ const App: React.FC = () => {
 
   // Track if Supabase tables exist
   const [tablesExist, setTablesExist] = useState<boolean | null>(null);
+
+  // Subscription state
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionStatusType | null>(null);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
 
   // Initialize dark mode based on system preference
   useEffect(() => {
@@ -118,6 +124,29 @@ const App: React.FC = () => {
     };
     saveProjects();
   }, [projects, isSignedIn, user?.id, isLoading, tablesExist]);
+
+  // Load subscription data
+  useEffect(() => {
+    const loadSubscriptionData = async () => {
+      if (!isSignedIn || !user?.id) {
+        setSubscriptionData(null);
+        setIsLoadingSubscription(false);
+        return;
+      }
+
+      try {
+        const data = await getUserSubscriptionStatus(user.id);
+        setSubscriptionData(data);
+      } catch (error) {
+        console.error('Error loading subscription data:', error);
+        setSubscriptionData(null);
+      } finally {
+        setIsLoadingSubscription(false);
+      }
+    };
+
+    loadSubscriptionData();
+  }, [isSignedIn, user?.id]);
 
   const handleCreateProject = async (project: Project) => {
     const newProject = {
@@ -249,36 +278,50 @@ const App: React.FC = () => {
         projects={projectsForNav}
         onSelectProject={handleSelectProject}
         onCreateNewProject={handleCreateNewProject}
-        userName={user?.firstName || user?.username || 'User'}
+        userName={user?.firstName || 'User'}
       />
       
       {/* Main content area */}
-      <div className="ml-[240px] min-h-screen pt-4 transition-all duration-300 overflow-hidden dark:bg-[#1f1f1f]">
+      <main className={`ml-64 min-h-screen ${isDarkMode ? 'bg-[#1f1f1f]' : 'bg-white'}`}>
+        {/* Subscription status widget for the top of the page */}
         <div className="p-6">
-          {/* Render different content based on the active page */}
-          {activePage === 'projects' && (
-            selectedProjectId ? (
-              <ProjectFileView 
-                project={selectedProject!}
-                onBackToProjects={handleBackToProjects}
-                onSaveProject={handleSaveProject}
-                userId={user?.id}
-              />
-            ) : (
-              <ProjectPage 
-                projects={projects} 
-                onCreateProject={handleCreateProject}
-                onSelectProject={handleSelectProject}
-                onDeleteProject={handleDeleteProject}
-              />
-            )
+          <SubscriptionStatus 
+            subscriptionData={subscriptionData}
+            isLoading={isLoadingSubscription}
+          />
+        </div>
+
+        {/* Page content */}
+        <div className="p-6">
+          {activePage === 'projects' && !selectedProjectId && (
+            <ProjectPage 
+              projects={projects}
+              onCreateProject={handleCreateProject}
+              onSelectProject={handleSelectProject}
+              onDeleteProject={handleDeleteProject}
+            />
           )}
           
-          {activePage === 'planner' && <FixedKanbanBoard userId={user?.id} />}
+          {activePage === 'projects' && selectedProjectId && selectedProject && (
+            <ProjectFileView 
+              project={selectedProject}
+              onBackToProjects={handleBackToProjects}
+              onSaveProject={handleSaveProject}
+              userId={user?.id}
+            />
+          )}
           
-          {activePage === 'whiteboard' && <WhiteboardCanvas />}
+          {activePage === 'planner' && (
+            <FixedKanbanBoard 
+              userId={user?.id}
+            />
+          )}
+          
+          {activePage === 'whiteboard' && (
+            <WhiteboardCanvas />
+          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

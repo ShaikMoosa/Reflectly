@@ -123,4 +123,38 @@
    - Implement projects management
    - Connect notes to projects
    - Create sharing features
-   - Target: End of Week 4 
+   - Target: End of Week 4
+
+## Recent Progress
+
+### Landing Page Implementation
+
+- Created a new landing page at `/landing` with modern UI using Aceternity UI inspired components
+- Implemented responsive design with dark/light mode support
+- Added sections for hero, features, testimonials, pricing, and FAQ
+- Set up user flow from landing page to sign up
+
+### Subscription System
+
+- Implemented Lemon Squeezy integration for subscription management
+- Created database schema with `user_subscriptions` and `user_usage` tables
+- Added usage tracking for transcription and AI chat features
+- Set up webhook handler for processing subscription events
+- Created helper functions for checking subscription status and limits
+
+### Feature Limitations
+
+- Free plan: 5 video transcriptions, 5 AI chat queries
+- Premium plan ($20/month): 50 video transcriptions, 1000 AI chat sessions
+- Implemented server-side validation for feature usage
+- Added UI elements to display usage limits to users
+
+## Next Steps
+
+- Set up actual Lemon Squeezy store and product configuration
+- Enable proper webhook validation with signing secret
+- Add usage indicators in the application UI
+- Create an account/billing page for users to manage their subscription
+- Add screenshots to the landing page showcasing the application
+- Implement proper image assets for the landing page
+- Set up email notifications for subscription events 
