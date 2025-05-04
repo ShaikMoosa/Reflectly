@@ -60,6 +60,9 @@ Custom PowerShell scripts are also available for Windows users:
 - **API Limits**: OpenAI API rate limits
 - **Storage**: Supabase storage quotas based on plan
 - **Database**: Row limitations based on Supabase plan
+- **Client-Side Performance**: Optimized React rendering with memo and useMemo
+- **Chunk Loading**: Enhanced error handling for chunk loading errors
+- **Local Storage**: Debounced localStorage operations to reduce writes
 
 ### Security
 - **Authentication**: Secure user authentication via Clerk
@@ -70,6 +73,7 @@ Custom PowerShell scripts are also available for Windows users:
 - **Database Scaling**: Limited by Supabase plan
 - **API Scaling**: Limited by OpenAI rate limits and pricing
 - **Storage Scaling**: Limited by Supabase plan
+- **Frontend Performance**: Optimized to handle larger datasets through memoization
 
 ## Dependencies
 
@@ -81,12 +85,14 @@ Custom PowerShell scripts are also available for Windows users:
 - `openai`: OpenAI API client
 - `tailwindcss`: Utility-first CSS framework
 - `shadcn/ui`: UI component library based on Radix UI
+- `react-beautiful-dnd`: Drag and drop functionality
 
 ### Development Dependencies
 - `typescript`: TypeScript language
 - `eslint`: Code linting
 - `jest`: Testing framework
 - `@types/*`: TypeScript type definitions
+- `cross-env`: Cross-environment variable setting
 
 ## Project Structure
 
@@ -104,11 +110,31 @@ The project follows a standard Next.js 15 structure with App Router:
 - `/lib`: Shared libraries and utilities
 - `/.cursor`: Cursor configuration and rules
 
+## Performance Optimizations
+
+### React Optimizations
+- **Component Memoization**: React.memo for heavy components
+- **Calculation Caching**: useMemo for expensive calculations
+- **Function Stability**: useCallback for event handlers and callbacks
+- **Render Optimization**: Custom comparison functions for memoized components
+- **State Management**: Optimized state updates with function updaters
+
+### Next.js Optimizations
+- **Chunk Error Handling**: Implemented error recovery for chunk loading issues
+- **Webpack Configuration**: Optimized chunk sizes and loading timeout in next.config.js
+- **Console Logging**: Removed excessive console.log in production builds
+
+### Browser Optimizations
+- **LocalStorage**: Debounced writes to reduce performance impact
+- **DOM Updates**: Minimized with memoization and careful state management
+- **Event Handling**: Optimized with useCallback for stable references
+
 ## Testing Approach
 
 - **Unit Tests**: Component and function testing with Jest
 - **Integration Tests**: API and data flow testing
 - **Manual Testing**: UI and user flow validation
+- **Performance Testing**: React DevTools Profiler for component rendering analysis
 
 ## Deployment Strategy
 

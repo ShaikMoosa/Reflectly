@@ -1,10 +1,59 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
 import { Search, Plus, Filter, MoreHorizontal, Edit2, Trash2, Link, MessageSquare, Grid, List, Settings, X, GripHorizontal } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../utils/supabase';
+import DragDropDebug from './DragDropDebug';
+
+// ChunkErrorHandler component to help with chunk loading errors
+const ChunkErrorHandler = () => {
+  useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+
+    const handleChunkError = (event: ErrorEvent) => {
+      const isChunkError = 
+        (event.error?.message?.includes('ChunkLoadError') || 
+        event.message?.includes('ChunkLoadError') || 
+        event.error?.message?.includes('Failed to fetch'));
+        
+      if (isChunkError) {
+        console.error('Chunk loading error detected:', event);
+        event.preventDefault();
+        
+        // Try to recover by refreshing the page after a delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    };
+    
+    const handlePromiseRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason && (
+        event.reason.message?.includes('ChunkLoadError') || 
+        event.reason.toString?.().includes('ChunkLoadError')
+      )) {
+        console.error('Chunk load promise rejection:', event);
+        event.preventDefault();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    };
+    
+    window.addEventListener('error', handleChunkError);
+    window.addEventListener('unhandledrejection', handlePromiseRejection);
+    
+    return () => {
+      window.removeEventListener('error', handleChunkError);
+      window.removeEventListener('unhandledrejection', handlePromiseRejection);
+    };
+  }, []);
+  
+  return null;
+};
 
 // Define the task type
 interface Task {
@@ -129,8 +178,8 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     };
   }, []);
 
-  // Load board data from localStorage or use empty initial data
-  const loadBoardData = () => {
+  // Load board data from localStorage or use empty initial data - only once on mount
+  const loadBoardData = useCallback(() => {
     try {
       const savedData = localStorage.getItem('plannerBoardData');
       if (savedData) {
@@ -140,17 +189,29 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
       console.error('Error loading board data from localStorage:', error);
     }
     return initialData;
-  };
+  }, []);
 
-  const [boardData, setBoardData] = useState<BoardData>(loadBoardData());
+  const [boardData, setBoardData] = useState<BoardData>(() => loadBoardData());
   
-  // Save board data to localStorage when it changes
+  // Debounced localStorage save to avoid excessive writes
   useEffect(() => {
-    try {
-      localStorage.setItem('plannerBoardData', JSON.stringify(boardData));
-    } catch (error) {
-      console.error('Error saving board data to localStorage:', error);
-    }
+    // Create a debounced save function
+    const saveData = () => {
+      try {
+        localStorage.setItem('plannerBoardData', JSON.stringify(boardData));
+      } catch (error) {
+        console.error('Error saving board data to localStorage:', error);
+      }
+    };
+    
+    // Set timeout with proper initialization
+    const saveTimeout = setTimeout(saveData, 500);
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(saveTimeout);
+      saveData(); // Save on unmount
+    };
   }, [boardData]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -195,6 +256,22 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
   // Add loading state
   const [isLoading, setIsLoading] = useState(false);
   
+  // Add a timeout to force reset loading state if stuck
+  useEffect(() => {
+    // If loading state gets stuck, reset it after 5 seconds
+    let loadingTimer: NodeJS.Timeout;
+    
+    if (isLoading) {
+      loadingTimer = setTimeout(() => {
+        setIsLoading(false);
+      }, 5000);
+    }
+    
+    return () => {
+      if (loadingTimer) clearTimeout(loadingTimer);
+    };
+  }, [isLoading]);
+  
   // Track active filters count
   const activeFiltersCount = 
     (filter.priority?.length || 0) + 
@@ -221,11 +298,13 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
   };
 
   // Handle drag end event
-  const onDragEnd = (result: any) => {
+  const onDragEnd = (result: DropResult, provided?: ResponderProvided) => {
     const { destination, source, draggableId } = result;
 
     // If there's no destination, do nothing
-    if (!destination) return;
+    if (!destination) {
+      return;
+    }
 
     // If the destination is the same as the source and the index is the same, do nothing
     if (
@@ -239,8 +318,13 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     const sourceColumn = boardData.columns[source.droppableId];
     const destinationColumn = boardData.columns[destination.droppableId];
 
+    if (!sourceColumn || !destinationColumn) {
+      console.error('Source or destination column not found');
+      return;
+    }
+
     // If moving within the same column
-    if (sourceColumn === destinationColumn) {
+    if (source.droppableId === destination.droppableId) {
       const newTaskIds = Array.from(sourceColumn.taskIds);
       newTaskIds.splice(source.index, 1);
       newTaskIds.splice(destination.index, 0, draggableId);
@@ -281,8 +365,8 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
       ...boardData,
       columns: {
         ...boardData.columns,
-        [newSourceColumn.id]: newSourceColumn,
-        [newDestinationColumn.id]: newDestinationColumn
+        [sourceColumn.id]: newSourceColumn,
+        [destinationColumn.id]: newDestinationColumn
       }
     };
 
@@ -291,37 +375,71 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
 
   // Handle task creation or update
   const handleSaveTask = (task: Task) => {
-    if (task.id in boardData.tasks) {
-      // Update existing task
-      setBoardData({
-        ...boardData,
-        tasks: {
-          ...boardData.tasks,
-          [task.id]: task
-        }
-      });
-    } else {
-      // Use the selected column for new tasks instead of always using the first column
-      const selectedColumnId = taskForm.columnId || boardData.columnOrder[0];
-      const selectedColumn = boardData.columns[selectedColumnId];
-      
-      setBoardData({
-        ...boardData,
-        tasks: {
-          ...boardData.tasks,
-          [task.id]: task
-        },
-        columns: {
-          ...boardData.columns,
-          [selectedColumnId]: {
-            ...selectedColumn,
-            taskIds: [...selectedColumn.taskIds, task.id]
+    try {
+      if (task.id in boardData.tasks) {
+        // Update existing task
+        
+        // Find which column contains this task (in case we need to update its position)
+        let columnWithTaskId: string | null = null;
+        
+        for (const columnId of boardData.columnOrder) {
+          if (boardData.columns[columnId].taskIds.includes(task.id)) {
+            columnWithTaskId = columnId;
+            break;
           }
         }
-      });
+        
+        setBoardData(prev => ({
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [task.id]: task
+          }
+        }));
+      } else {
+        // Create new task
+        // Use the selected column for new tasks instead of always using the first column
+        const selectedColumnId = taskForm.columnId || boardData.columnOrder[0];
+        
+        
+        // Make sure the column exists
+        if (!boardData.columns[selectedColumnId]) {
+          console.error('Selected column does not exist:', selectedColumnId);
+          return;
+        }
+        
+        // Generate a unique ID to prevent collisions
+        const newTaskId = `task-${Date.now()}-${Math.round(Math.random() * 1000)}`;
+        const newTask = {
+          ...task,
+          id: newTaskId
+        };
+        
+        setBoardData(prev => ({
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [newTaskId]: newTask
+          },
+          columns: {
+            ...prev.columns,
+            [selectedColumnId]: {
+              ...prev.columns[selectedColumnId],
+              taskIds: [...prev.columns[selectedColumnId].taskIds, newTaskId]
+            }
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error saving task:', error);
+    } finally {
+      // Ensure isLoading is reset to false
+      setIsLoading(false);
+      
+      // Close the modal
+      setShowModal(false);
+      setCurrentTask(null);
     }
-    setShowModal(false);
-    setCurrentTask(null);
   };
 
   // Handle task deletion
@@ -360,7 +478,7 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
   };
 
   // Improved filtering function with better performance
-  const getFilteredTasks = () => {
+  const getFilteredTasks = useCallback(() => {
     // Avoid unnecessary work if no filters applied
     if (!searchTerm && !activeFiltersCount) return boardData;
     
@@ -416,7 +534,10 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     }
 
     return filtered;
-  };
+  }, [boardData, searchTerm, filter, activeFiltersCount]);
+
+  // Memoize filtered data to avoid unnecessary recalculations
+  const filteredData = useMemo(() => getFilteredTasks(), [getFilteredTasks]);
 
   const getTagColor = (tag: string) => {
     // Simple hash function to consistently assign the same color to the same tag
@@ -447,8 +568,9 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
       });
     } else {
       // Create new task
+      const newTaskId = `task-${Date.now()}-${Math.round(Math.random() * 1000)}`;
       setTaskForm({
-        id: `task-${Date.now()}`,
+        id: newTaskId,
         content: '',
         description: '',
         priority: 'medium',
@@ -486,7 +608,38 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleSaveTask(taskForm);
+    
+    // Set loading state
+    setIsLoading(true);
+    
+    // Validation - ensure required fields are present
+    if (!taskForm.content.trim()) {
+      alert('Task title is required');
+      setIsLoading(false);
+      return;
+    }
+    
+    // Create a new task object from the form data
+    const taskToSave: Task = {
+      id: taskForm.id,
+      content: taskForm.content.trim(),
+      description: taskForm.description.trim() || undefined,
+      priority: taskForm.priority,
+      assignee: taskForm.assignee || undefined,
+      dueDate: taskForm.dueDate || undefined,
+      tags: taskForm.tags,
+      code: taskForm.code || undefined,
+      status: taskForm.status,
+      type: taskForm.type || undefined,
+      links: taskForm.links || [],
+      system: taskForm.system || undefined,
+      createdAt: taskForm.createdAt,
+      updatedAt: new Date().toISOString(),
+      commentCount: taskForm.commentCount
+    };
+    
+    // Save the task
+    handleSaveTask(taskToSave);
   };
 
   // Handle status filter toggle
@@ -535,7 +688,22 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredData = getFilteredTasks();
+  // Update rendered task cards to use the memoized component
+  const renderTaskCard = (task: Task, provided: any, snapshot: any) => (
+    <TaskCard
+      task={task}
+      provided={provided}
+      snapshot={snapshot}
+      getTagColor={getTagColor}
+      handleDeleteTask={handleDeleteTask}
+      openTaskModal={openTaskModal}
+      searchTerm={searchTerm}
+      highlightMatch={highlightMatch}
+      statusColors={statusColors}
+      priorityColors={priorityColors}
+      typeIcons={typeIcons}
+    />
+  );
 
   // Add this function to render the traceability view
   const renderTraceabilityView = () => {
@@ -557,7 +725,7 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Links</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody>
               {allTasks.map(task => (
                 <tr 
                   key={task.id} 
@@ -584,7 +752,7 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                     {task.assignee || '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     {task.links && task.links.length > 0 ? (
                       <span className="flex items-center text-blue-600 dark:text-blue-400">
                         <Link className="h-3 w-3 mr-1" />
@@ -622,124 +790,165 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
     ...draggableStyle,
   });
 
-  // Update rendered task cards 
-  const renderTaskCard = (task: Task, provided: any, snapshot: any) => (
-    <div
-      ref={provided.innerRef}
-      {...provided.draggableProps}
-      style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
-      className={`group bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
-        snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-300 dark:ring-indigo-600 rotate-1 scale-105' : ''
-      }`}
-    >
-      {/* Drag handle at top of card */}
-      <div 
-        {...provided.dragHandleProps} 
-        className="flex justify-center items-center w-full h-1 mb-3 cursor-grab active:cursor-grabbing"
+  // Memoize task card rendering for better performance
+  const TaskCard = memo(({ 
+    task, 
+    provided, 
+    snapshot, 
+    getTagColor, 
+    handleDeleteTask,
+    openTaskModal,
+    searchTerm,
+    highlightMatch,
+    statusColors,
+    priorityColors,
+    typeIcons
+  }: {
+    task: Task;
+    provided: any;
+    snapshot: any;
+    getTagColor: (tag: string) => string;
+    handleDeleteTask: (id: string) => void;
+    openTaskModal: (task: Task) => void;
+    searchTerm: string;
+    highlightMatch: (text: string, searchTerm: string) => React.ReactNode;
+    statusColors: Record<string, string>;
+    priorityColors: Record<string, string>;
+    typeIcons: Record<string, string>;
+  }) => {
+    return (
+      <div
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+        className={`group bg-white dark:bg-gray-700 p-4 mb-3 rounded-lg shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
+          snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-300 dark:ring-indigo-600 rotate-1 scale-105' : ''
+        }`}
+        data-task-id={task.id}
       >
-        <div className="w-10 h-1 bg-gray-200 dark:bg-gray-600 rounded-full group-hover:bg-indigo-200 dark:group-hover:bg-indigo-700 transition-colors"></div>
-      </div>
-      
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center gap-2 max-w-[calc(100%-24px)]">
-          {task.type && <span className="flex-shrink-0 text-base">{typeIcons[task.type]}</span>}
-          {task.code && (
-            <span className="text-xs font-mono text-gray-500 dark:text-gray-400 flex-shrink-0 bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">
-              {task.code}
-            </span>
-          )}
-          <h4 className="font-medium text-gray-900 dark:text-white text-sm leading-5 break-words">
-            {searchTerm ? highlightMatch(task.content, searchTerm) : task.content}
-          </h4>
+        {/* Drag handle at top of card */}
+        <div 
+          {...provided.dragHandleProps} 
+          className="flex justify-center items-center w-full h-4 mb-3 cursor-grab active:cursor-grabbing"
+        >
+          <div className="w-10 h-1 bg-gray-200 dark:bg-gray-600 rounded-full group-hover:bg-indigo-200 dark:group-hover:bg-indigo-700 transition-colors"></div>
         </div>
-        <div className="relative flex-shrink-0">
-          <button 
-            aria-label="Task options"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-      
-      {task.description && (
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 hover:line-clamp-none transition-all">
-          {searchTerm ? highlightMatch(task.description, searchTerm) : task.description}
-        </div>
-      )}
-      
-      {task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {task.tags.map(tag => (
-            <span 
-              key={tag} 
-              className={`text-xs px-2 py-0.5 rounded-full ${getTagColor(tag)}`}
+        
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2 max-w-[calc(100%-24px)]">
+            {task.type && <span className="flex-shrink-0 text-base">{typeIcons[task.type]}</span>}
+            {task.code && (
+              <span className="text-xs font-mono text-gray-500 dark:text-gray-400 flex-shrink-0 bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">
+                {task.code}
+              </span>
+            )}
+            <h4 className="font-medium text-gray-900 dark:text-white text-sm leading-5 break-words">
+              {searchTerm ? highlightMatch(task.content, searchTerm) : task.content}
+            </h4>
+          </div>
+          <div className="relative flex-shrink-0">
+            <button 
+              aria-label="Task options"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
             >
-              {tag}
-            </span>
-          ))}
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      )}
-      
-      <div className="flex justify-between items-center mt-2 text-xs border-t pt-2 border-gray-100 dark:border-gray-600">
-        <span className={`px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
-          {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-        </span>
-        <span className={`px-2 py-0.5 rounded-full ${statusColors[task.status]}`}>
-          {task.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-        </span>
-        {task.assignee && (
-          <span className="bg-gray-100 dark:bg-gray-600 px-2 py-0.5 rounded-full text-gray-700 dark:text-gray-300">
-            {task.assignee}
-          </span>
+        
+        {task.description && (
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 hover:line-clamp-none transition-all">
+            {searchTerm ? highlightMatch(task.description, searchTerm) : task.description}
+          </div>
         )}
-      </div>
-      
-      <div className="flex justify-between items-center mt-2">
-        <div className="flex space-x-2">
-          <button 
-            className="text-xs text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 flex items-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              openTaskModal(task);
-            }}
-            aria-label="Edit task"
-          >
-            <Edit2 className="h-3 w-3 mr-1" />
-            Edit
-          </button>
-          <button 
-            className="text-xs text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 flex items-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteTask(task.id);
-            }}
-            aria-label="Delete task"
-          >
-            <Trash2 className="h-3 w-3 mr-1" />
-            Delete
-          </button>
-        </div>
-        <div className="flex items-center text-xs text-gray-500">
-          {task.links && task.links.length > 0 && (
-            <span className="flex items-center mr-2">
-              <Link className="h-3 w-3 mr-1" />
-              {task.links.length}
-            </span>
-          )}
-          {task.commentCount && task.commentCount > 0 && (
-            <span className="flex items-center">
-              <MessageSquare className="h-3 w-3 mr-1" />
-              {task.commentCount}
+        
+        {task.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {task.tags.map(tag => (
+              <span 
+                key={tag} 
+                className={`text-xs px-2 py-0.5 rounded-full ${getTagColor(tag)}`}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex justify-between items-center mt-2 text-xs border-t pt-2 border-gray-100 dark:border-gray-600">
+          <span className={`px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
+            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+          </span>
+          <span className={`px-2 py-0.5 rounded-full ${statusColors[task.status]}`}>
+            {task.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          </span>
+          {task.assignee && (
+            <span className="bg-gray-100 dark:bg-gray-600 px-2 py-0.5 rounded-full text-gray-700 dark:text-gray-300">
+              {task.assignee}
             </span>
           )}
         </div>
+        
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex space-x-2">
+            <button 
+              className="text-xs text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 flex items-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                openTaskModal(task);
+              }}
+              aria-label="Edit task"
+            >
+              <Edit2 className="h-3 w-3 mr-1" />
+              Edit
+            </button>
+            <button 
+              className="text-xs text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 flex items-center opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteTask(task.id);
+              }}
+              aria-label="Delete task"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Delete
+            </button>
+          </div>
+          <div className="flex items-center text-xs text-gray-500">
+            {task.links && task.links.length > 0 && (
+              <span className="flex items-center mr-2">
+                <Link className="h-3 w-3 mr-1" />
+                {task.links.length}
+              </span>
+            )}
+            {task.commentCount && task.commentCount > 0 && (
+              <span className="flex items-center">
+                <MessageSquare className="h-3 w-3 mr-1" />
+                {task.commentCount}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }, (prevProps, nextProps) => {
+    // Custom comparison function for memo
+    // Only re-render if these props change
+    return (
+      prevProps.task.id === nextProps.task.id &&
+      prevProps.task.content === nextProps.task.content &&
+      prevProps.task.description === nextProps.task.description &&
+      prevProps.task.priority === nextProps.task.priority &&
+      prevProps.task.status === nextProps.task.status &&
+      prevProps.task.assignee === nextProps.task.assignee &&
+      prevProps.task.tags.join() === nextProps.task.tags.join() &&
+      prevProps.searchTerm === nextProps.searchTerm &&
+      prevProps.snapshot.isDragging === nextProps.snapshot.isDragging
+    );
+  });
 
   // Empty/No Results state component
-  const EmptyState = ({ type }: { type: 'empty' | 'no-results' | 'loading' }) => (
+  const EmptyState = memo(({ type }: { type: 'empty' | 'no-results' | 'loading' }) => (
     <div className="flex flex-col items-center justify-center p-6 h-64 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
       {type === 'loading' ? (
         <>
@@ -778,10 +987,430 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
         </>
       )}
     </div>
-  );
+  ));
 
+  // Create a memoized column component
+  const KanbanColumn = memo(({ 
+    column, 
+    columnId, 
+    index, 
+    filteredData,
+    renderTaskCard,
+    EmptyState,
+    searchTerm,
+    activeFiltersCount
+  }: { 
+    column: Column; 
+    columnId: string; 
+    index: number;
+    filteredData: BoardData;
+    renderTaskCard: (task: Task, provided: any, snapshot: any) => JSX.Element;
+    EmptyState: React.ComponentType<{ type: 'empty' | 'no-results' | 'loading' }>;
+    searchTerm: string;
+    activeFiltersCount: number;
+  }) => {
+    // Column color indicators based on position
+    const columnColors = [
+      "border-l-4 border-blue-500", // To Do
+      "border-l-4 border-yellow-500", // In Progress 
+      "border-l-4 border-green-500", // Done
+    ];
+    const colorClass = columnColors[index % columnColors.length];
+    
+    return (
+      <div key={column.id} className={`flex-none w-80 ${colorClass} rounded-lg bg-gray-50 dark:bg-gray-800/50 shadow-md overflow-hidden`}>
+        <div className="bg-white dark:bg-gray-700 p-3 sticky top-0 z-10 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold flex items-center">
+              <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                index === 0 ? 'bg-blue-500' : 
+                index === 1 ? 'bg-yellow-500' : 
+                'bg-green-500'
+              }`}></span>
+              {column.title}
+            </h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full px-2 py-0.5 min-w-[1.5rem] text-center">
+              {column.taskIds.length}
+            </span>
+          </div>
+        </div>
+        <Droppable droppableId={column.id} type="TASK">
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className={`p-3 min-h-[calc(100vh-13rem)] transition-all ${
+                snapshot.isDraggingOver 
+                  ? 'bg-blue-50 dark:bg-indigo-900/30 ring-inset ring-2 ring-indigo-200 dark:ring-indigo-800' 
+                  : ''
+              }`}
+              data-column-id={column.id}
+            >
+              {column.taskIds.length === 0 ? (
+                <EmptyState type={searchTerm || activeFiltersCount > 0 ? 'no-results' : 'empty'} />
+              ) : (
+                column.taskIds.map((taskId, index) => {
+                  const task = filteredData.tasks[taskId];
+                  if (!task) {
+                    return null;
+                  }
+                  return (
+                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                      {(provided, snapshot) => renderTaskCard(task, provided, snapshot)}
+                    </Draggable>
+                  );
+                })
+              )}
+              {provided.placeholder}
+              {snapshot.isDraggingOver && (
+                <div className="mt-2 p-2 text-center text-xs bg-indigo-50 dark:bg-indigo-900/20 rounded-md text-indigo-600 dark:text-indigo-300 border border-dashed border-indigo-200 dark:border-indigo-800">
+                  Drop here to add to {column.title}
+                </div>
+              )}
+            </div>
+          )}
+        </Droppable>
+      </div>
+    );
+  });
+
+  // Create a memoized grid view component
+  const GridView = memo(({ 
+    onDragEnd, 
+    filteredData, 
+    renderTaskCard,
+    EmptyState,
+    searchTerm,
+    activeFiltersCount,
+    boardData
+  }: { 
+    onDragEnd: (result: DropResult, provided?: ResponderProvided) => void;
+    filteredData: BoardData;
+    renderTaskCard: (task: Task, provided: any, snapshot: any) => JSX.Element;
+    EmptyState: React.ComponentType<{ type: 'empty' | 'no-results' | 'loading' }>;
+    searchTerm: string;
+    activeFiltersCount: number;
+    boardData: BoardData;
+  }) => {
+    return (
+      <DragDropContext onDragEnd={onDragEnd}>
+        {/* Notion-style hint banner */}
+        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900 rounded-md p-3 text-sm text-yellow-800 dark:text-yellow-300 flex items-center">
+          <div className="mr-2 p-1 bg-yellow-100 dark:bg-yellow-800 rounded-full">
+            <GripHorizontal size={16} className="text-yellow-600 dark:text-yellow-300" />
+          </div>
+          <span>
+            <span className="font-medium">Tip:</span> Drag tasks between columns to update their status. Use the drag handle at the top of each card.
+          </span>
+          <button 
+            onClick={(e) => e.currentTarget.parentElement?.remove()} 
+            className="ml-auto text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        
+        {/* Debug panel */}
+        <div className="fixed bottom-4 right-4 p-2 bg-white dark:bg-gray-800 rounded shadow-lg text-xs opacity-70 hover:opacity-100 transition-opacity z-50 max-w-xs">
+          <div className="font-mono text-gray-700 dark:text-gray-300 mb-1">
+            Drag and Drop Debug:
+          </div>
+          <div className="text-gray-600 dark:text-gray-400">
+            {boardData.columnOrder.map(colId => (
+              <div key={colId}>
+                {boardData.columns[colId].title}: {boardData.columns[colId].taskIds.length} tasks
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex gap-6 h-full overflow-x-auto pb-4">
+          {filteredData.columnOrder.map((columnId, index) => {
+            const column = filteredData.columns[columnId];
+            return (
+              <KanbanColumn
+                key={column.id}
+                column={column}
+                columnId={column.id}
+                index={index}
+                filteredData={filteredData}
+                renderTaskCard={renderTaskCard}
+                EmptyState={EmptyState}
+                searchTerm={searchTerm}
+                activeFiltersCount={activeFiltersCount}
+              />
+            );
+          })}
+        </div>
+      </DragDropContext>
+    );
+  }, (prevProps, nextProps) => {
+    // Custom comparison for the GridView component
+    return (
+      prevProps.filteredData === nextProps.filteredData &&
+      prevProps.searchTerm === nextProps.searchTerm &&
+      prevProps.activeFiltersCount === nextProps.activeFiltersCount
+    );
+  });
+
+  // Main component return with optimized render
   return (
     <div className="h-full w-full flex flex-col px-10 py-8">
+      {/* Chunk error handler */}
+      <ChunkErrorHandler />
+      
+      {/* Task Creation/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onKeyDown={handleModalKeyDown}
+          >
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {currentTask ? 'Edit Task' : 'Create New Task'}
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                  aria-label="Close modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleFormSubmit}>
+                <div className="space-y-4">
+                  {/* Title field */}
+                  <div>
+                    <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="task-title"
+                      type="text"
+                      value={taskForm.content}
+                      onChange={(e) => setTaskForm({...taskForm, content: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Task title"
+                      required
+                    />
+                  </div>
+                  
+                  {/* Description field */}
+                  <div>
+                    <label htmlFor="task-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      id="task-description"
+                      value={taskForm.description}
+                      onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Task description"
+                    />
+                  </div>
+                  
+                  {/* Code and Status fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="task-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Code
+                      </label>
+                      <input
+                        id="task-code"
+                        type="text"
+                        value={taskForm.code}
+                        onChange={(e) => setTaskForm({...taskForm, code: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="e.g., UN-1, REQ-1"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="task-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Status
+                      </label>
+                      <select
+                        id="task-status"
+                        value={taskForm.status}
+                        onChange={(e) => setTaskForm({...taskForm, status: e.target.value as any})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="new">New</option>
+                        <option value="in_review">In Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="revised">Revised</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Type and Priority fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="task-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Type
+                      </label>
+                      <select
+                        id="task-type"
+                        value={taskForm.type}
+                        onChange={(e) => setTaskForm({...taskForm, type: e.target.value as any})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="system">System {typeIcons.system}</option>
+                        <option value="battery">Battery {typeIcons.battery}</option>
+                        <option value="electrode">Electrode {typeIcons.electrode}</option>
+                        <option value="labeling">Labeling {typeIcons.labeling}</option>
+                        <option value="other">Other {typeIcons.other}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="task-priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Priority
+                      </label>
+                      <select
+                        id="task-priority"
+                        value={taskForm.priority}
+                        onChange={(e) => setTaskForm({...taskForm, priority: e.target.value as any})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Assignee and System fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="task-assignee" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Assignee
+                      </label>
+                      <select
+                        id="task-assignee"
+                        value={taskForm.assignee}
+                        onChange={(e) => setTaskForm({...taskForm, assignee: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="">Not assigned</option>
+                        {assignees.map(assignee => (
+                          <option key={assignee} value={assignee}>{assignee}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="task-system" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        System
+                      </label>
+                      <select
+                        id="task-system"
+                        value={taskForm.system}
+                        onChange={(e) => setTaskForm({...taskForm, system: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="">None</option>
+                        {systemOptions.map(system => (
+                          <option key={system} value={system}>{system}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Tags */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tags
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {taskForm.tags.map(tag => (
+                        <span 
+                          key={tag}
+                          className={`${getTagColor(tag)} text-xs px-2 py-1 rounded-full flex items-center`}
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleTagToggle(tag)}
+                            className="ml-1.5 text-opacity-70 hover:text-opacity-100"
+                            aria-label={`Remove ${tag} tag`}
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {availableTags.filter(tag => !taskForm.tags.includes(tag)).map(tag => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => handleTagToggle(tag)}
+                          className={`text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600`}
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Column selection (for new tasks only) */}
+                  {!currentTask && (
+                    <div>
+                      <label htmlFor="task-column" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Column
+                      </label>
+                      <select
+                        id="task-column"
+                        value={taskForm.columnId}
+                        onChange={(e) => setTaskForm({...taskForm, columnId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        {boardData.columnOrder.map((columnId) => (
+                          <option key={columnId} value={columnId}>
+                            {boardData.columns[columnId].title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 flex items-center"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-t-2 border-white border-solid rounded-full animate-spin mr-2"></div>
+                        {currentTask ? 'Saving...' : 'Creating...'}
+                      </>
+                    ) : (
+                      currentTask ? 'Save Changes' : 'Create Task'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Debug panel */}
+      <DragDropDebug data={boardData} />
+      
       {/* Header with search and filters */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="w-full md:w-64 relative">
@@ -1018,298 +1647,30 @@ const FixedKanbanBoard: React.FC<FixedKanbanBoardProps> = ({ userId }) => {
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <EmptyState type="loading" />
-        </div>
-      ) : viewType === 'grid' ? (
-        <DragDropContext onDragEnd={onDragEnd}>
-          {/* Notion-style hint banner */}
-          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900 rounded-md p-3 text-sm text-yellow-800 dark:text-yellow-300 flex items-center">
-            <div className="mr-2 p-1 bg-yellow-100 dark:bg-yellow-800 rounded-full">
-              <GripHorizontal size={16} className="text-yellow-600 dark:text-yellow-300" />
-            </div>
-            <span>
-              <span className="font-medium">Tip:</span> Drag tasks between columns to update their status. Use the drag handle at the top of each card.
-            </span>
+          <div className="text-center">
+            <div className="w-16 h-16 border-t-4 border-indigo-500 border-solid rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading tasks...</p>
             <button 
-              onClick={(e) => e.currentTarget.parentElement?.remove()} 
-              className="ml-auto text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
+              onClick={() => setIsLoading(false)} 
+              className="mt-6 px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
             >
-              <X size={16} />
+              Cancel Loading
             </button>
           </div>
-          
-          <div className="flex gap-6 h-full overflow-x-auto pb-4">
-            {filteredData.columnOrder.map((columnId, index) => {
-              const column = filteredData.columns[columnId];
-              // Column color indicators based on position
-              const columnColors = [
-                "border-l-4 border-blue-500", // To Do
-                "border-l-4 border-yellow-500", // In Progress 
-                "border-l-4 border-green-500", // Done
-              ];
-              const colorClass = columnColors[index % columnColors.length];
-              
-              return (
-                <div key={column.id} className={`flex-none w-80 ${colorClass} rounded-lg bg-gray-50 dark:bg-gray-800/50 shadow-md overflow-hidden`}>
-                  <div className="bg-white dark:bg-gray-700 p-3 sticky top-0 z-10 border-b border-gray-200 dark:border-gray-600">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold flex items-center">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                          index === 0 ? 'bg-blue-500' : 
-                          index === 1 ? 'bg-yellow-500' : 
-                          'bg-green-500'
-                        }`}></span>
-                        {column.title}
-                      </h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full px-2 py-0.5 min-w-[1.5rem] text-center">
-                        {column.taskIds.length}
-                      </span>
-                    </div>
-                  </div>
-                  <Droppable droppableId={column.id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`p-3 min-h-[calc(100vh-13rem)] transition-all ${
-                          snapshot.isDraggingOver 
-                            ? 'bg-blue-50 dark:bg-indigo-900/30 ring-inset ring-2 ring-indigo-200 dark:ring-indigo-800' 
-                            : ''
-                        }`}
-                      >
-                        {column.taskIds.length === 0 ? (
-                          <EmptyState type={searchTerm || activeFiltersCount > 0 ? 'no-results' : 'empty'} />
-                        ) : (
-                          column.taskIds.map((taskId, index) => {
-                            const task = filteredData.tasks[taskId];
-                            return (
-                              <Draggable key={task.id} draggableId={task.id} index={index}>
-                                {(provided, snapshot) => renderTaskCard(task, provided, snapshot)}
-                              </Draggable>
-                            );
-                          })
-                        )}
-                        {provided.placeholder}
-                        {snapshot.isDraggingOver && (
-                          <div className="mt-2 p-2 text-center text-xs bg-indigo-50 dark:bg-indigo-900/20 rounded-md text-indigo-600 dark:text-indigo-300 border border-dashed border-indigo-200 dark:border-indigo-800">
-                            Drop here to add to {column.title}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              );
-            })}
-          </div>
-        </DragDropContext>
-      ) : (
-        renderTraceabilityView()
-      )}
-
-      {/* Enhanced Task modal with keyboard support */}
-      {showModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={() => setShowModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={handleModalKeyDown}
-            tabIndex={-1}
-          >
-            {/* Notion-style header with title field */}
-            <div className="p-6 pb-3">
-              <div className="flex justify-end">
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  aria-label="Close modal"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <form onSubmit={handleFormSubmit} className="space-y-5">
-                {/* Title - Notion-style big input */}
-                <input
-                  type="text"
-                  value={taskForm.content}
-                  onChange={(e) => setTaskForm({...taskForm, content: e.target.value})}
-                  className="w-full px-0 py-2 bg-transparent border-0 text-xl font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-0 placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Untitled"
-                  required
-                  autoFocus
-                />
-                
-                {/* Description - Notion-style textarea */}
-                <textarea
-                  value={taskForm.description}
-                  onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
-                  className="w-full px-0 py-2 bg-transparent border-0 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-0 resize-none min-h-[100px] placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Add a description..."
-                  rows={4}
-                />
-                
-                {/* Task properties */}
-                <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-700">
-                  {/* Column Selection - only show for new tasks */}
-                  {!currentTask && (
-                    <div className="flex items-center gap-3">
-                      <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Column
-                      </div>
-                      <div className="flex-1">
-                        <select
-                          value={taskForm.columnId}
-                          onChange={(e) => setTaskForm({...taskForm, columnId: e.target.value})}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
-                        >
-                          {boardData.columnOrder.map((columnId) => (
-                            <option key={columnId} value={columnId}>
-                              {boardData.columns[columnId].title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Status property */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Status
-                    </div>
-                    <div className="flex-1">
-                      <select
-                        value={taskForm.status}
-                        onChange={(e) => setTaskForm({...taskForm, status: e.target.value as 'new' | 'in_review' | 'approved' | 'pending' | 'revised'})}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
-                      >
-                        <option value="new">New</option>
-                        <option value="in_review">In Review</option>
-                        <option value="approved">Approved</option>
-                        <option value="pending">Pending</option>
-                        <option value="revised">Revised</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {/* Priority property */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Priority
-                    </div>
-                    <div className="flex-1">
-                      <select
-                        value={taskForm.priority}
-                        onChange={(e) => setTaskForm({...taskForm, priority: e.target.value as 'low' | 'medium' | 'high'})}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {/* Assignee property - changed to input field */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Assignee
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={taskForm.assignee}
-                        onChange={(e) => setTaskForm({...taskForm, assignee: e.target.value})}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
-                        placeholder="Enter assignee name"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Due Date property */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Due Date
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="date"
-                        value={taskForm.dueDate}
-                        onChange={(e) => setTaskForm({...taskForm, dueDate: e.target.value})}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Tags property - Notion-style tags */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Tags
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap gap-2">
-                        {taskForm.tags.length === 0 && (
-                          <span className="text-sm text-gray-400 dark:text-gray-500">Click to add tags</span>
-                        )}
-                        {taskForm.tags.map(tag => (
-                          <div 
-                            key={tag}
-                            className={`group flex items-center text-xs px-2 py-1 rounded-md ${getTagColor(tag)} transition-colors`}
-                          >
-                            {tag}
-                            <button
-                              type="button"
-                              onClick={() => handleTagToggle(tag)}
-                              className="ml-1 opacity-50 hover:opacity-100 focus:opacity-100"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {availableTags.filter(tag => !taskForm.tags.includes(tag)).map(tag => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => handleTagToggle(tag)}
-                            className="text-xs px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 self-center mr-auto">
-                    Press Esc to cancel, Ctrl+Enter to save
-                  </span>
-                  <button 
-                    type="button"
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    {currentTask ? 'Save Changes' : 'Create Task'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
         </div>
+      ) : viewType === 'grid' ? (
+        <GridView
+          onDragEnd={onDragEnd}
+          filteredData={filteredData}
+          renderTaskCard={renderTaskCard}
+          EmptyState={EmptyState}
+          searchTerm={searchTerm}
+          activeFiltersCount={activeFiltersCount}
+          boardData={boardData}
+        />
+      ) : (
+        // Traceability View
+        renderTraceabilityView()
       )}
     </div>
   );

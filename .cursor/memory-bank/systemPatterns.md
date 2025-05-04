@@ -135,3 +135,294 @@ sequenceDiagram
 
 4. **AI Interaction**
    - User query → Context collection → OpenAI API → Response processing → UI presentation 
+
+## React Performance Patterns
+
+### Memoization Pattern
+
+```typescript
+// Component memoization with custom equality function
+const TaskCard = memo(({ task, provided, snapshot /* ...props */ }) => {
+  // Component implementation
+  return (
+    <div>
+      {/* Component JSX */}
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if important props change
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.content === nextProps.task.content &&
+    prevProps.searchTerm === nextProps.searchTerm
+    // Other important prop comparisons
+  );
+});
+```
+
+Key benefits:
+- Prevents unnecessary re-renders
+- Improves UI responsiveness
+- Reduces wasted calculations
+
+### Computation Caching Pattern
+
+```typescript
+// Cache expensive calculations with useMemo
+const filteredData = useMemo(() => {
+  // Expensive filtering operations
+  return computeFilteredResults(data, filters);
+}, [data, filters]);
+
+// Memoize callback functions
+const handleSave = useCallback((item) => {
+  // Save implementation
+}, [dependencies]);
+```
+
+Key benefits:
+- Avoids redundant calculations
+- Maintains function reference stability
+- Prevents child component re-renders
+
+### Debounced Storage Pattern
+
+```typescript
+// Debounce localStorage operations
+useEffect(() => {
+  let saveTimeout: NodeJS.Timeout;
+  
+  const saveData = () => {
+    localStorage.setItem('key', JSON.stringify(data));
+  };
+  
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveData, 500);
+  
+  return () => {
+    clearTimeout(saveTimeout);
+    saveData(); // Save on unmount
+  };
+}, [data]);
+```
+
+Key benefits:
+- Reduces expensive I/O operations
+- Prevents performance bottlenecks
+- Ensures data is still saved
+
+### Chunk Error Recovery Pattern
+
+```typescript
+const ChunkErrorHandler = () => {
+  useEffect(() => {
+    const handleChunkError = (event: ErrorEvent) => {
+      const isChunkError = event.error?.message?.includes('ChunkLoadError');
+      
+      if (isChunkError) {
+        // Handle the error, e.g., refresh the page
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    };
+    
+    window.addEventListener('error', handleChunkError);
+    return () => window.removeEventListener('error', handleChunkError);
+  }, []);
+  
+  return null;
+};
+```
+
+Key benefits:
+- Recovers from Next.js chunk loading failures
+- Provides seamless user experience
+- Prevents app crashes
+
+## Authentication Patterns
+
+### Auth Provider Pattern
+
+```tsx
+// auth-provider.tsx
+import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
+
+const AuthContext = createContext<{
+  user: any | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  loading: boolean;
+}>({
+  user: null,
+  signIn: async () => {},
+  signOut: async () => {},
+  loading: true
+});
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check active session
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      setUser(data?.session?.user || null);
+      setLoading(false);
+    };
+    
+    getUser();
+    
+    // Listen for auth changes
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      setLoading(false);
+    });
+    
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ 
+      user, 
+      signIn: async (email, password) => {
+        await supabase.auth.signInWithPassword({ email, password });
+      },
+      signOut: async () => {
+        await supabase.auth.signOut();
+      },
+      loading 
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
+```
+
+## Data Fetching Patterns
+
+### Secure API Route Pattern
+
+```typescript
+// app/api/protected-data/route.ts
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+
+export async function GET(request: Request) {
+  const supabase = createRouteHandlerClient({ cookies });
+  
+  // Verify authenticated user
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  
+  // Get data with RLS applied
+  const { data, error } = await supabase
+    .from('protected_table')
+    .select('*');
+    
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  
+  return NextResponse.json({ data });
+}
+```
+
+## Form Handling Patterns
+
+### Controlled Form Pattern
+
+```tsx
+import { useState } from 'react';
+
+const FormComponent = () => {
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Submit form data
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <input 
+        type="text"
+        name="name"
+        value={form.name}
+        onChange={handleChange}
+      />
+      {/* Other form elements */}
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+```
+
+## Error Handling Patterns
+
+### API Error Handler Pattern
+
+```typescript
+// utils/api-error.ts
+export class ApiError extends Error {
+  public statusCode: number;
+  public details?: any;
+  
+  constructor(message: string, statusCode: number, details?: any) {
+    super(message);
+    this.statusCode = statusCode;
+    this.details = details;
+    this.name = 'ApiError';
+  }
+  
+  static fromResponse(response: Response): Promise<ApiError> {
+    return response.json().then(body => {
+      return new ApiError(
+        body.message || 'An error occurred',
+        response.status,
+        body.details
+      );
+    });
+  }
+}
+
+// Using the error handler
+const fetchData = async () => {
+  try {
+    const response = await fetch('/api/data');
+    
+    if (!response.ok) {
+      throw await ApiError.fromResponse(response);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      // Handle API error
+      console.error(`API Error (${error.statusCode}): ${error.message}`);
+    } else {
+      // Handle other errors
+      console.error('Unexpected error:', error);
+    }
+  }
+};
+``` 
