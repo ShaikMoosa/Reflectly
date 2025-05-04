@@ -229,7 +229,7 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className={`flex items-center justify-center h-screen ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
+      <div className={`flex items-center justify-center h-screen ${isDarkMode ? 'dark bg-[#1f1f1f] text-white' : 'bg-white text-gray-800'}`}>
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
@@ -239,7 +239,7 @@ const App: React.FC = () => {
   const projectsForNav = projects.map(p => ({ id: p.id, name: p.name }));
 
   return (
-    <div className={`${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
+    <div className={`${isDarkMode ? 'dark bg-[#1f1f1f] text-white' : 'bg-white text-gray-800'}`}>
       {/* Sidebar for navigation */}
       <SideNavigation 
         activePage={activePage}
@@ -253,65 +253,32 @@ const App: React.FC = () => {
       />
       
       {/* Main content area */}
-      <main className="pl-64 pr-10 h-screen overflow-y-auto">
-        <div className="h-full">
-          {/* Render appropriate page based on active page */}
-          {activePage === 'home' ? (
-            <div className="px-10 py-8">
-              <h1 className="text-2xl font-bold mb-4">Welcome to Reflectly</h1>
-              <p className="mb-4">This is your dashboard for managing video transcription projects and notes.</p>
-              
-              <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-2">Recent Projects</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {projects.slice(0, 3).map(project => (
-                    <div 
-                      key={project.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => {
-                        handleSelectProject(project.id);
-                        setActivePage('projects');
-                      }}
-                    >
-                      <h3 className="font-medium">{project.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{project.description || 'No description'}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : activePage === 'projects' ? (
-            selectedProject ? (
-              <ProjectFileView
-                project={selectedProject}
+      <div className="ml-[240px] min-h-screen pt-4 transition-all duration-300 overflow-hidden dark:bg-[#1f1f1f]">
+        <div className="p-6">
+          {/* Render different content based on the active page */}
+          {activePage === 'projects' && (
+            selectedProjectId ? (
+              <ProjectFileView 
+                project={selectedProject!}
                 onBackToProjects={handleBackToProjects}
                 onSaveProject={handleSaveProject}
                 userId={user?.id}
               />
             ) : (
-              <ProjectPage
-                projects={projects}
+              <ProjectPage 
+                projects={projects} 
                 onCreateProject={handleCreateProject}
                 onSelectProject={handleSelectProject}
                 onDeleteProject={handleDeleteProject}
               />
             )
-          ) : activePage === 'planner' ? (
-            <div className="h-full">
-              <FixedKanbanBoard />
-            </div>
-          ) : activePage === 'whiteboard' ? (
-            <div className="h-full">
-              <div className="p-4">
-                <h1 className="text-2xl font-bold mb-4">Whiteboard</h1>
-              </div>
-              <div className="flex-1 relative overflow-hidden h-[calc(100vh-120px)]">
-                <WhiteboardCanvas />
-              </div>
-            </div>
-          ) : null}
+          )}
+          
+          {activePage === 'planner' && <FixedKanbanBoard userId={user?.id} />}
+          
+          {activePage === 'whiteboard' && <WhiteboardCanvas />}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

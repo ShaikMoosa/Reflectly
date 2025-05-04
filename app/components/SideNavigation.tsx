@@ -48,12 +48,12 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
   };
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-30 flex flex-col w-64 overflow-y-auto border-r border-gray-200 bg-white ${isDarkMode ? 'dark bg-gray-900 border-gray-700 text-gray-200' : 'text-gray-800'} transition-all`}>
-      <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+    <aside className={`fixed inset-y-0 left-0 z-30 flex flex-col w-64 overflow-y-auto border-r border-gray-200 bg-white ${isDarkMode ? 'dark bg-[#1f1f1f] border-[#383838] text-gray-200' : 'text-gray-800'} transition-all`}>
+      <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-[#383838]">
         <h1 className="text-lg font-semibold">Reflectly</h1>
         <div className="flex items-center gap-2">
           <button 
-            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-[#2a2a2a] text-gray-500 dark:text-gray-400"
             onClick={onToggleTheme}
           >
             {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -61,7 +61,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
         </div>
       </div>
 
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-[#383838]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium">
@@ -77,7 +77,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
 
       <div className="flex-1 overflow-y-auto">
         <div className="p-2">
-          <div className="mb-2 px-2 py-1.5 flex items-center justify-between rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+          <div className="mb-2 px-2 py-1.5 flex items-center justify-between rounded-md hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer">
             <div className="flex items-center gap-2">
               <Search size={18} />
               <span className="text-sm text-gray-500 dark:text-gray-400">Search</span>
@@ -90,7 +90,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
           <ul className="space-y-1 px-2">
             <li>
               <a 
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${activePage === 'home' ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''}`}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer ${activePage === 'home' ? 'bg-gray-100 dark:bg-[#262626] font-medium' : ''}`}
                 onClick={() => onNavigate('home')}
               >
                 <Home size={18} />
@@ -100,7 +100,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
             
             <li>
               <div 
-                className="flex items-center justify-between px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                className="flex items-center justify-between px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer"
                 onClick={toggleProjectsExpanded}
               >
                 <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
                   <span>Projects</span>
                 </div>
                 <button 
-                  className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#333333]"
                   onClick={handleCreateProject}
                 >
                   <Plus size={14} />
@@ -117,9 +117,9 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
               </div>
               
               {projectsExpanded && (
-                <ul className="ml-5 mt-1 border-l border-gray-200 dark:border-gray-700 pl-3 space-y-1">
+                <ul className="ml-5 mt-1 border-l border-gray-200 dark:border-[#383838] pl-3 space-y-1">
                   <li 
-                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${activePage === 'projects' && !onSelectProject ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''}`}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer ${activePage === 'projects' && !onSelectProject ? 'bg-gray-100 dark:bg-[#262626] font-medium' : ''}`}
                     onClick={() => onNavigate('projects')}
                   >
                     <span>All Projects</span>
@@ -128,7 +128,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
                   {projects.map(project => (
                     <li 
                       key={project.id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-gray-600 dark:text-gray-400"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer text-gray-600 dark:text-gray-400"
                       onClick={() => handleProjectClick(project.id)}
                     >
                       <span className="truncate">{project.name}</span>
@@ -140,7 +140,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
             
             <li>
               <a 
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${activePage === 'planner' ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''}`}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer ${activePage === 'planner' ? 'bg-gray-100 dark:bg-[#262626] font-medium' : ''}`}
                 onClick={() => onNavigate('planner')}
               >
                 <Kanban size={18} />
@@ -150,7 +150,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
 
             <li>
               <a 
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${activePage === 'whiteboard' ? 'bg-gray-100 dark:bg-gray-800 font-medium' : ''}`}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer ${activePage === 'whiteboard' ? 'bg-gray-100 dark:bg-[#262626] font-medium' : ''}`}
                 onClick={() => onNavigate('whiteboard')}
               >
                 <Edit3 size={18} />
@@ -161,8 +161,8 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
         </nav>
       </div>
 
-      <div className="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+      <div className="mt-auto p-4 border-t border-gray-200 dark:border-[#383838]">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer">
           <Settings size={18} />
           <span>Settings</span>
         </div>
