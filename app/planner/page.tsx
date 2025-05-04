@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { getPlannerData, PlannerData } from './actions'; 
 import PlannerBoard from './components/planner-board'; // Corrected anticipated path
-import { Skeleton } from '@/app/components/ui/skeleton'; // Using @/ alias
+import { Skeleton } from '../components/ui/skeleton'; // Corrected path for shadcn ui
 
 export default async function PlannerPage() {
   // Check authentication server-side
