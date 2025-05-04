@@ -1,0 +1,14 @@
+{
+  "name": "lemonsqueezy-webhook-test",
+  "version": "1.0.0",
+  "description": "Test script for Lemon Squeezy webhook integration",
+  "main": "test-lemonsqueezy-webhook.js",
+  "scripts": {
+    "test": "node test-lemonsqueezy-webhook.js"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "node-fetch": "^2.6.7",
+    "dotenv": "^16.0.3"
+  }
+} 
