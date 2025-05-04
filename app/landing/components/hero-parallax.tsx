@@ -27,17 +27,17 @@ export function HeroParallax() {
         speed="fast"
         waveOpacity={0.5}
       >
-        <div ref={ref} className="relative flex items-center justify-center">
+        <div ref={ref} className="relative flex items-center justify-center w-full h-full">
           {/* Hero content */}
           <motion.div 
-            className="relative z-20 text-center max-w-5xl px-4"
+            className="relative z-50 text-center max-w-5xl px-4 py-10 bg-black/20 backdrop-blur-sm rounded-xl"
             style={{ 
               opacity: contentOpacity, 
               y: contentY 
             }}
           >
             <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300"
+              className="text-5xl md:text-7xl font-bold mb-6 text-white"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -46,7 +46,7 @@ export function HeroParallax() {
             </motion.h1>
             
             <motion.p 
-              className="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto"
+              className="text-xl md:text-2xl text-gray-200 mb-10 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
@@ -62,20 +62,20 @@ export function HeroParallax() {
             >
               <Link 
                 href="/sign-up" 
-                className="px-8 py-4 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-medium transition-colors text-lg"
+                className="px-8 py-4 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-medium transition-colors text-lg shadow-xl hover:shadow-blue-500/20"
               >
                 Get Started Free
               </Link>
               <Link 
                 href="#pricing" 
-                className="px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-medium transition-colors text-lg"
+                className="px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-medium transition-colors text-lg shadow-xl"
               >
                 View Pricing
               </Link>
             </motion.div>
             
             <motion.div 
-              className="mt-16 text-sm text-gray-400"
+              className="mt-16 text-sm text-gray-300"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 1 }}
