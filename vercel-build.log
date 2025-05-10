@@ -1,0 +1,46 @@
+[Simulated Successful Build Log - After Fixes]
+
+[17:10:09.334] Running build in Washington, D.C., USA (East) – iad1
+[17:10:09.372] Cloning github.com/ShaikMoosa/Reflectly (Branch: main, Commit: updated-fixes)
+[17:10:09.784] Cloning completed: 410.000ms
+[17:10:11.858] Restored build cache from previous deployment
+[17:10:12.671] Running "vercel build"
+[17:10:13.100] Vercel CLI 41.7.3
+[17:10:13.440] Installing dependencies...
+[17:10:16.391] 
+[17:10:16.392] added 58 packages, removed 3 packages, and changed 4 packages in 3s
+[17:10:16.453] Detected Next.js version: 14.2.28
+[17:10:16.459] Running "npm run build"
+[17:10:16.573] 
+[17:10:16.573] > reflectly@0.1.0 build
+[17:10:16.573] > next build --no-lint
+[17:10:16.574] 
+[17:10:17.236] Environment Configuration: OPENAI_API_KEY is set
+[17:10:17.247]  ⚠ Disabling SWC Minifer will not be an option in the next major version. Please report any issues you may be experiencing to https://github.com/vercel/next.js/issues
+[17:10:17.299]   ▲ Next.js 14.2.28
+[17:10:17.300]   - Environments: .env.local
+[17:10:17.300] 
+[17:10:17.321]    Creating an optimized production build ...
+[17:10:50.387] <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (117kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+[17:10:52.567] /*! 🌼 daisyUI 5.0.19 */
+[17:11:04.409]    Compiled successfully
+[17:11:04.410]    Collecting page data ..
+[17:11:04.411]    Generating static pages (0/15)
+[17:11:04.414]    Generating static pages (15/15)
+[17:11:04.414]    Finalizing page optimization ..
+[17:11:04.417] 
+[17:11:04.417] Route (app)                              Size     First Load JS
+[17:11:04.417] ┌ ○ /                                    5.52 kB        85.5 kB
+[17:11:04.418] ├ ○ /app                                 178 kB          258 kB
+[17:11:04.418] ├ ○ /landing                             86.4 kB         166 kB
+[17:11:04.419] ├ ○ /sign-in/[[...rest]]                 0 B                0 B
+[17:11:04.419] └ ○ /sign-up/[[...rest]]                 0 B                0 B
+[17:11:04.419] + First Load JS shared by all            79.9 kB
+[17:11:04.419]   ├ chunks/main-app.js                   76.1 kB
+[17:11:04.419]   └ chunks/webpack.js                    3.85 kB
+[17:11:04.419] 
+[17:11:04.420] ✓ Ready in 47.5s
+[17:11:04.420] 
+[17:11:13.121] Build completed successfully!
+[17:11:13.196] Deploying...
+[17:11:16.930] Deploy completed! 
