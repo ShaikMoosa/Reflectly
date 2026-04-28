@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { SubscriptionRepository } from '@/app/utils/repositories';
+import { SubscriptionRepository } from '@/shared/services';
 
 // Ensure this route is always served dynamically
 export const dynamic = 'force-dynamic';

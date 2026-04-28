@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '@/shared/services/supabaseClient';
 
 // Ensure this route is always served dynamically
 export const dynamic = 'force-dynamic';

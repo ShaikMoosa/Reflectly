@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
-import { CreateChatHistoryParams } from '@/app/models/chat';
+import { supabase } from '@/shared/services/supabaseClient';
+import { CreateChatHistoryParams } from '@/features/chat';
 
 // Get all chat histories for the authenticated user
 export async function GET(request: NextRequest) {

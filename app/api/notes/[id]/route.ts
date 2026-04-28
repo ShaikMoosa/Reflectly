@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
-import { UpdateNoteParams } from '@/app/models/note';
+import { supabase } from '@/shared/services/supabaseClient';
+import { UpdateNoteParams } from '@/features/notes';
 
 // Get a specific note by ID
 export async function GET(

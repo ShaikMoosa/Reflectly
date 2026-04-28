@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
+import { supabase } from '@/shared/services/supabaseClient';
 
 // Get a specific transcript by ID - accessible without authentication
 export async function GET(

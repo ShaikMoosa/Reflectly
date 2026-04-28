@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
-import { UpdateChatHistoryParams } from '@/app/models/chat';
+import { supabase } from '@/shared/services/supabaseClient';
+import { UpdateChatHistoryParams } from '@/features/chat';
 
 // Get a specific chat history by ID
 export async function GET(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
-import { CreateNoteParams, Note } from '@/app/models/note';
+import { supabase } from '@/shared/services/supabaseClient';
+import { CreateNoteParams, Note } from '@/features/notes';
 
 // Get all notes for the authenticated user
 export async function GET(request: NextRequest) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { createCheckoutUrl } from '@/app/utils/lemonsqueezy';
+import { createCheckoutUrl } from '@/shared/utils/lemonsqueezy';
 
 // Ensure this route is always served dynamically
 export const dynamic = 'force-dynamic';

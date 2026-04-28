@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
-import { ProjectUpdateInput } from '@/app/models/project';
+import { supabase } from '@/shared/services/supabaseClient';
+import { UpdateProjectParams as ProjectUpdateInput } from '@/features/projects';
 
 // Get a specific project by ID
 export async function GET(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/utils/supabase';
-import { Project, ProjectCreateInput } from '@/app/models/project';
+import { supabase } from '@/shared/services/supabaseClient';
+import { Project, CreateProjectParams as ProjectCreateInput } from '@/features/projects';
 import { cookies } from 'next/headers';
 
 // Get all projects for the authenticated user

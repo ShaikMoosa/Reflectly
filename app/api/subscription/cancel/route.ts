@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { SubscriptionRepository } from '@/app/utils/repositories/subscription-repository';
-import { supabaseAdminClient } from '@/app/utils/supabase/admin';
-import { cancelSubscription } from '@/app/utils/lemonsqueezy';
+import { SubscriptionRepository } from '@/shared/services'; // or use the full path to the repository
+import { supabaseAdminClient } from '@/shared/services/supabaseClient';
+import { cancelSubscription } from '@/shared/utils/lemonsqueezy';
 
 // Ensure this route is always served dynamically
 export const dynamic = 'force-dynamic';

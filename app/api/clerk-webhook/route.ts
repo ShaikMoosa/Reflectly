@@ -1,8 +1,8 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
-import { supabaseAdminClient } from '@/app/utils/supabase/admin';
-import { handleSupabaseError } from '@/app/utils/supabase/error-handler';
+import { supabaseAdminClient } from '@/shared/services/supabaseClient';
+import { handleSupabaseError } from '@/shared/services/error-handler';
 
 export async function POST(req: Request) {
   // Get the headers

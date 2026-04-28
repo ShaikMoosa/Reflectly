@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { SubscriptionAdminRepository } from '@/app/utils/repositories/subscription-admin-repository';
+import { SubscriptionAdminRepository } from '@/shared/services';
 
 // Ensure this route is always served dynamically
 export const dynamic = 'force-dynamic';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { cancelUserSubscription } from '@/app/utils/subscriptions';
+import { cancelUserSubscription } from '@/shared/utils/subscriptions';
 
 // Ensure this route is always served dynamically
 export const dynamic = 'force-dynamic';

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { supabase } from '@/utils/supabase';
+import { supabase } from '@/shared/services/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import { incrementTranscriptionCount } from '@/app/utils/subscriptions';
+import { incrementTranscriptionCount } from '@/shared/utils/subscriptions';
 
 // Explicitly make this route dynamic
 export const dynamic = 'force-dynamic';
