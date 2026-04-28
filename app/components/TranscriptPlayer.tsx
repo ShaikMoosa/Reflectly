@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import TranscriptSegment, { TranscriptSegmentData } from './TranscriptSegment';
+import { TranscriptSegment, TranscriptSegmentData, LoadingIndicator } from '@/features/transcription';
 import { Clock, ChevronsDown, ChevronsUp, FileText } from 'lucide-react';
-import LoadingIndicator from './LoadingIndicator';
 
 export interface TranscriptPlayerProps {
   segments: TranscriptSegmentData[];

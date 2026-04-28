@@ -1,17 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import ProjectPage, { Project } from './ProjectPage';
-import ProjectFileView from './ProjectFileView';
-import SideNavigation, { PageType } from './SideNavigation';
+import { ProjectPage, Project } from '@/features/projects';
+import { ProjectFileView } from '@/features/projects';
+import { SideNavigation, PageType } from '@/shared/components/layout';
 import { useMediaQuery } from 'react-responsive';
-import FixedKanbanBoard from './FixedKanbanBoard';
+import { FixedKanbanBoard } from '@/features/kanban';
 import { useUser } from '@clerk/nextjs';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase, initializeSupabaseTables } from '../../utils/supabase';
-import { WhiteboardCanvas } from '@/app/whiteboard/components/WhiteboardCanvas';
-import { getUserSubscriptionStatus, SubscriptionStatus as SubscriptionStatusType } from '../utils/subscriptions';
-import SubscriptionStatus from './SubscriptionStatus';
+import { supabase } from '@/shared/services/supabaseClient';
+import { WhiteboardCanvas } from '@/features/whiteboard';
+import { getUserSubscriptionStatus, SubscriptionStatus } from '@/shared/utils/subscriptions';
 
 const App: React.FC = () => {
   // Project state
