@@ -2,8 +2,8 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import { getUserSubscriptionStatus } from '../utils/subscriptions';
-import { createClient } from '../utils/supabase/server';
+import { getUserSubscriptionStatus } from '@/shared/utils/subscriptions';
+import { createClient } from '@/shared/services/supabaseClient';
 
 export default async function AccountPage() {
   const { userId } = await auth();

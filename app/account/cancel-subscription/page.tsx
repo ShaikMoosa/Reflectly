@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { CancelSubscriptionForm } from './cancel-subscription-form';
-import { Button } from '@/app/components/ui/button';
+import { Button } from '@/shared/components/ui';
 import { ArrowLeft } from 'lucide-react';
 
 export const metadata: Metadata = {

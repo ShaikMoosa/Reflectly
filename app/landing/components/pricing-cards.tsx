@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/utils";
 
 type Plan = {
   id: string;

@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { SubscriptionPanel } from '@/app/components/subscription/subscription-panel';
+import { SubscriptionPanel } from '@/features/subscription';
 
 export const metadata: Metadata = {
   title: 'Subscription Management | Reflectly',

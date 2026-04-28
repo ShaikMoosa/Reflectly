@@ -23,9 +23,7 @@ import {
   updateTaskContent,
   updateTaskOrder,
 } from '../actions';
-import { Button } from '../../components/ui/button'; // Fixed path
-import { Input } from '../../components/ui/input';   // Fixed path
-import { Textarea } from '../../components/ui/textarea'; // Fixed path
+import { Button, Input, Textarea } from '@/shared/components/ui';
 import { PlusIcon, TrashIcon, EditIcon, CheckIcon, XIcon } from 'lucide-react'; // Example icons
 import { toast } from 'sonner'; // Assuming shadcn uses sonner for toasts
 

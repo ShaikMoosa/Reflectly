@@ -1,12 +1,8 @@
-import { Metadata } from 'next';
-import { WhiteboardCanvas } from '@/app/whiteboard/components/WhiteboardCanvas';
+'use client';
+
+import { WhiteboardCanvas } from '@/features/whiteboard';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-
-export const metadata: Metadata = {
-  title: 'Whiteboard | Reflectly',
-  description: 'Interactive whiteboard for creative work',
-};
 
 export default function WhiteboardPage() {
   return (
@@ -23,4 +19,4 @@ export default function WhiteboardPage() {
       </div>
     </div>
   );
-} 
+}

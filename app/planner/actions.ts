@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '../utils/supabase/server'; // Updated import
-import { Database, Tables, TablesInsert, TablesUpdate } from '../utils/supabase/database.types'; // Corrected path
+import { createClient } from '@/shared/services/supabaseClient';
+import { Database, Tables, TablesInsert, TablesUpdate } from '@/shared/services';
 import { redirect } from 'next/navigation';
 
 type PlannerColumn = Tables<'planner_columns'>;
